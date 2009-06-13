@@ -1,0 +1,17 @@
+0) Apply the patch to the comment module.
+
+1) Enable the module.
+
+2) Edit 'Administer >> Content management >> Content types >> Support ticket'
+ a) Set the desired Submission form settings (such as Title field label, Body 
+    field label, Minimum number of words, etc)
+ b) Set the desired Workflow settings
+ c) Set the desired Comment settings (recommended):
+    - make comments read/write
+    - make default display mode 'flat list - expanded'
+    - make default display order 'Date - oldest first'
+    - increase default comments per page
+    - do not display comment controls
+    - disable the comment subject field
+    - display comment submission form below post or comments
+

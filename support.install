@@ -1,0 +1,151 @@
+<?php
+
+/**
+ * Helpdesk / support ticketing database schema.
+ * Copyright (c) 2008-9 Tag1 Consulting, Inc <jeremy@tag1consulting.com>.
+ */
+
+function jobtrack_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {jobtrack_client} (
+        clid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(128) NOT NULL DEFAULT '',
+        path VARCHAR(32) NOT NULL DEFAULT '',
+        status BOOL NOT NULL DEFAULT '0',
+        server_name varchar(64) NOT NULL DEFAULT '',
+        server_username varchar(64) NOT NULL DEFAULT '',
+        server_password varchar(64) NOT NULL DEFAULT '',
+        mailfrom varchar(64) NOT NULL DEFAULT '',
+        mailbox varchar(64) NOT NULL DEFAULT '',
+        protocol int(2) UNSIGNED NOT NULL DEFAULT '0',
+        port int(5) UNSIGNED NOT NULL DEFAULT '0',
+        delete_read BOOL NOT NULL DEFAULT '0',
+        autosubscribe TEXT NULL,
+        domains TEXT NULL,
+        notes LONGTEXT NULL,
+        UNIQUE KEY name (name)
+      )");
+      db_query("CREATE TABLE {jobtrack_job} (
+        jid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        clid INT UNSIGNED NOT NULL DEFAULT '0',
+        name VARCHAR(128) NOT NULL DEFAULT '',
+        notes LONGTEXT NULL,
+        status INT(2) UNSIGNED NOT NULL DEFAULT '0'
+      )");
+      db_query("CREATE TABLE {jobtrack_ticket} (
+        nid INT NOT NULL DEFAULT '0' PRIMARY KEY,
+        state INT(3) UNSIGNED NOT NULL DEFAULT '0',
+        priority INT(3) UNSIGNED NOT NULL DEFAULT '0',
+        client INT UNSIGNED NOT NULL DEFAULT '0',
+        assigned INT UNSIGNED NOT NULL DEFAULT '0',
+        KEY state (state)
+      )");
+      db_query("CREATE TABLE {jobtrack_ticket_comment} (
+        cid INT NOT NULL PRIMARY KEY,
+        state INT(3) UNSIGNED NOT NULL DEFAULT '0',
+        priority INT(3) UNSIGNED NOT NULL DEFAULT '0',
+        client INT UNSIGNED NOT NULL DEFAULT '0',
+        assigned INT UNSIGNED NOT NULL DEFAULT '0'
+      )");
+      db_query("CREATE TABLE {jobtrack_assigned} (
+        nid INT UNSIGNED NOT NULL DEFAULT '0',
+        uid INT UNSIGNED NOT NULL DEFAULT '0',
+        active BOOL NOT NULL DEFAULT '1',
+        PRIMARY KEY (uid, nid),
+        KEY active (active)
+      )");
+      db_query("CREATE TABLE {jobtrack_states} (
+        sid INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        state VARCHAR(32) NOT NULL DEFAULT '',
+        phase1 BOOL NOT NULL DEFAULT '0',
+        phase2 BOOL NOT NULL DEFAULT '0',
+        isdefault BOOL NOT NULL DEFAULT '0',
+        weight INT UNSIGNED NOT NULL DEFAULT '0',
+        KEY weight_state (weight, state),
+        KEY isdefault (isdefault)
+      )");
+      db_query("INSERT INTO {jobtrack_states} (state, weight, admin, phase1, phase2, isdefault) VALUES('new', 0, 0, 1, 0, 1)");
+      db_query("INSERT INTO {jobtrack_states} (state, weight, phase1, phase2) VALUES('active', 1, 0, 1)");
+      db_query("INSERT INTO {jobtrack_states} (state, weight, phase1, phase2) VALUES('pending', 2, 0, 1)");
+      db_query("INSERT INTO {jobtrack_states} (state, weight, phase1, phase2) VALUES('closed', 3, 0, 1)");
+      db_query("CREATE TABLE {jobtrack_priority} (
+        pid INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        priority VARCHAR(32) NOT NULL DEFAULT '',
+        isdefault BOOL NOT NULL DEFAULT '0',
+        weight INT UNSIGNED NOT NULL DEFAULT '0',
+        KEY weight (weight, priority),
+        KEY isdefault (isdefault)
+      )");
+      db_query("INSERT INTO {jobtrack_priority} (priority, weight) VALUES('low', 0)");
+      db_query("INSERT INTO {jobtrack_priority} (priority, weight, isdefault) VALUES('normal', 1, 1)");
+      db_query("INSERT INTO {jobtrack_priority} (priority, weight) VALUES('high', 2)");
+      db_query("INSERT INTO {jobtrack_priority} (priority, weight) VALUES('critical', 3)");
+
+      break;
+  }
+}
+
+/**
+ * Cleanup.
+ */
+function jobtrack_uninstall() {
+  $result = db_query("SELECT nid FROM {node} WHERE type = 'jobtrack_ticket'");
+  while ($node = db_fetch_object($result)) {
+    node_delete($node->nid);
+  }
+
+  db_query('DROP TABLE {jobtrack_ticket}');
+  db_query('DROP TABLE {jobtrack_ticket_comment}');
+  db_query('DROP TABLE {jobtrack_assigned}');
+  db_query('DROP TABLE {jobtrack_states}');
+  db_query('DROP TABLE {jobtrack_priority}');
+  db_query('DROP TABLE {jobtrack_job}');
+  db_query('DROP TABLE {jobtrack_client}');
+}
+
+/**
+ * Add 'path' field, rebuild menus.
+ */
+function jobtrack_update_6001() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {jobtrack_client} ADD path VARCHAR(32) NOT NULL DEFAULT '' AFTER name");
+  cache_clear_all();
+  return $ret;
+}
+
+/**
+ * Add 'autosubscribe' field.
+ * Add 'active' field and index.
+ */
+function jobtrack_update_6002() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {jobtrack_client} ADD autosubscribe TEXT NULL AFTER delete_read");
+  $ret[] = update_sql("ALTER TABLE {jobtrack_assigned} ADD active BOOL NOT NULL DEFAULT '1'");
+  $ret[] = update_sql('ALTER TABLE {jobtrack_assigned} ADD KEY active (active)');
+  cache_clear_all();
+  return $ret;
+}
+
+/**
+ * Add 'domains' field.
+ */
+function jobtrack_update_6003() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {jobtrack_client} ADD domains TEXT NULL AFTER autosubscribe");
+  cache_clear_all();
+  return $ret;
+}
+
+/**
+ * Add 'assigned' field.
+ */
+function jobtrack_update_6004() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {jobtrack_ticket} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
+  $ret[] = update_sql("ALTER TABLE {jobtrack_ticket_comment} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
+  cache_clear_all();
+  cache_clear_all(NULL, 'cache_menu');
+  return $ret;
+}

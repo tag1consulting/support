@@ -1,4 +1,8 @@
 June 13th, 2009
+ - jobtrack.install
+    o bug #485318: do not set default value for text column
+
+June 13th, 2009
 Project renamed from 'jobtrack' to 'support', addressing potential trademark
 infringement.
 

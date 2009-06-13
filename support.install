@@ -93,7 +93,6 @@ function support_schema() {
       ),
       'autosubscribe' => array(
         'type' => 'text',
-        'default' => '',
       ),
       'domains' => array(
         'type' => 'text',

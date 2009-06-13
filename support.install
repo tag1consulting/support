@@ -333,24 +333,39 @@ function support_schema() {
  * Install support database schema.
  */
 function support_install() {
-  drupal_install_schema('support');
+  // Check if we're upgrading a previous jobtrack installation.
+  if (db_table_exists('jobtrack_client')) {
+    $ret = array();
+    db_rename_table($ret, 'jobtrack_client', 'support_client');
+    db_rename_table($ret, 'jobtrack_ticket', 'support_ticket');
+    db_rename_table($ret, 'jobtrack_ticket_comment', 'support_ticket_comment');
+    db_rename_table($ret, 'jobtrack_assigned', 'support_assigned');
+    db_rename_table($ret, 'jobtrack_states', 'support_states');
+    db_rename_table($ret, 'jobtrack_priority', 'support_priority');
+    db_query("UPDATE {node} SET type = 'support_ticket' WHERE type = 'jobtrack_ticket'");
+    cache_clear_all();
+    menu_rebuild();
+  }
+  else {
+    drupal_install_schema('support');
 
-  // default states
-  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isdefault) VALUES('new', 0, 1, 0, 1)");
-  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('active', 1, 0, 1)");
-  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('pending', 2, 0, 1)");
-  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isclosed) VALUES('closed', 3, 0, 1, 1)");
-  // default priorities
-  db_query("INSERT INTO {support_priority} (priority, weight) VALUES('low', 0)");
-  db_query("INSERT INTO {support_priority} (priority, weight, isdefault) VALUES('normal', 1, 1)");
-  db_query("INSERT INTO {support_priority} (priority, weight) VALUES('high', 2)");
-  db_query("INSERT INTO {support_priority} (priority, weight) VALUES('critical', 3)");
-  // default comment settings
-  variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED_EXPANDED);
-  variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
+    // default 
+    db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isdefault) VALUES('new', 0, 1, 0, 1)");
+    db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('active', 1, 0, 1)");
+    db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('pending', 2, 0, 1)");
+    db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isclosed) VALUES('closed', 3, 0, 1, 1)");
+    // default priorities
+    db_query("INSERT INTO {support_priority} (priority, weight) VALUES('low', 0)");
+    db_query("INSERT INTO {support_priority} (priority, weight, isdefault) VALUES('normal', 1, 1)");
+    db_query("INSERT INTO {support_priority} (priority, weight) VALUES('high', 2)");
+    db_query("INSERT INTO {support_priority} (priority, weight) VALUES('critical', 3)");
+    // default comment settings
+    variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED_EXPANDED);
+    variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
 
-  // Set default weight
-  db_query("UPDATE {system} SET weight = 10 WHERE name = 'support'");
+    // Set default weight
+    db_query("UPDATE {system} SET weight = 10 WHERE name = 'support'");
+  }
 }
 
 /**
@@ -363,165 +378,5 @@ function support_uninstall() {
   }
 
   drupal_uninstall_schema('support');
-}
-
-/**
- * Add 'path' field, rebuild menus.
- */
-function support_update_6001() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_client} ADD path VARCHAR(32) NOT NULL DEFAULT '' AFTER name");
-  cache_clear_all();
-  return $ret;
-}
-
-/**
- * Add 'autosubscribe' field.
- * Add 'active' field and index.
- */
-function support_update_6002() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_client} ADD autosubscribe TEXT NULL AFTER delete_read");
-  $ret[] = update_sql("ALTER TABLE {support_assigned} ADD active BOOL NOT NULL DEFAULT '1'");
-  $ret[] = update_sql('ALTER TABLE {support_assigned} ADD KEY active (active)');
-  cache_clear_all();
-  return $ret;
-}
-
-/**
- * Add 'domains' field.
- */
-function support_update_6003() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_client} ADD domains TEXT NULL AFTER autosubscribe");
-  cache_clear_all();
-  return $ret;
-}
-
-/**
- * Add 'assigned' field.
- */
-function support_update_6004() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_ticket} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
-  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
-  cache_clear_all();
-  cache_clear_all(NULL, 'cache_menu');
-  return $ret;
-}
-
-/**
- * Add 'message_id' field.
- */
-function support_update_6005() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_ticket} ADD message_id varchar(64) NOT NULL DEFAULT '' AFTER nid");
-  $ret[] = update_sql("ALTER TABLE {support_ticket} ADD KEY message_id (message_id)");
-  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} ADD message_id varchar(64) NOT NULL DEFAULT '' AFTER cid");
-  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} ADD KEY message_id (message_id)");
-  cache_clear_all();
-  menu_rebuild();
-  cache_clear_all('schema', 'cache');
-  return $ret;
-}
-
-/**
- * Increase size of 'message_id' field.
- */
-function support_update_6006() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_ticket} MODIFY message_id varchar(255)");
-  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} MODIFY message_id varchar(255)");
-  return $ret;
-}
-
-/**
- * Increase size of 'message_id' field.
- */
-function support_update_6007() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {support_client} ADD integrate_email BOOL NOT NULL DEFAULT '0'");
-  // Prior to this change, email integration was required, so we cans simply
-  // enable this bit for all existing clients.
-  $ret[] = update_sql('UPDATE {support_client} SET integrate_email = TRUE');
-  $ret[] = update_sql('ALTER TABLE {support_client} ADD KEY status_name (status, name)');
-  return $ret;
-}
-
-/**
- * Rebuild menu to provide access to new /support/fetch path.
- */
-function support_update_6008() {
-  cache_clear_all();
-  menu_rebuild();
-  return array();
-}
-
-/**
- * Rebuild menu to provide users access to their own tickets on their user page.
- */
-function support_update_6009() {
-  cache_clear_all();
-  menu_rebuild();
-  return array();
-}
-
-/**
- * Introduce isclosed status for support_states.
- */
-function support_update_6010() {
-  $ret = array();
-  db_add_field($ret, 'support_states', 'isclosed',
-    array(
-      'type' => 'int',
-      'size' => 'tiny',
-      'not null' => TRUE,
-      'unsigned' => TRUE,
-      'default' => 0,
-    ),
-    array('indexes' => array(
-      'isclosed' => array('isclosed')),
-    )
-  );
-  $ret[] = update_sql("UPDATE {support_states} SET isclosed = 1 WHERE state = 'closed'");
-  return $ret;
-}
-
-/**
- * Rebuild menu to add 'my open' tab, and per-state tabs for user assigned
- * tickets.
- */
-function support_update_6011() {
-  cache_clear_all();
-  menu_rebuild();
-  return array();
-}
-
-/**
- * Introduce extra field in support_client table, allows setting csutom imap_open flags.
- */
-function support_update_6012() {
-  $ret = array();
-  db_add_field($ret, 'support_client', 'extra',
-    array(
-      'type' => 'varchar',
-      'length' => 128,
-      'not null' => TRUE,
-      'default' => '',
-    ),
-    array()
-  );
-  $ret[] = update_sql("UPDATE {support_client} SET extra = '/novalidate-cert'");
-  return $ret;
-}
-
-/**
- * Rebuild menu to add autocomplete paths and to adjust module weight (per issue #422834)
- */
-function support_update_6013() {
-  db_query("UPDATE {system} SET weight = 10 WHERE name = 'support'");
-  cache_clear_all();
-  menu_rebuild();
-  return array();
 }
 

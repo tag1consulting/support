@@ -1,0 +1,24 @@
+This module was formerly known as "jobtrack", but was renamed due to a possible
+trademark infrigmenet: http://drupal.org/node/469210
+
+If you are upgrading from 'jobtrack' to 'support', you need to follow these
+directions.  If you are installing 'support' for the first time, then you
+can ignore the contents of this file.
+
+-----
+
+1) Make a backup of your database.
+   Play it safe!  Something may go wrong with the upgrade process, and this way
+   you don't risk permantently losing important data.
+
+2) Verify that your backup is valid.
+   A backup is worthless if it doesn't work.  Test that you can restore your
+   backup onto a development server.
+
+3) Disable the 'jobtrack' module.
+   The jobtrack module is no longer necessary.
+
+4) Enable the 'support' module.
+   The support module replaces the jobtrack module.
+
+That's all, folks!

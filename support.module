@@ -140,7 +140,7 @@ function support_menu() {
     'type' => MENU_CALLBACK,
   );
   $items['admin/support'] = array(
-    'title' => 'Helpdesk / support ticket system',
+    'title' => 'Support ticketing system',
     'description' => 'Manage the support ticket system.',
     'position' => 'right',
     'weight' => 5,

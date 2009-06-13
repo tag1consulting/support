@@ -1,5 +1,5 @@
 diff --git a/modules/comment/comment.module b/modules/comment/comment.module
-index c0ff6e8..76e8ba3 100644
+index 1505523..90f6fc9 100644
 --- a/modules/comment/comment.module
 +++ b/modules/comment/comment.module
 @@ -830,10 +830,13 @@ function comment_links($comment, $return = 1) {
@@ -20,7 +20,25 @@ index c0ff6e8..76e8ba3 100644
      }
      else if (user_access('post comments')) {
        if (comment_access('edit', $comment)) {
-@@ -1048,7 +1051,12 @@ function comment_render($node, $cid = 0) {
+@@ -842,10 +845,13 @@ function comment_links($comment, $return = 1) {
+           'href' => "comment/edit/$comment->cid"
+         );
+       }
+-      $links['comment_reply'] = array(
+-        'title' => t('reply'),
+-        'href' => "comment/reply/$comment->nid/$comment->cid"
+-      );
++      $node = node_load($comment->nid);
++      if ($node->type != 'support_ticket') {
++        $links['comment_reply'] = array(
++          'title' => t('reply'),
++          'href' => "comment/reply/$comment->nid/$comment->cid"
++        );
++      }
+     }
+     else {
+       $node = node_load($comment->nid);
+@@ -1048,7 +1054,12 @@ function comment_render($node, $cid = 0) {
      // If enabled, show new comment form if it's not already being displayed.
      $reply = arg(0) == 'comment' && arg(1) == 'reply';
      if (user_access('post comments') && node_comment_mode($nid) == COMMENT_NODE_READ_WRITE && (variable_get('comment_form_location_'. $node->type, COMMENT_FORM_SEPARATE_PAGE) == COMMENT_FORM_BELOW) && !$reply) {
@@ -34,24 +52,3 @@ index c0ff6e8..76e8ba3 100644
      }
  
      $output = theme('comment_wrapper', $output, $node);
-@@ -1334,8 +1342,9 @@ function comment_form(&$form_state, $edit, $title = NULL) {
- 
-     }
-     else {
--      $form['_author'] = array('#type' => 'item', '#title' => t('Your name'), '#value' => theme('username', $user)
--      );
-+      if ($node->type != 'support_ticket') {
-+        $form['_author'] = array('#type' => 'item', '#title' => t('Your name'), '#value' => theme('username', $user));
-+      }
-       $form['author'] = array('#type' => 'value', '#value' => $user->name);
-     }
-   }
-@@ -1369,7 +1378,7 @@ function comment_form(&$form_state, $edit, $title = NULL) {
- 
-   $form['comment_filter']['comment'] = array(
-     '#type' => 'textarea',
--    '#title' => t('Comment'),
-+    '#title' => ($node->type != 'support_ticket') ?  t('Comment') : t('Update ticket'),
-     '#rows' => 15,
-     '#default_value' => $default,
-     '#required' => TRUE,

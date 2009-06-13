@@ -1,0 +1,61 @@
+/* Color ticket listing by state & priority */
+.support tr.state-1.priority-1 {
+  background-color: #fdffdd
+}
+.support tr.state-1.priority-2 {
+  background-color: #fbffc2
+}
+.support tr.state-1.priority-3 {
+  background-color: #f9ff9c
+}
+.support tr.state-1.priority-4 {
+  background-color: #f6ff6b
+}
+.support tr.state-1 td.active {
+  background-color: #e9edab
+}
+.support tr.state-2.priority-1 {
+  background-color: #ecfff3
+}
+.support tr.state-2.priority-2 {
+  background-color: #d0ffe1
+}
+.support tr.state-2.priority-3 {
+  background-color: #aaffc8
+}
+.support tr.state-2.priority-4 {
+  background-color: #80ffad
+}
+.support tr.state-2 td.active {
+  background-color: #cdecd8
+}
+.support tr.state-3.priority-1 {
+  background-color: #ffdada
+}
+.support tr.state-3.priority-2 {
+  background-color: #ffc6c6
+}
+.support tr.state-3.priority-3 {
+  background-color: #ffb4b4
+}
+.support tr.state-3.priority-4 {
+  background-color: #ffa1a1
+}
+.support tr.state-3 td.active {
+  background-color: #eccdcd
+}
+.support tr.state-4.priority-1 {
+  background-color: #f8f8f8
+}
+.support tr.state-4.priority-2 {
+  background-color: #f3f3f3
+}
+.support tr.state-4.priority-3 {
+  background-color: #ececec
+}
+.support tr.state-4.priority-4 {
+  background-color: #e8e8e8
+}
+.support tr.state-4 td.active {
+  background-color: #e1e1e1
+}

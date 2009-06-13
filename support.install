@@ -1,116 +1,376 @@
 <?php
 
 /**
- * Helpdesk / support ticketing database schema.
- * Copyright (c) 2008-9 Tag1 Consulting, Inc <jeremy@tag1consulting.com>.
+ * Helpdesk / support ticket tracking system database schema.
+ * Copyright (c) 2008-2009 Tag1 Consulting, Inc <jeremy@tag1consulting.com>.
  */
 
-function jobtrack_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {jobtrack_client} (
-        clid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(128) NOT NULL DEFAULT '',
-        path VARCHAR(32) NOT NULL DEFAULT '',
-        status BOOL NOT NULL DEFAULT '0',
-        server_name varchar(64) NOT NULL DEFAULT '',
-        server_username varchar(64) NOT NULL DEFAULT '',
-        server_password varchar(64) NOT NULL DEFAULT '',
-        mailfrom varchar(64) NOT NULL DEFAULT '',
-        mailbox varchar(64) NOT NULL DEFAULT '',
-        protocol int(2) UNSIGNED NOT NULL DEFAULT '0',
-        port int(5) UNSIGNED NOT NULL DEFAULT '0',
-        delete_read BOOL NOT NULL DEFAULT '0',
-        autosubscribe TEXT NULL,
-        domains TEXT NULL,
-        notes LONGTEXT NULL,
-        UNIQUE KEY name (name)
-      )");
-      db_query("CREATE TABLE {jobtrack_job} (
-        jid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        clid INT UNSIGNED NOT NULL DEFAULT '0',
-        name VARCHAR(128) NOT NULL DEFAULT '',
-        notes LONGTEXT NULL,
-        status INT(2) UNSIGNED NOT NULL DEFAULT '0'
-      )");
-      db_query("CREATE TABLE {jobtrack_ticket} (
-        nid INT NOT NULL DEFAULT '0' PRIMARY KEY,
-        state INT(3) UNSIGNED NOT NULL DEFAULT '0',
-        priority INT(3) UNSIGNED NOT NULL DEFAULT '0',
-        client INT UNSIGNED NOT NULL DEFAULT '0',
-        assigned INT UNSIGNED NOT NULL DEFAULT '0',
-        KEY state (state)
-      )");
-      db_query("CREATE TABLE {jobtrack_ticket_comment} (
-        cid INT NOT NULL PRIMARY KEY,
-        state INT(3) UNSIGNED NOT NULL DEFAULT '0',
-        priority INT(3) UNSIGNED NOT NULL DEFAULT '0',
-        client INT UNSIGNED NOT NULL DEFAULT '0',
-        assigned INT UNSIGNED NOT NULL DEFAULT '0'
-      )");
-      db_query("CREATE TABLE {jobtrack_assigned} (
-        nid INT UNSIGNED NOT NULL DEFAULT '0',
-        uid INT UNSIGNED NOT NULL DEFAULT '0',
-        active BOOL NOT NULL DEFAULT '1',
-        PRIMARY KEY (uid, nid),
-        KEY active (active)
-      )");
-      db_query("CREATE TABLE {jobtrack_states} (
-        sid INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        state VARCHAR(32) NOT NULL DEFAULT '',
-        phase1 BOOL NOT NULL DEFAULT '0',
-        phase2 BOOL NOT NULL DEFAULT '0',
-        isdefault BOOL NOT NULL DEFAULT '0',
-        weight INT UNSIGNED NOT NULL DEFAULT '0',
-        KEY weight_state (weight, state),
-        KEY isdefault (isdefault)
-      )");
-      db_query("INSERT INTO {jobtrack_states} (state, weight, admin, phase1, phase2, isdefault) VALUES('new', 0, 0, 1, 0, 1)");
-      db_query("INSERT INTO {jobtrack_states} (state, weight, phase1, phase2) VALUES('active', 1, 0, 1)");
-      db_query("INSERT INTO {jobtrack_states} (state, weight, phase1, phase2) VALUES('pending', 2, 0, 1)");
-      db_query("INSERT INTO {jobtrack_states} (state, weight, phase1, phase2) VALUES('closed', 3, 0, 1)");
-      db_query("CREATE TABLE {jobtrack_priority} (
-        pid INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        priority VARCHAR(32) NOT NULL DEFAULT '',
-        isdefault BOOL NOT NULL DEFAULT '0',
-        weight INT UNSIGNED NOT NULL DEFAULT '0',
-        KEY weight (weight, priority),
-        KEY isdefault (isdefault)
-      )");
-      db_query("INSERT INTO {jobtrack_priority} (priority, weight) VALUES('low', 0)");
-      db_query("INSERT INTO {jobtrack_priority} (priority, weight, isdefault) VALUES('normal', 1, 1)");
-      db_query("INSERT INTO {jobtrack_priority} (priority, weight) VALUES('high', 2)");
-      db_query("INSERT INTO {jobtrack_priority} (priority, weight) VALUES('critical', 3)");
+/**
+ * Support database schema definition.
+ */
+function support_schema() {
+  $schema['support_client'] = array(
+    'description' => 'Stores information about support clients.',
+    'fields' => array(
+      'clid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'path' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'integrate_email' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'server_name' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'server_username' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'server_password' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mailfrom' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mailbox' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'protocol' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'extra' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'port' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'autosubscribe' => array(
+        'type' => 'text',
+        'default' => '',
+      ),
+      'domains' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'default' => '',
+      ),
+      'notes' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('clid'),
+    'indexes' => array('status' => array('status')),
+    'unique keys' => array('name' => array('name')),
+  );
 
-      break;
-  }
+  $schema['support_ticket'] = array(
+    'description' => 'Stores information about support tickets.',
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'message_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'state' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'priority' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'client' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'assigned' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid'),
+    'indexes' => array(
+      'message_id' => array('message_id'),
+      'state' => array('state'),
+    ),
+  );
+
+  $schema['support_ticket_comment'] = array(
+    'description' => 'Stores information about support ticket comments.',
+    'fields' => array(
+      'cid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'message_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'state' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'priority' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'client' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'assigned' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('cid'),
+    'indexes' => array(
+      'message_id' => array('message_id'),
+    ),
+  );
+
+  $schema['support_assigned'] = array(
+    'description' => 'Stores information about who tickets are assigned to.',
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'active' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('uid', 'nid'),
+    'indexes' => array(
+      'active' => array('active')
+    ),
+  );
+
+  $schema['support_states'] = array(
+    'description' => 'All available support states.',
+    'fields' => array(
+      'sid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'state' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'phase1' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'phase2' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'isdefault' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'isclosed' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('sid'),
+    'indexes' => array(
+      'weight_state' => array('weight', 'state'),
+      'isdefault' => array('isdefault'),
+      'isclosed' => array('isclosed'),
+    ),
+  );
+
+  $schema['support_priority'] = array(
+    'description' => 'All available support priorities.',
+    'fields' => array(
+      'pid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'priority' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'isdefault' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('pid'),
+    'indexes' => array(
+      'weight_priority' => array('weight', 'priority'),
+      'isdefault' => array('isdefault'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Install support database schema.
+ */
+function support_install() {
+  drupal_install_schema('support');
+
+  // default states
+  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isdefault) VALUES('new', 0, 1, 0, 1)");
+  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('active', 1, 0, 1)");
+  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('pending', 2, 0, 1)");
+  db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isclosed) VALUES('closed', 3, 0, 1, 1)");
+  // default priorities
+  db_query("INSERT INTO {support_priority} (priority, weight) VALUES('low', 0)");
+  db_query("INSERT INTO {support_priority} (priority, weight, isdefault) VALUES('normal', 1, 1)");
+  db_query("INSERT INTO {support_priority} (priority, weight) VALUES('high', 2)");
+  db_query("INSERT INTO {support_priority} (priority, weight) VALUES('critical', 3)");
+  // default comment settings
+  variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED_EXPANDED);
+  variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
+
+  // Set default weight
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'support'");
 }
 
 /**
  * Cleanup.
  */
-function jobtrack_uninstall() {
-  $result = db_query("SELECT nid FROM {node} WHERE type = 'jobtrack_ticket'");
+function support_uninstall() {
+  $result = db_query("SELECT nid FROM {node} WHERE type = 'support_ticket'");
   while ($node = db_fetch_object($result)) {
     node_delete($node->nid);
   }
 
-  db_query('DROP TABLE {jobtrack_ticket}');
-  db_query('DROP TABLE {jobtrack_ticket_comment}');
-  db_query('DROP TABLE {jobtrack_assigned}');
-  db_query('DROP TABLE {jobtrack_states}');
-  db_query('DROP TABLE {jobtrack_priority}');
-  db_query('DROP TABLE {jobtrack_job}');
-  db_query('DROP TABLE {jobtrack_client}');
+  drupal_uninstall_schema('support');
 }
 
 /**
  * Add 'path' field, rebuild menus.
  */
-function jobtrack_update_6001() {
+function support_update_6001() {
   $ret = array();
-  $ret[] = update_sql("ALTER TABLE {jobtrack_client} ADD path VARCHAR(32) NOT NULL DEFAULT '' AFTER name");
+  $ret[] = update_sql("ALTER TABLE {support_client} ADD path VARCHAR(32) NOT NULL DEFAULT '' AFTER name");
   cache_clear_all();
   return $ret;
 }
@@ -119,11 +379,11 @@ function jobtrack_update_6001() {
  * Add 'autosubscribe' field.
  * Add 'active' field and index.
  */
-function jobtrack_update_6002() {
+function support_update_6002() {
   $ret = array();
-  $ret[] = update_sql("ALTER TABLE {jobtrack_client} ADD autosubscribe TEXT NULL AFTER delete_read");
-  $ret[] = update_sql("ALTER TABLE {jobtrack_assigned} ADD active BOOL NOT NULL DEFAULT '1'");
-  $ret[] = update_sql('ALTER TABLE {jobtrack_assigned} ADD KEY active (active)');
+  $ret[] = update_sql("ALTER TABLE {support_client} ADD autosubscribe TEXT NULL AFTER delete_read");
+  $ret[] = update_sql("ALTER TABLE {support_assigned} ADD active BOOL NOT NULL DEFAULT '1'");
+  $ret[] = update_sql('ALTER TABLE {support_assigned} ADD KEY active (active)');
   cache_clear_all();
   return $ret;
 }
@@ -131,9 +391,9 @@ function jobtrack_update_6002() {
 /**
  * Add 'domains' field.
  */
-function jobtrack_update_6003() {
+function support_update_6003() {
   $ret = array();
-  $ret[] = update_sql("ALTER TABLE {jobtrack_client} ADD domains TEXT NULL AFTER autosubscribe");
+  $ret[] = update_sql("ALTER TABLE {support_client} ADD domains TEXT NULL AFTER autosubscribe");
   cache_clear_all();
   return $ret;
 }
@@ -141,11 +401,127 @@ function jobtrack_update_6003() {
 /**
  * Add 'assigned' field.
  */
-function jobtrack_update_6004() {
+function support_update_6004() {
   $ret = array();
-  $ret[] = update_sql("ALTER TABLE {jobtrack_ticket} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
-  $ret[] = update_sql("ALTER TABLE {jobtrack_ticket_comment} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
+  $ret[] = update_sql("ALTER TABLE {support_ticket} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
+  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} ADD assigned INT UNSIGNED NOT NULL DEFAULT '0'");
   cache_clear_all();
   cache_clear_all(NULL, 'cache_menu');
   return $ret;
 }
+
+/**
+ * Add 'message_id' field.
+ */
+function support_update_6005() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {support_ticket} ADD message_id varchar(64) NOT NULL DEFAULT '' AFTER nid");
+  $ret[] = update_sql("ALTER TABLE {support_ticket} ADD KEY message_id (message_id)");
+  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} ADD message_id varchar(64) NOT NULL DEFAULT '' AFTER cid");
+  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} ADD KEY message_id (message_id)");
+  cache_clear_all();
+  menu_rebuild();
+  cache_clear_all('schema', 'cache');
+  return $ret;
+}
+
+/**
+ * Increase size of 'message_id' field.
+ */
+function support_update_6006() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {support_ticket} MODIFY message_id varchar(255)");
+  $ret[] = update_sql("ALTER TABLE {support_ticket_comment} MODIFY message_id varchar(255)");
+  return $ret;
+}
+
+/**
+ * Increase size of 'message_id' field.
+ */
+function support_update_6007() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {support_client} ADD integrate_email BOOL NOT NULL DEFAULT '0'");
+  // Prior to this change, email integration was required, so we cans simply
+  // enable this bit for all existing clients.
+  $ret[] = update_sql('UPDATE {support_client} SET integrate_email = TRUE');
+  $ret[] = update_sql('ALTER TABLE {support_client} ADD KEY status_name (status, name)');
+  return $ret;
+}
+
+/**
+ * Rebuild menu to provide access to new /support/fetch path.
+ */
+function support_update_6008() {
+  cache_clear_all();
+  menu_rebuild();
+  return array();
+}
+
+/**
+ * Rebuild menu to provide users access to their own tickets on their user page.
+ */
+function support_update_6009() {
+  cache_clear_all();
+  menu_rebuild();
+  return array();
+}
+
+/**
+ * Introduce isclosed status for support_states.
+ */
+function support_update_6010() {
+  $ret = array();
+  db_add_field($ret, 'support_states', 'isclosed',
+    array(
+      'type' => 'int',
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'unsigned' => TRUE,
+      'default' => 0,
+    ),
+    array('indexes' => array(
+      'isclosed' => array('isclosed')),
+    )
+  );
+  $ret[] = update_sql("UPDATE {support_states} SET isclosed = 1 WHERE state = 'closed'");
+  return $ret;
+}
+
+/**
+ * Rebuild menu to add 'my open' tab, and per-state tabs for user assigned
+ * tickets.
+ */
+function support_update_6011() {
+  cache_clear_all();
+  menu_rebuild();
+  return array();
+}
+
+/**
+ * Introduce extra field in support_client table, allows setting csutom imap_open flags.
+ */
+function support_update_6012() {
+  $ret = array();
+  db_add_field($ret, 'support_client', 'extra',
+    array(
+      'type' => 'varchar',
+      'length' => 128,
+      'not null' => TRUE,
+      'default' => '',
+    ),
+    array()
+  );
+  $ret[] = update_sql("UPDATE {support_client} SET extra = '/novalidate-cert'");
+  return $ret;
+}
+
+/**
+ * Rebuild menu to add autocomplete paths and to adjust module weight (per issue #422834)
+ */
+function support_update_6013() {
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'support'");
+  cache_clear_all();
+  menu_rebuild();
+  return array();
+}
+

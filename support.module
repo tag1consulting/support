@@ -5,11 +5,7 @@
  * @file support.module
  */
 
-/**
- * TODO items:
- *  3. Configurable auto-reply to new tickets
- *  6. Client form validation
- */
+define('SUPPORT_STATE_CLOSED', -3);
 
 /**
  * Implementation of hook_node_info().
@@ -25,12 +21,26 @@ function support_node_info() {
 }
 
 /**
- * Implementation of hook_acces().
+ * Implementation of hook_access().
  */
 function support_access($op, $node, $account) {
   switch ($op) {
     case 'create':
       return user_access('create tickets', $account);
+    case 'update':
+      return (user_access('edit any ticket', $account) || (user_access('edit own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account));
+    case 'delete':
+      return (user_access('delete any ticket', $account) || (user_access('delete own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account));
+    case 'view':
+      if (isset($node->client)) {
+        $client = support_client_load($node->client);
+        if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
+          return ($node->uid == $account->uid && support_access_clients($client, $account));
+        }
+        else {
+          return support_access_clients($client, $account);
+        }
+      }
   }
 }
 
@@ -45,18 +55,37 @@ function support_menu() {
     'access callback' => 'support_access_clients',
     'access arguments' => array(),
   );
-  // TODO: Figure out how to use the 6.x menu system correctly, this feels a
-  // little sloppy.
-  $result = db_query('SELECT clid, path, name FROM {jobtrack_client} WHERE status = 1');
+  $items['support/fetch'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'support_fetch_client_mail',
+    'access arguments' => array('download mail via support/fetch'),
+  );
+
+  // Autocomplete paths
+  $items['support/autocomplete/assigned'] = array(
+    'title' => 'Autocomplete support assigned user',
+    'page callback' => 'support_autocomplete_assigned',
+    'access callback' => 'support_access_clients',
+    'access arguments' => array(),
+    'type' => MENU_CALLBACK,
+  );
+  $items['support/autocomplete/autosubscribe'] = array(
+    'title' => 'Autocomplete support autosubscribed user',
+    'page callback' => 'support_autocomplete_autosubscribe',
+    'access arguments' => array('administer support'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = 1');
   while ($client = db_fetch_object($result)) {
-    $items["support/$client->path"] = array(
-      'title' => "$client->name",
+    $items['support/'. $client->path] = array(
+      'title' => check_plain($client->name),
       'page callback' => 'support_page',
       'page arguments' => array($client->clid),
       'access callback' => 'support_access_clients',
       'access arguments' => array($client, TRUE),
     );
-    $states = array('all' => 'all', 'all open' => 'all open') + _support_states();
+    $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
     foreach ($states as $sid => $state) {
       $items["support/$client->path/$state"] = array(
         'title' => "$state",
@@ -69,25 +98,10 @@ function support_menu() {
       );
     }
   }
-  $result = db_query('SELECT clid, path, name FROM {jobtrack_client} WHERE status = 1');
-  while ($client = db_fetch_object($result)) {
-    $states = array('all' => 'all', 'all open' => 'all open') + _support_states();
-    foreach ($states as $sid => $state) {
-      $items["support/$state"] = array(
-        'title' => "$state",
-        'page callback' => 'support_page',
-        'page arguments' => array($client->clid, $state),
-        'access callback' => 'support_access_clients',
-        'access arguments' => array($client),
-        'weight' => $sid,
-        'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
-      );
-    }
-  }
-  $items['support/user/%user_uid_optional'] = array(
+  $items['support/user/%user'] = array(
     'page callback' => 'support_page_user',
     'page arguments' => array(2),
-    'access callback' => 'support_page_user_access',
+    'access callback' => 'support_access_user_tickets',
     'access arguments' => array(2),
     'type' => MENU_CALLBACK,
     'file' => 'support.user.inc',
@@ -100,6 +114,19 @@ function support_menu() {
     'access arguments' => array(1),
     'file' => 'support.user.inc',
   );
+  $states = array('all' => 'all', 'all open' => 'all open') + _support_states();
+  foreach ($states as $sid => $state) {
+    $items["support/%user_uid_optional/assigned/$state"] = array(
+      'title' => "$state",
+      'page callback' => 'support_page_user',
+      'page arguments' => array(1, TRUE, $state),
+      'access callback' => 'support_access_clients',
+      'access arguments' => array($client, TRUE),
+      'file' => 'support.user.inc',
+      'weight' => $sid,
+      'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+    );
+  }
   $items['support/%node/unsubscribe/%user/%'] = array(
     'page callback' => 'support_unsubscribe_user',
     'page arguments' => array(1, 3, 4),
@@ -113,8 +140,8 @@ function support_menu() {
     'type' => MENU_CALLBACK,
   );
   $items['admin/support'] = array(
-    'title' => 'Support',
-    'description' => 'Manage the support tickets.',
+    'title' => 'Helpdesk / support ticket system',
+    'description' => 'Manage the support ticket system.',
     'position' => 'right',
     'weight' => 5,
     'page callback' => 'support_admin_menu_block_page',
@@ -167,11 +194,109 @@ function support_menu() {
   return $items;
 }
 
+/**
+ * Implementation of hook_cron().
+ */
 function support_cron() {
-  $clients = support_active_clients();
-  foreach ($clients as $clid => $client) {
-    support_client_fetch($client, FALSE); 
+  if (variable_get('support_cron_download_mail', TRUE)) {
+    support_fetch_client_mail();
   }
+}
+
+/**
+ * Autocomplete usernames to assign to ticket.
+ */
+function support_autocomplete_assigned($clid, $string = '') {
+  $matches = array();
+  if ($string) {
+    $roles = array();
+    $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $clid));
+    // retrieve all roles giving permission to access current tickets
+    $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'", "access $client tickets", 'administer support');
+    while ($role = db_fetch_object($result)) {
+      $roles[$role->rid] = $role->rid;
+    }
+    $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')", implode(', ', $roles), $string, 0, 10);
+    while ($user = db_fetch_object($result)) {
+      $matches[$user->name] = check_plain($user->name);
+    }
+  }
+
+  drupal_json($matches);
+}
+
+/**
+ * Autocomplete usernames to assign to ticket.
+ */
+function support_autocomplete_autosubscribe($clid, $string = '') {
+  // The user enters a comma-separated list of users.  We only autocomplete the
+  // last user.
+  $array = drupal_explode_tags($string);
+
+  // Fetch last user.
+  $last_string = trim(array_pop($array));
+
+  $matches = array();
+  if ($last_string) {
+    $roles = array();
+    $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $clid));
+    // retrieve all roles giving permission to access current tickets
+    $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'", "access $client tickets", 'administer support');
+    while ($role = db_fetch_object($result)) {
+      $roles[$role->rid] = $role->rid;
+    }
+    $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')", implode(', ', $roles), $last_string, 0, 10);
+
+    $prefix = count($array) ? implode(', ', $array) .', ': '';
+
+    while ($account = db_fetch_object($result)) {
+      $a = $account->name;
+      $matches[$prefix . $a] = check_plain($account->name);
+    }
+  }
+
+  drupal_json($matches);
+}
+
+/**
+ * Be sure a valid user is being assigned to a ticket.
+ */
+function _support_validate_assigned_user($uid, $client) {
+  $account = user_load(array('uid' => $uid));
+  return (user_access("access $client tickets", $account) || user_access('administer support', $account));
+}
+
+/**
+ * Automatically download messages for all active clients.
+ */
+function support_fetch_client_mail() {
+  $clients = support_active_clients();
+  if (is_array($clients)) {
+    foreach ($clients as $clid => $client) {
+      if ($client->integrate_email) {
+        support_client_fetch($client, FALSE);
+      }
+    }
+  }
+}
+
+/**
+ * Provide some inline documentation.
+ */
+function support_help($path, $arg) {
+  switch ($path) {
+    case 'admin/support/clients':
+      $output = '<p>'. t('Each support ticket can only be assigned to one client. !create one or more clients, then !assign allowing users to access these tickets.  Users can only create tickets for clients they have permission to access.  If working with multiple clients you will need to !define for each to prevent one client from viewing the tickets of another client.', array('!create' => l(t('Create'), 'admin/support/clients/add'), '!assign' => l(t('assign permissions'), 'admin/user/permissions', array('fragment' => 'module-support')), '!define' => l(t('define roles'), 'admin/user/roles'))) .'</p>';
+      break;
+    case 'admin/support/clients/add':
+    case 'admin/support/clients/%/edit':
+      $output  = '<p>'. t("Each support ticket must be assigned to one client.  Support can be configured so one client can't view another client's tickets.") .'</p>';
+      $output .= '<p>'. t('If you would like users to be able to create and update tickets via email, you will requires a dedicated email address for each client.  This email address is used to send and receive update notifications.  A cronjob automatically downloads emails sent to this address and converts them into tickets and ticket updates.  The message_id of each email is tracked, allowing support to properly associate replies with existing tickets.') .'</p>';
+      break;
+    case 'admin/support/settings':
+      $output = '<p>'. t('Global settings for the support module.') .'</p>';
+  }
+  return $output;
 }
 
 /**
@@ -181,7 +306,7 @@ function support_active_clients() {
   static $clients = NULL;
 
   if (is_null($clients)) {
-    $result = db_query('SELECT * FROM {jobtrack_client} WHERE status = 1');
+    $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, port, notes, autosubscribe, domains FROM {support_client} WHERE status = 1');
     while ($client = db_fetch_object($result)) {
       $clients[$client->clid] = $client;
     }
@@ -197,22 +322,22 @@ function support_unsubscribe_user($node, $account, $key) {
   if (is_object($node) && is_object($account)) {
     $lock = md5($account->uid . $node->nid);
     if ($key == $lock) {
-      db_query('UPDATE {jobtrack_assigned} SET active = 0 WHERE uid = %d AND nid = %d', $account->uid, $node->nid);
-      drupal_set_message(t('%email has been unsubscribed from ticket %ticket.', array('%email' => $account->mail, '%ticket' => $node->title)));
+      db_query('UPDATE {support_assigned} SET active = 0 WHERE uid = %d AND nid = %d', $account->uid, $node->nid);
+      drupal_set_message(t('%email has been unsubscribed from ticket %ticket.', array('%email' => check_plain($account->mail), '%ticket' => check_plain($node->title))));
     }
     else {
-      drupal_set_message(t('Invalid key, failed to unsubscribe %email.', array('%email' => $account->mail)), 'error');
+      drupal_set_message(t('Invalid key, failed to unsubscribe %email.', array('%email' => check_plain($account->mail))), 'error');
     }
     drupal_goto("node/$node->nid");
   }
   else if (is_object($account)) {
     $lock = md5($account->uid);
     if ($key == $lock) {
-      db_query('UPDATE {jobtrack_assigned} SET active = 0 WHERE uid = %d', $account->uid);
-      drupal_set_message(t('%email has been unsubscribed from all tickets.', array('%email' => $account->mail)));
+      db_query('UPDATE {support_assigned} SET active = 0 WHERE uid = %d', $account->uid);
+      drupal_set_message(t('%email has been unsubscribed from all tickets.', array('%email' => check_plain($account->mail))));
     }
     else {
-      drupal_set_message(t('Invalid key, failed to unsubscribe %email.', array('%email' => $account->mail)), 'error');
+      drupal_set_message(t('Invalid key, failed to unsubscribe %email.', array('%email' => check_plain($account->mail))), 'error');
     }
   }
   drupal_goto('');
@@ -221,17 +346,13 @@ function support_unsubscribe_user($node, $account, $key) {
 /**
  * Custom permissions function.
  */
-function support_access_clients($client = NULL, $quantity = NULL) {
+function support_access_clients($client = NULL, $account = NULL) {
   if (is_object($client)) {
-    if ($quantity === TRUE) {
-      // menu for displaying multiple clients
-      return (user_access("access $client->name tickets") &&
-              (_support_access_tickets() > 1));
+    if (is_object($account)) {
+      return (user_access('administer support', $account) || user_access("access $client->name tickets", $account));
     }
     else {
-      // menu for displaying only one client
-      return (user_access("access $client->name tickets") &&
-              (_support_access_tickets() == 1));
+      return (user_access('administer support') || user_access("access $client->name tickets"));
     }
   }
   else {
@@ -245,7 +366,7 @@ function support_access_clients($client = NULL, $quantity = NULL) {
 function support_client_load($clid) {
   static $clients = array();
   if (!isset($clients[$clid])) {
-    $clients[$clid] = db_fetch_object(db_query('SELECT * FROM {jobtrack_client} WHERE clid = %d', $clid));
+    $clients[$clid] = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autosubscribe, domains FROM {support_client} WHERE clid = %d', $clid));
   }
   return $clients[$clid];
 }
@@ -254,11 +375,23 @@ function support_client_load($clid) {
  * Menu callback, load a ticket.
  */
 function support_ticket_load($nid) {
-  $tickets = array();
+  static $tickets = array();
   if (!isset($tickets[$nid])) {
-    $tickets[$nid] = db_fetch_object(db_query('SELECT * FROM {jobtrack_ticket} WHERE nid = %d', $nid));
+    $tickets[$nid] = db_fetch_object(db_query('SELECT * FROM {support_ticket} WHERE nid = %d', $nid));
   }
   return $tickets[$nid];
+}
+
+/**
+ * Menu callback.
+ */
+function support_access_user_tickets($account) {
+  global $user;
+  if (user_access('administer support') || user_access('edit any ticket') ||
+      (user_access('create tickets') && $account->uid == $user->uid)) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /**
@@ -270,7 +403,7 @@ function _support_domains($client, $global) {
   $raw = explode(',', $string);
   foreach ($raw as $domain) {
     if ($domain) {
-      $domains[] = trim($domain);
+      $domains[] = check_plain(trim($domain));
     }
   }
   return $domains;
@@ -281,24 +414,25 @@ function _support_domains($client, $global) {
  * doesn't match any.
  * TODO: Make it possible to assign multiple email addresses to one account.
  */
-function support_account_load($from, $ticket, $subject) {
+function support_account_load($from, $ticket, $subject, $client) {
   $uid = db_result(db_query("SELECT uid FROM {users} WHERE mail = '%s'", $from));
   if ($uid) {
     return user_load($uid);
   }
   else {
     // extract the domain out of the from email address
+    $matches = array();
     preg_match("/(.*)@(.*)/", $from, $matches);
     $domain = $matches[2];
     $ticket = support_ticket_load($ticket);
-    $client = support_client_load($ticket->client);
-    $domains = _support_domains($client->domains, variable_get('jobtrack_global_domains', ''));
+    $domains = _support_domains($client->domains, variable_get('support_global_domains', ''));
     $valid = TRUE;
     if (!empty($domains)) {
       $valid = FALSE;
       foreach ($domains as $match) {
-        if ($domain == $match) {
+        if (($domain == $match) || ($match == '*')) {
           $valid = TRUE;
+          break;
         }
       }
     }
@@ -310,8 +444,8 @@ function support_account_load($from, $ticket, $subject) {
       return user_save(NULL, array('mail' => $from, 'init' => $from, 'name' => $from, 'status' => 1));
     }
     else {
-      $node = node_load($ticket);
-      watchdog('support', 'Email update from !from denied for ticket "!title", subject "!subject."', array('!from' => $from, '!title' => $node->title, '!subject' => $subject), WATCHDOG_NOTICE);
+      $node = node_load($ticket->nid);
+      watchdog('support', 'Email update from !from denied for ticket "!title", subject "!subject."', array('!from' => $from, '!title' => check_plain($node->title), '!subject' => $subject), WATCHDOG_NOTICE);
       return FALSE;
     }
   }
@@ -321,17 +455,17 @@ function support_account_load($from, $ticket, $subject) {
  *
  */
 function support_client_name_load($name) {
-  return db_fetch_object(db_query("SELECT * FROM {jobtrack_client} WHERE name = '%s'"));
+  return db_fetch_object(db_query("SELECT * FROM {support_client} WHERE name = '%s'"));
 }
 
 /**
  * Implementation of hook_perm().
  */
 function support_perm() {
-  $perm = array('administer support', 'create tickets', 'edit own ticket', 'administer state');
-  $result = db_query('SELECT name FROM {jobtrack_client} WHERE status = 1');
+  $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'administer state', 'can suppress notification', 'can assign tickets to other users', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'view ticket status bar');
+  $result = db_query('SELECT name FROM {support_client} WHERE status = 1');
   while ($client = db_fetch_object($result)) {
-    $perm[] = "access $client->name tickets";
+    $perm[] = 'access '. check_plain($client->name) .' tickets';
   }
   return $perm;
 }
@@ -339,12 +473,18 @@ function support_perm() {
 /**
  * Implementation of hook_user().
  */
-function support_user($type, &$edit, &$user) {
-  if ($type == 'view' && user_access('create tickets', $user)) {
-    $user->content['summary']['support'] = array(
+function support_user($type, &$edit, &$account) {
+  global $user;
+  if ($type == 'view' &&
+     ((user_access('create tickets', $account) && $user->uid == $account->uid) ||
+       user_access('administer support'))) {
+    $items = array();
+    $items[] = l(t('View recent tickets'), "support/user/$account->uid", array('attributes' => array('title' => t("Read @username's latest tickets.", array('@username' => check_plain($account->name))))));
+    $items[] = l(t('Create new ticket'), 'node/add/support-ticket');
+    $account->content['summary']['support'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Tickets'),
-      '#value' => l(t('View recent tickets'), "support/user/$user->uid", array('attributes' => array('title' => t("Read @username's latest tickets.", array('@username' => $user->name))))),
+      '#value' => theme('item_list', $items),
       '#attributes' => array('class' => 'support'),
     );
   }
@@ -360,7 +500,7 @@ function support_form(&$node) {
     '#type' => 'textfield',
     '#title' => check_plain($type->title_label),
     '#required' => TRUE,
-    '#default_value' => !empty($node->title) ? $node->title : NULL,
+    '#default_value' => !empty($node->title) ? check_plain($node->title) : NULL,
     '#weight' => -5,
   );
 
@@ -379,33 +519,70 @@ function support_form(&$node) {
  * Implementation of hook_nodeapi().
  */
 function support_nodeapi(&$node, $op, $teaser, $page) {
-  switch ($op) {
-    case 'load':
-      return db_fetch_array(db_query('SELECT state, priority, client, assigned FROM {jobtrack_ticket} WHERE nid = %d', $node->nid));
-    case 'validate':
-      if (!$node->client) {
-        form_set_error('client', t('You must select a client'));
-      }
-      break;
-    case 'insert':
-    case 'update':
-      db_query('UPDATE {jobtrack_ticket} SET state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d', $node->state, $node->priority, $node->client, $node->assigned, $node->nid);
-      if (!db_affected_rows()) {
-        db_query('INSERT INTO {jobtrack_ticket} (nid, state, priority, client, assigned) VALUES(%d, %d, %d, %d, %d)', $node->nid, $node->state, $node->priority, $node->client, $node->assigned);
-      }
-      if ($op == 'insert') {
-        // auto-subscribe configured users
-        _support_autosubscribe($node->nid, $node->client);
-        // auto-subscribe ticket creator
-        support_subscribe_user($node->nid, $node->uid, $node->notification);
-        // generate notification emails
-        support_notification(0, $node->nid, 'ticket_new');
-      }
-      cache_clear_all();
-      break;
-    case 'delete':
-      db_query('DELETE FROM {jobtrack_ticket} WHERE nid = %d', $node->nid);
-      break;
+  if ($node->type == 'support_ticket') {
+    switch ($op) {
+      case 'view':
+        // viewing a ticket
+        $breadcrumb = array();
+        $breadcrumb[] = l(t('Home'), NULL);
+        $breadcrumb[] = l(t('Support tickets'), 'support');
+        if (is_numeric($node->client)) {
+          $_SESSION['support_client'] = $node->client;
+          $client = support_client_load($node->client);
+          $breadcrumb[] = l(check_plain($client->name), "support/$client->path");
+        }
+        drupal_set_breadcrumb($breadcrumb);
+        break;
+      case 'load':
+        return db_fetch_array(db_query('SELECT message_id, state, priority, client, assigned FROM {support_ticket} WHERE nid = %d', $node->nid));
+      case 'validate':
+        if (!isset($node->client) || $node->client == 0) {
+          form_set_error('client', t('You must select a client'));
+        }
+        if (isset($node->assigned) && !is_numeric($node->assigned)) {
+          $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $node->assigned));
+          if ($node->assigned && !$assigned) {
+            form_set_error('assigned', t('You must specify a valid user.'));
+          }
+          else if ($assigned) {
+            $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
+            $valid = _support_validate_assigned_user($assigned, $client);
+            if (!$valid) {
+              form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
+            }
+          }
+        }
+        break;
+
+      case 'insert':
+      case 'update':
+        if (isset($node->assigned) && !is_numeric($node->assigned)) {
+          $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $node->assigned));
+          if ($assigned) {
+            $node->assigned = $assigned;
+          }
+          else {
+            $node->assigned = 0;
+          }
+        }
+        db_query("UPDATE {support_ticket} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d", $node->message_id, $node->state, $node->priority, $node->client, $node->assigned, $node->nid);
+        if (!db_affected_rows()) {
+          db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, $node->message_id, $node->state, $node->priority, $node->client, $node->assigned);
+        }
+        if ($op == 'insert') {
+          // auto-subscribe configured users
+          _support_autosubscribe($node->nid, $node->client);
+          // auto-subscribe ticket creator
+          support_subscribe_user($node->nid, $node->uid, $node->notification);
+          // generate notification emails
+          support_notification(0, $node->nid, 'ticket_new', $node->suppress);
+        }
+        cache_clear_all();
+        break;
+      case 'delete':
+        db_query('DELETE FROM {support_ticket} WHERE nid = %d', $node->nid);
+        break;
+    }
   }
 }
 
@@ -413,15 +590,42 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
  * Implementation of hook_comment().
  */
 function support_comment(&$comment, $op) {
+  global $user;
+
   switch ($op) {
     case 'view':
       support_comment_view($comment);
       break;
+    case 'validate':
+      if (isset($comment['assigned']) && !is_numeric($comment['assigned'])) {
+        $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $comment['assigned']));
+        if ($node->assigned && !$assigned) {
+          form_set_error('assigned', t('You must specify a valid user.'));
+        }
+        else if ($assigned) {
+          $node = node_load($comment['nid']);
+          $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
+          $valid = _support_validate_assigned_user($assigned, $client);
+          if (!$valid) {
+            form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
+          }
+        }
+      }
+      break;
     case 'insert':
     case 'update':
-      db_query('UPDATE {jobtrack_ticket_comment} SET state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
+      if (isset($comment['assigned']) && !is_numeric($comment['assigned'])) {
+        $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $comment['assigned']));
+        if ($assigned) {
+          $comment['assigned'] = $assigned;
+        }
+        else {
+          $comment['assigned'] = 0;
+        }
+      }
+      db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", $comment['message_id'], $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
       if (!db_affected_rows()) {
-        db_query('INSERT INTO {jobtrack_ticket_comment} (cid, state, priority, client, assigned) VALUES(%d, %d, %d, %d, %d)', $comment['cid'], $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
+        db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], $comment['message_id'], $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
       }
       _support_comment_update_node($comment['nid']);
       if ($op == 'insert') {
@@ -431,14 +635,31 @@ function support_comment(&$comment, $op) {
         support_subscribe_user($comment['nid'], $comment['uid'], $comment['notification']);
         // auto-subscribe assigned user
         if ($comment['assigned']) {
-          support_subscribe_user($comment['nid'], $comment['assigned'], 1);
+          support_subscribe_user($comment['nid'], $comment['assigned']);
         }
         // generate notification emails
-        support_notification($comment['cid'], $comment['nid']);
+        support_notification($comment['cid'], $comment['nid'], 'ticket_comment_new', $comment['suppress']);
+      }
+      // if admin, can update who is assignd to the ticket
+      if (user_access('administer support') && !$comment['support_email']) {
+        $node = node_load($comment['nid']);
+        if (isset($comment['subscribed-users']) &&
+            !empty($comment['subscribed-users'])) {
+          $array = drupal_explode_tags($comment['subscribed-users']);
+          foreach ($array as $name) {
+            $uid = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $name));
+            $comment["notify-$uid"] = 1;
+          }
+        }
+        $available = _support_assigned(0, $node);
+        foreach ($available as $uid => $name) {
+          if (!$uid || $user->uid == $uid) continue;
+          support_subscribe_user($node->nid, $uid, $comment["notify-$uid"]);
+        }
       }
       break;
     case 'delete':
-      db_query('DELETE FROM {jobtrack_ticket_comment} WHERE cid = %d', $comment->cid);
+      db_query('DELETE FROM {support_ticket_comment} WHERE cid = %d', $comment->cid);
       _support_comment_update_node($comment->nid);
   }
 }
@@ -451,7 +672,7 @@ function support_comment_view(&$comment) {
   static $priority = 0;
   static $client = 0;
   static $assigned = 0;
-  $current = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {jobtrack_ticket_comment} WHERE cid = %d', $comment->cid));
+  $current = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = %d', $comment->cid));
   if ($assigned != $current->assigned) {
     $previous_account = user_load(array('uid' => $assigned));
     $current_account = user_load(array('uid' => $current->assigned));
@@ -477,15 +698,19 @@ function support_comment_view(&$comment) {
  */
 function support_mail($key, &$message, $params) {
   $language = $message['language'];
-  $variables = support_mail_tokens($params['account'], $language, $params['nid'], $params['cid']);
-  $message['subject'] .= _support_mail_text($key .'_subject', $language, $variables);
-  $message['body'] = _support_mail_text($key .'_body', $language, $variables);
+  $variables = support_mail_tokens($params['account'], $language, $params['nid'], $params['cid'], $params['suppress']);
+  $message['subject'] .= _support_mail_text($key .'_subject', $language, $variables, $params['integrate_email']);
+  $message['body'] = _support_mail_text($key .'_body', $language, $variables, $params['integrate_email']);
+  $array = explode("\n", $message['body']);
+  $length = sizeof($array);
+  $md5 = md5($length);
+  $message['body'] .= "\n\n[$length:$md5]\n";
 }
 
 /**
  * Return an array of token to value mappings for support e-mail messages.
  */
-function support_mail_tokens($account, $language, $nid, $cid) {
+function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
   global $base_url;
   static $reset = TRUE;
   // force reload node from database to get updated state/priority information,
@@ -493,12 +718,12 @@ function support_mail_tokens($account, $language, $nid, $cid) {
   $node = node_load($nid, NULL, $reset);
   $reset = FALSE;
   $comment = _comment_load($cid);
-  $update_account = user_load($comment->uid);
+  $update_account = $comment->uid ? user_load($comment->uid) : user_load($node->uid);
   $ticket_unsubscribe_key = md5($account->uid . $node->nid);
   $all_unsubscribe_key = md5($account->uid);
   $previous_comment = db_result(db_query_range('SELECT cid FROM {comments} WHERE nid = %d ORDER BY cid DESC', $nid, 1, 1));
   if ($previous_comment) {
-    $previous = db_fetch_object(db_query('SELECT * FROM {jobtrack_ticket_comment} WHERE cid = %d', $previous_comment));
+    $previous = db_fetch_object(db_query('SELECT * FROM {support_ticket_comment} WHERE cid = %d', $previous_comment));
   }
   $tokens = array(
     '!username' => $account->name,
@@ -509,11 +734,11 @@ function support_mail_tokens($account, $language, $nid, $cid) {
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
     '!mailto' => $account->mail,
     '!date' => format_date(time(), 'medium', '', NULL, $language->language),
-    '!ticket_subject' => $node->title,
-    '!ticket_body' => $node->body,
+    '!ticket_subject' => check_plain($node->title),
+    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') : drupal_html_to_text(check_markup($node->body)),
     '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid")),
     '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form")),
-    '!update' => $comment->comment,
+    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') : drupal_html_to_text(check_markup($comment->comment)),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) .' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) .' -> ' : '') . _support_priorities($node->priority),
     '!unsubscribe_ticket' => url("support/$nid/unsubscribe/$account->uid/$ticket_unsubscribe_key", array('absolute' => TRUE, 'language' => $language)),
@@ -528,7 +753,7 @@ function support_mail_tokens($account, $language, $nid, $cid) {
 /**
  * Returns the appropriate mail string for a given key.
  */
-function _support_mail_text($key, $language = NULL, $variables = array()) {
+function _support_mail_text($key, $language = NULL, $variables = array(), $integrate_email) {
   $langcode = isset($language) ? $language->language : NULL;
 
   if ($admin_setting = variable_get('support_mail_'. $key, FALSE)) {
@@ -536,16 +761,22 @@ function _support_mail_text($key, $language = NULL, $variables = array()) {
     return strtr($admin_setting, $variables);
   }
   else {
+    if ($integrate_email == TRUE) {
+      $reply = t('You can reply to this email or visit the following URL to update this ticket');
+    }
+    else {
+      $reply = t('You can visit the following URL to update this ticket');
+    }
     // No override, return default string.
     switch ($key) {
       case 'ticket_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_new_body':
-        return t("!username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\nYou can reply to this email (do not modify the subject) or visit the following URL to update this ticket:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
+        return t("!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
       case 'ticket_comment_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_comment_new_body':
-        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\nYou can reply to this email (do not modify the subject) or visit the following URL to update this ticket:\n!update_url\n\nUpdate text:\n------------------------------\n!update\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
+        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
     }
   }
 }
@@ -553,9 +784,17 @@ function _support_mail_text($key, $language = NULL, $variables = array()) {
 /**
  * Save the message.
  */
-function support_save_message($subject, $body, $from, $ticket, $client) {
-  $account = support_account_load($from, $ticket, $subject);
+function support_save_message($subject, $body, $from, $ticket, $client, $header = NULL) {
+  $account = support_account_load($from, $ticket, $subject, $client);
   $ticket = support_ticket_load($ticket);
+
+  if (is_object($header) && isset($header->message_id)) {
+    $message_id = $header->message_id;
+  }
+  else {
+    $message_id = NULL;
+  }
+
   if (is_object($account) && is_object($ticket) && $ticket->nid) {
     // by retrieving the maximum thread level.
     $max = db_result(db_query('SELECT MAX(thread) FROM {comments} WHERE nid = %d', $ticket->nid));
@@ -563,6 +802,7 @@ function support_save_message($subject, $body, $from, $ticket, $client) {
     $max = rtrim($max, '/');
     // Finally, build the thread field for this new comment.
     $thread = int2vancode(vancode2int($max) + 1) .'/';
+
     // TODO: format?
     // TODO: ip_address?
     db_query("INSERT INTO {comments} (nid, pid, uid, subject, comment, format, hostname, timestamp, status, thread, name, mail, homepage) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, %d, '%s', '%s', '%s', '%s')", $ticket->nid, 0, $account->uid, $subject, $body, 1, ip_address(), time(), 0, $thread, $account->name, $account->mail, $account->homepage);
@@ -573,9 +813,13 @@ function support_save_message($subject, $body, $from, $ticket, $client) {
     $comment['comment'] = $body;
     $comment['nid'] = $ticket->nid;
     $comment['uid'] = $account->uid;
+    $comment['message_id'] = $message_id;
     $comment['state'] = $ticket->state;
     $comment['priority'] = $ticket->priority;
     $comment['client'] = $ticket->client;
+    $comment['assigned'] = $ticket->assigned;
+    $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
+    $comment['support_email'] = TRUE;
     comment_invoke_comment($comment, 'insert');
 
     // Add an entry to the watchdog log.
@@ -594,9 +838,13 @@ function support_save_message($subject, $body, $from, $ticket, $client) {
     $node->log = t('Support ticket created from email.');
     $node->comment = COMMENT_NODE_READ_WRITE;
     $node->uid = $account->uid;
+    $node->message_id = $message_id;
     $node->state = _support_state_default();
     $node->priority = _support_priority_default();
     $node->client = $client->clid;
+    $node->notification = TRUE;
+    $node->support_email = TRUE;
+    $node->language = $account->language;
     node_save($node);
   }
 }
@@ -623,12 +871,51 @@ function _support_get_message_body($stream, $message, $structure, $part = 1) {
     }
 
     if ($decoded) {
-      return ($decoded);
+      $body = $decoded;
     }
     else {
       watchdog('support', t("Failed to convert message to utf8 -- using unconverted message.  To fix this, try installing iconv, GNU recode, or mbstring for PHP."));
-      return ($body);
     }
+
+    // If reply includes complete unchanged copy of ticket notification, strip
+    // it.
+    $stripped = FALSE;
+    $array = explode("\n", $body);
+    foreach ($array as $line => $text) {
+      // Look for last occurrance of magic in previous ticket.
+      preg_match_all("/([0-9]*):([0-9a-f]*)\]/", $text, $magic);
+      if (!empty($magic[0][0])) {
+        foreach ($magic[1] as $key => $length) {
+          $last_line = $line;
+          $last_length = $length;
+        }
+      }
+    }
+    // Strip old ticket if quoted with "> " as most mail clients do.
+    $start = $last_line - $last_length;
+    if ($last_length) {
+      for ($current = $last_line; substr($array[$current], 0, 2) == '> '; $current--) {
+        $stripped = TRUE;
+        unset($array[$current]);
+      }
+      // If stripped entire ticket, strip one more line as most mail clients
+      // include a line saying who the message was by.  If we only stripped
+      // part of the message, someone probably edited inline so we just stop
+      // at first unquoted line.
+      if ($current <= $start) {
+        unset($array[$current]);
+      }
+    }
+
+    if ($stripped) {
+      // The ticket has been stripped of previous ticket text, rebuild it.
+      $body = '';
+      foreach ($array as $line) {
+        $body .= $line ."\n";
+      }
+    }
+
+    return $body;
 
   }
   return NULL;
@@ -638,9 +925,19 @@ function _support_get_message_body($stream, $message, $structure, $part = 1) {
  * Subscribe a user to a ticket.
  */
 function support_subscribe_user($nid, $uid, $active = 1) {
-  db_query('UPDATE {jobtrack_assigned} SET active = %d WHERE uid = %d AND nid = %d', $active, $uid, $nid);
-  if (!db_affected_rows()) {
-    db_query('INSERT INTO {jobtrack_assigned} (nid, uid, active) VALUES(%d, %d, %d)', $nid, $uid, $active);
+  $clid = db_result(db_query('SELECT client FROM {support_ticket} WHERE nid = %d', $nid));
+  $client = support_client_load($clid);
+  $account = user_load(array('uid' => $uid));
+  if (support_access_clients($client, $account)) {
+    db_query('UPDATE {support_assigned} SET active = %d WHERE uid = %d AND nid = %d', $active, $uid, $nid);
+    if (!db_affected_rows()) {
+      db_query('INSERT INTO {support_assigned} (nid, uid, active) VALUES(%d, %d, %d)', $nid, $uid, $active);
+    }
+  }
+  else {
+    // If this user doesn't have permission to receive ticket updates,
+    // be sure they are unsubscribed.
+    db_query('UPDATE {support_assigned} SET active = 0 WHERE uid = %d AND nid = %d', $uid, $nid);
   }
 }
 
@@ -648,10 +945,10 @@ function support_subscribe_user($nid, $uid, $active = 1) {
  * Autosubscribe users to new client ticket.
  */
 function _support_autosubscribe($nid, $client) {
-  $autosubscribe = db_result(db_query('SELECT autosubscribe FROM {jobtrack_client} WHERE clid = %d', $client));
+  $autosubscribe = db_result(db_query('SELECT autosubscribe FROM {support_client} WHERE clid = %d', $client));
   $autosubscribe = explode(',', $autosubscribe);
   foreach ($autosubscribe as $name) {
-    $account = user_load(array('name' => $name));
+    $account = user_load(array('name' => trim($name)));
     if (is_object($account) && $account->uid) {
       support_subscribe_user($nid, $account->uid);
     }
@@ -661,25 +958,36 @@ function _support_autosubscribe($nid, $client) {
 /**
  * Send notification emails to everyone subscribed to the updated ticket.
  */
-function support_notification($cid, $nid, $op = 'ticket_comment_new') {
-  $result = db_query('SELECT uid FROM {jobtrack_assigned} WHERE nid = %d AND active = 1', $nid);
+function support_notification($cid, $nid, $op = 'ticket_comment_new', $suppress = FALSE) {
+  $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $nid);
   while ($account = db_fetch_object($result)) {
-    _support_mail_notify($op, user_load(array('uid' => $account->uid)), $cid, $nid);
+    $account = user_load(array('uid' => $account->uid));
+    // always send emails to admins, even if update was suppressed
+    if (!$suppress || user_access('administer support', $account)) {
+      _support_mail_notify($op, $account, $cid, $nid, $suppress);
+    }
   }
 }
 
 /**
  * Use drupal_mail to send email.
  */
-function _support_mail_notify($op, $account, $cid = NULL, $nid = NULL, $language = NULL) {
+function _support_mail_notify($op, $account, $cid = NULL, $nid = NULL, $suppress = FALSE, $language = NULL) {
   $notify = variable_get('support_mail_'. $op .'_notify', TRUE);
   if ($notify) {
     $node = node_load($nid);
-    $mailfrom = db_result(db_query('SELECT mailfrom FROM {jobtrack_client} WHERE clid = %d', $node->client));
     $params['account'] = $account;
     $params['nid'] = $nid;
     $params['cid'] = $cid;
+    $params['suppress'] = $suppress;
     $language = $language ? $language : user_preferred_language($account);
+    $params['integrate_email'] = db_result(db_query('SELECT integrate_email FROM {support_client} WHERE clid = %d', $node->client));
+    if ($params['integrate_email'] == TRUE) {
+      $mailfrom = db_result(db_query('SELECT mailfrom FROM {support_client} WHERE clid = %d', $node->client));
+    }
+    else {
+      $mailfrom = variable_get('support_global_mailfrom', '');
+    }
     $mail = drupal_mail('support', $op, $account->mail, $language, $params, $mailfrom);
     // TODO: notify admins as necessary
   }
@@ -692,8 +1000,8 @@ function _support_mail_notify($op, $account, $cid = NULL, $nid = NULL, $language
 function _support_comment_update_node($nid) {
   $cid = db_result(db_query('SELECT MAX(cid) FROM {comments} WHERE nid = %d', $nid));
   if ($cid) {
-    $comment = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {jobtrack_ticket_comment} WHERE cid = %d', $cid));
-    db_query('UPDATE {jobtrack_ticket} SET state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d', $comment->state, $comment->priority, $comment->client, $comment->assigned, $nid);
+    $comment = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = %d', $cid));
+    db_query('UPDATE {support_ticket} SET state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d', $comment->state, $comment->priority, $comment->client, $comment->assigned, $nid);
   }
 }
 
@@ -702,16 +1010,349 @@ function _support_comment_update_node($nid) {
  */
 function support_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'comment_form') {
-    $reference = array();
-    $form = array_merge(support_status_form($form_state, $form, ''), $form);
-    $form = array_merge($form, support_subscribe_form($reference, $form, ''));
+    if (is_array($form) && isset($form['nid']) && is_array($form['nid'])) {
+      $node = node_load($form['nid']['#value']);
+    }
+    if (isset($node) && is_object($node) && isset($node->type) &&
+      $node->type == 'support_ticket') {
+      $reference = array();
+      $form = array_merge(support_status_form($form_state, $form, ''), $form);
+      $form = array_merge($form, support_subscribe_form($reference, $form, ''));
+      $form['comment_filter']['comment']['#title'] = t('Update');
+      unset($form['_author']);
+    }
+  }
+  else if ($form_id == 'search_form' && variable_get('support_remove_tickets', TRUE)) {
+    unset($form['advanced']['type']['#options']['support_ticket']);
+  }
+  else if ($form_id == 'search_theme_form' && variable_get('support_override_theme', FALSE)) {
+    $form['#submit'] = array('support_search_form_submit');
+  }
+  else if ($form_id == 'search_block_form' && variable_get('support_override_block', FALSE)) {
+    $form['#submit'] = array('support_search_form_submit');
+  }
+  if ($form_id == 'search_form' && $form['module']['#value'] == 'support' && user_access('use advanced search')) {
+    // Keyword boxes:
+    $form['advanced'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Advanced search'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#attributes' => array('class' => 'search-advanced'),
+    );
+    $form['advanced']['keywords'] = array(
+      '#prefix' => '<div class="criterion">',
+      '#suffix' => '</div>',
+    );
+    $form['advanced']['keywords']['or'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Containing any of the words'),
+      '#size' => 30,
+      '#maxlength' => 255,
+    );
+    $form['advanced']['keywords']['phrase'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Containing the phrase'),
+      '#size' => 30,
+      '#maxlength' => 255,
+    );
+    $form['advanced']['keywords']['negative'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Containing none of the words'),
+      '#size' => 30,
+      '#maxlength' => 255,
+    );
+    $form['advanced']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Advanced search'),
+      '#prefix' => '<div class="action">',
+      '#suffix' => '</div>',
+    );
+    // Clients
+    $clients = _support_available_clients();
+    if (sizeof($clients) > 1) {
+      $form['advanced']['client'] = array(
+        '#type' => 'select',
+        '#multiple' => TRUE,
+        '#title' => t('Search specific client(s)'),
+        '#prefix' => '<div class="criterion">',
+        '#suffix' => '</div>',
+        '#options' => $clients,
+      );
+    }
+    // States
+    $states = _support_states();
+    if (sizeof($states) > 1) {
+      $form['advanced']['state'] = array(
+        '#type' => 'select',
+        '#multiple' => TRUE,
+        '#title' => t('Search specific state(s)'),
+        '#prefix' => '<div class="criterion">',
+        '#suffix' => '</div>',
+        '#options' => $states,
+      );
+    }
+    // Priorities
+    $priorities = _support_priorities();
+    if (sizeof($priorities) > 1) {
+      $form['advanced']['priority'] = array(
+        '#type' => 'select',
+        '#multiple' => TRUE,
+        '#title' => t('Search specific priorities'),
+        '#prefix' => '<div class="criterion">',
+        '#suffix' => '</div>',
+        '#options' => $priorities,
+      );
+    }
+
+    $form['#validate'][] = 'support_search_validate';
   }
 }
 
 /**
- * Generate form for adding update to ticket.  Enhances comment_form.
+ * Form API callback for the search form. Registered in support_form_alter().
+ */
+function support_search_validate($form, &$form_state) {
+  // Initialise using any existing basic search keywords.
+  $keys = $form_state['values']['processed_keys'];
+
+  // Insert extra restrictions into the search keywords string.
+  if (isset($form_state['values']['client']) && is_array($form_state['values']['client'])) {
+    if (count($form_state['values']['client'])) {
+      $keys = search_query_insert($keys, 'client', implode(',', array_keys($form_state['values']['client'])));
+    }
+  }
+  if (isset($form_state['values']['state']) && is_array($form_state['values']['state'])) {
+    if (count($form_state['values']['state'])) {
+      $keys = search_query_insert($keys, 'state', implode(',', array_keys($form_state['values']['state'])));
+    }
+  }
+  if (isset($form_state['values']['priority']) && is_array($form_state['values']['priority'])) {
+    if (count($form_state['values']['priority'])) {
+      $keys = search_query_insert($keys, 'priority', implode(',', array_keys($form_state['values']['priority'])));
+    }
+  }
+
+  if ($form_state['values']['negative'] != '') {
+    if (preg_match_all('/ ("[^"]+"|[^" ]+)/i', ' '. $form_state['values']['negative'], $matches)) {
+      $keys .= ' -'. implode(' -', $matches[1]);
+    }
+  }
+  if ($form_state['values']['phrase'] != '') {
+    $keys .= ' "'. str_replace('"', ' ', $form_state['values']['phrase']) .'"';
+  }
+  if (!empty($keys)) {
+    form_set_value($form['basic']['inline']['processed_keys'], trim($keys), $form_state);
+  }
+}
+
+function support_search_form_submit($form, &$form_state) {
+  $form_id = $form['form_id']['#value'];
+  $form_state['redirect'] = 'search/support/'. trim($form_state['values'][$form_id]);
+}
+
+/**
+ * Imeplementation of hook_db_rewrite_sql().
+ * Optionally remove support tickets from content search.
+ */
+function support_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
+  if (variable_get('support_remove_tickets', TRUE) && $query == '' && $primary_table == 'n' && $primary_field = 'nid' && empty($args)) {
+    return array('where' => " n.type != 'support_ticket'");
+  }
+}
+
+/**
+ * Return array of client ids which current user has access to.
+ */
+function support_search_available_clients() {
+  static $clids = NULL;
+  if (!is_array($clids)) {
+    $clids = array();
+    $clients = _support_available_clients();
+    if (is_array($clients)) {
+      foreach ($clients as $clid => $client) {
+        $clids[] = $clid;
+      }
+    }
+  }
+  return $clids;
+}
+
+/**
+ * Implementation of hook _search.
+ */
+function support_search($op = 'search', $keys = NULL) {
+  global $user;
+
+  switch ($op) {
+    case 'name':
+      return t('Tickets');
+
+    case 'search':
+      // Build matching conditions
+      $join = 'INNER JOIN {node} n ON n.nid = i.sid';
+      $conditions = "n.status = 1 AND n.type = 'support_ticket'";
+      $arguments = array();
+
+      // clients
+      if ($client = search_query_extract($keys, 'client')) {
+        $clients = array();
+        foreach (explode(',', $client) as $c) {
+          $clients[] = "jt.client = %d";
+          $arguments[] = $c;
+        }
+        $conditions .= ' AND ('. implode(' OR ', $clients) .')';
+        $keys = search_query_insert($keys, 'client');
+      }
+      // states
+      if ($state = search_query_extract($keys, 'state')) {
+        $states = array();
+        foreach (explode(',', $state) as $s) {
+          $states[] = "jt.state = %d";
+          $arguments[] = $s;
+        }
+        $conditions .= ' AND ('. implode(' OR ', $states) .')';
+        $keys = search_query_insert($keys, 'state');
+      }
+      // priorities
+      if ($priority = search_query_extract($keys, 'priority')) {
+        $priorities = array();
+        foreach (explode(',', $priority) as $p) {
+          $priorities[] = "jt.priority = %d";
+          $arguments[] = $p;
+        }
+        $conditions .= ' AND ('. implode(' OR ', $priorities) .')';
+        $keys = search_query_insert($keys, 'priority');
+      }
+
+      $keys = search_query_insert($keys, 'type');
+      $clients = support_search_available_clients();
+      if (!empty($clients)) {
+        $join .= " LEFT JOIN {support_ticket} jt ON n.nid = jt.nid";
+        $conditions .= ' AND jt.client IN ('. implode(',', support_search_available_clients()) .')';
+      }
+      else {
+        // User can not access any tickets
+        $conditions .= " AND n.type != 'support_ticket'";
+      }
+      if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
+        $conditions .= " AND n.uid = $user->uid";
+      }
+
+      // Build ranking expression (we try to map each parameter to a uniform
+      // distribution in the range 0..1).
+      // Tickets are nodes, so use the same ranking.
+      $ranking = array();
+      $arguments2 = array();
+      $join2 = '';
+      // Used to avoid joining on node_comment_statistics twice
+      $stats_join = FALSE;
+      $total = 0;
+      if ($weight = (int)variable_get('node_rank_relevance', 5)) {
+        // Average relevance values hover around 0.15
+        $ranking[] = '%d * i.relevance';
+        $arguments2[] = $weight;
+        $total += $weight;
+      }
+      if ($weight = (int)variable_get('node_rank_recent', 5)) {
+        // Exponential decay with half-life of 6 months, starting at last indexed node
+        $ranking[] = '%d * POW(2, (GREATEST(MAX(n.created), MAX(n.changed), MAX(c.last_comment_timestamp)) - %d) * 6.43e-8)';
+        $arguments2[] = $weight;
+        $arguments2[] = (int)variable_get('node_cron_last', 0);
+        $join2 .= ' LEFT JOIN {node_comment_statistics} c ON c.nid = i.sid';
+        $stats_join = TRUE;
+        $total += $weight;
+      }
+      if (module_exists('comment') && $weight = (int)variable_get('node_rank_comments', 5)) {
+        // Inverse law that maps the highest reply count on the site to 1 and 0 to 0.
+        $scale = variable_get('node_cron_comments_scale', 0.0);
+        $ranking[] = '%d * (2.0 - 2.0 / (1.0 + MAX(c.comment_count) * %f))';
+        $arguments2[] = $weight;
+        $arguments2[] = $scale;
+        if (!$stats_join) {
+          $join2 .= ' LEFT JOIN {node_comment_statistics} c ON c.nid = i.sid';
+        }
+        $total += $weight;
+      }
+      if (module_exists('statistics') && variable_get('statistics_count_content_views', 0) &&
+          $weight = (int)variable_get('node_rank_views', 5)) {
+        // Inverse law that maps the highest view count on the site to 1 and 0 to 0.
+        $scale = variable_get('node_cron_views_scale', 0.0);
+        $ranking[] = '%d * (2.0 - 2.0 / (1.0 + MAX(nc.totalcount) * %f))';
+        $arguments2[] = $weight;
+        $arguments2[] = $scale;
+        $join2 .= ' LEFT JOIN {node_counter} nc ON nc.nid = i.sid';
+        $total += $weight;
+      }
+
+      // When all search factors are disabled (ie they have a weight of zero),
+      // the default score is based only on keyword relevance and there is no need to
+      // adjust the score of each item.
+      if ($total == 0) {
+        $select2 = 'i.relevance AS score';
+        $total = 1;
+      }
+      else {
+        $select2 = implode(' + ', $ranking) . ' AS score';
+      }
+
+      // Do search.
+      $find = do_search($keys, 'node', $join, $conditions, $arguments, $select2, $join2, $arguments2);
+
+      // Load results.
+      $results = array();
+      foreach ($find as $item) {
+        // Build the node body.
+        $node = node_load($item->sid);
+        $node->build_mode = NODE_BUILD_SEARCH_RESULT;
+        $node = node_build_content($node, FALSE, FALSE);
+        $node->body = drupal_render($node->content);
+
+        // Fetch comments for snippet.
+        $node->body .= module_invoke('comment', 'nodeapi', $node, 'update index');
+        // Fetch terms for snippet.
+        $node->body .= module_invoke('taxonomy', 'nodeapi', $node, 'update index');
+
+        $extra = node_invoke_nodeapi($node, 'search result');
+        if (!is_array($extra)) {
+          $extra = array();
+        }
+        if (sizeof($clients) > 1) {
+          $title = _support_client($node->client) .': '. $node->title;
+        }
+        else {
+          $title = $node->title;
+        }
+        // change 'comments' to 'follow ups' for support tickets
+        foreach ($extra as $key => $value) {
+          $trans = array(' comments' => ' follow ups');
+          $extra[$key] = strtr($value, $trans);
+        }
+        $extra[] = _support_state($node->state);
+        $extra[] = _support_priorities($node->priority);
+        $clients = support_search_available_clients();
+        $results[] = array(
+          'link' => url('node/'. $item->sid, array('absolute' => TRUE)),
+          'type' => check_plain(node_get_types('name', $node)),
+          'title' => $title,
+          'user' => theme('username', $node),
+          'date' => $node->changed,
+          'node' => $node,
+          'extra' => $extra,
+          'score' => $item->score / $total,
+          'snippet' => search_excerpt($keys, $node->body),
+        );
+      }
+      return $results;
+  }
+}
+
+/**
+ * Generate form for adding update to ticket.  Enhances comment_form adding
+ * a ticket status bar.
  */
 function support_status_form(&$form_state, $edit, $title) {
+  global $user;
   $cid = 0;
   if (is_array($edit)) {
     if (is_array($edit['nid'])) {
@@ -722,123 +1363,200 @@ function support_status_form(&$form_state, $edit, $title) {
       $node = node_load($edit['nid']);
     }
   }
-  else if (is_object($edit)) {
-    $node = node_load($edit->nid);
+  // Form preview, $edit is object.
+  else {
+    $node = $edit;
   }
   if ($cid) {
-    $comment = db_fetch_object(db_query('SELECT state, priority FROM {jobtrack_ticket_comment} WHERE cid = %d', $cid));
+    $comment = db_fetch_object(db_query('SELECT state, priority FROM {support_ticket_comment} WHERE cid = %d', $cid));
     if ($comment->state && $comment->priority) {
       $node->state = $comment->state;
       $node->priority = $comment->priority;
     }
   }
-  $form['support'] = array(
-    '#type' => 'fieldset',
-    '#prefix' => '<div class="container-inline">',
-    '#suffix' => '</div>',
-  );
-  $form['support']['state'] = array(
-    '#type' => 'select',
-    '#title' => t('State'),
-    '#options' => _support_states(FALSE, $node->state),
-    '#default_value' => $node->state ? $node->state : _support_state_default(),
-  );
-  $form['support']['space'] = array(
-    '#value' => '&nbsp;&nbsp;',
-  );
-  $form['support']['priority'] = array(
-    '#type' => 'select',
-    '#title' => t('Priority'),
-    '#options' => _support_priorities(),
-    '#default_value' => $node->priority ? $node->priority : _support_priority_default(),
-  );
-  $form['support']['space2'] = array(
-    '#value' => '&nbsp;&nbsp;',
-  );
+  if (user_access('view ticket status bar') ||
+      user_access('administer support') || user_access('administer state') ||
+      user_access('can assign tickets to other users')) {
+    $form['support'] = array(
+      '#type' => 'fieldset',
+      '#prefix' => '<div class="container-inline">',
+      '#suffix' => '</div>',
+    );
+  }
+  $default = $node->state ? $node->state : _support_state_default();
+  if ($node->uid != $user->uid && $default == _support_state_default()) {
+    // We did not create this ticket, but we're updating it.  Suggest that it
+    // no longer be marked as new.
+    $default = _support_state_secondary();
+  }
+  if (!user_access('view ticket status bar') &&
+      !user_access('administer support') &&
+       !user_access('administer state')) {
+    $form['support']['state'] = array(
+      '#type' => 'hidden',
+      '#value' => $default,
+    );
+  }
+  else {
+    if (isset($node->nid) && $node->nid && isset($node->state)) {
+      $state = $node->state;
+    }
+    else {
+      $state = 0;
+    }
+    $form['support']['state'] = array(
+      '#type' => 'select',
+      '#title' => t('State'),
+      '#options' => _support_states(FALSE, $state),
+      '#default_value' => $default,
+    );
+  }
+  if (!user_access('view ticket status bar') &&
+      !user_access('administer support')) {
+    $form['support']['priority'] = array(
+      '#type' => 'hidden',
+      '#value' => $node->priority ? $node->priority : _support_priority_default(),
+    );
+  }
+  else {
+    $form['support']['priority'] = array(
+      '#type' => 'select',
+      '#prefix' => '&nbsp;&nbsp;',
+      '#title' => t('Priority'),
+      '#options' => _support_priorities(),
+      '#default_value' => $node->priority ? $node->priority : _support_priority_default(),
+    );
+  }
   $clients = _support_available_clients();
   if (sizeof($clients) == 1) {
-    foreach ($clients as $key => $name) {
-      $client = $key;
-    }
-    $node->client = $client;
+    $node->client = key($clients);
   }
   else {
     $clients = array(0 => '- select client -') + $clients;
+    if (is_numeric($_SESSION['support_client'])) {
+      $node->client = $_SESSION['support_client'];
+    }
   }
-  $form['support']['client'] = array(
-    '#type' => 'select',
-    '#required' => TRUE,
-    '#title' => t('Client'),
-    '#options' => $clients,
-    '#default_value' => $node->client ? $node->client : 0,
-  );
-  $form['support']['space3'] = array(
-    '#value' => '&nbsp;&nbsp;',
-  );
-  $form['support']['assigned'] = array(
-    '#type' => 'select',
-    '#title' => t('Assigned'),
-    '#options' => _support_assigned($node->assigned, $node),
-    '#default_value' => $node->assigned ? $node->assigned : 0,
-  );
+  if ((sizeof($clients) == 1) ||
+      (!user_access('view ticket status bar') &&
+       !user_access('administer support'))) {
+    $form['support']['client'] = array(
+      '#type' => 'hidden',
+      '#value' => is_numeric($node->client) ? $node->client : 0,
+    );
+  }
+  else {
+    $form['support']['client'] = array(
+      '#type' => 'select',
+      '#required' => TRUE,
+      '#prefix' => '&nbsp;&nbsp;',
+      '#title' => t('Client'),
+      '#options' => $clients,
+      '#default_value' => is_numeric($node->client) ? $node->client : 0,
+    );
+  }
+  if (!user_access('view ticket status bar') &&
+      !user_access('administer support') &&
+      !user_access('can assign tickets to other users')) {
+    $form['support']['assigned'] = array(
+      '#type' => 'hidden',
+      '#value' => $node->assigned ? $node->assigned : 0,
+    );
+  }
+  else {
+    $options = _support_assigned($node->assigned, $node, variable_get('support_autocomplete_limit', 15));
+    if ($options === FALSE) {
+      $account = user_load(array('uid' => $node->assigned));
+      $form['support']['assigned'] = array(
+        '#type' => 'textfield',
+        '#prefix' => '&nbsp;&nbsp',
+        '#title' => t('Assigned'),
+        '#autocomplete_path' => 'support/autocomplete/assigned/'. $node->client,
+        '#default_value' => isset($account->name) ? $account->name : '',
+        '#size' => '15',
+      );
+    }
+    else {
+      $form['support']['assigned'] = array(
+        '#type' => 'select',
+        '#prefix' => '&nbsp;&nbsp',
+        '#title' => t('Assigned'),
+        '#options' => $options,
+        '#default_value' => $node->assigned ? $node->assigned : 0,
+      );
+    }
+  }
   return $form;
 }
 
 /**
  * Get list of available users to assign ticket to.
  */
-function _support_assigned($assigned, $node) {
+function _support_assigned($assigned, $node, $limit = 9999) {
   global $user;
 
-  $available = array();
+  static $available = array();
+  $counter = 0;
 
-  // can only unassign tickets if assigned to self, or have admin permissions
-  if (!$assigned || $assigned == $user->uid || 
-      user_access('administer support')) {
-    $available[0] = ' - '. t('not assigned') .' -';
+  if (!isset($available["$assigned-$node->nid"])) {
+    if ($assigned && $assigned != $user->uid) {
+      $account = user_load($assigned);
+      $available["$assigned-$node->nid"][$account->uid] = $account->name;
+      $counter++;
+    }
+
+    // can always re-assign ticket to self
+    $available["$assigned-$node->nid"][$user->uid] = $user->name;
+    $counter++;
+
+    if (is_numeric($node->client) && (user_access('administer support') || user_access('can assign tickets to other users'))) {
+      $roles = array();
+      $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
+      // retrieve all roles giving permission to access current tickets
+      $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'", "access $client tickets", 'administer support');
+      while ($role = db_fetch_object($result)) {
+        $roles[$role->rid] = $role->rid;
+      }
+      // retrieve all users in appropriate roles
+      $accounts = array();
+      $all = FALSE;
+      foreach ($roles as $rid) {
+        if ($rid == DRUPAL_AUTHENTICATED_RID) {
+          $all = TRUE;
+          $result = db_query('SELECT uid FROM {users} WHERE status = 1');
+        }
+        else {
+          $result = db_query('SELECT r.uid FROM {users_roles} r LEFT JOIN {users} u ON r.uid = u.uid WHERE r.rid = %d AND u.status = 1', $rid);
+        }
+        while ($account = db_fetch_object($result)) {
+          $accounts[$account->uid] = $account->uid;
+          $counter++;
+          if (!$limit || ($counter > $limit)) {
+            return FALSE;
+          }
+        }
+        // we've already retrieved all active users, no need to search
+        // additional roles
+        if ($all) break;
+      }
+      // load users and allow them to be assigned
+      foreach ($accounts as $uid) {
+        $account = user_load(array('uid' => $uid));
+        $available["$assigned-$node->nid"][$account->uid] = $account->name;
+      }
+    }
+    // sort by name
+    asort($available["$assigned-$node->nid"]);
+
+    // can only unassign tickets if assigned to self, or have admin permissions
+    // (always put this at the top of the array)
+    if (!$assigned || $assigned == $user->uid ||
+        user_access('can assign tickets to other users') || user_access('administer support')) {
+      $available["$assigned-$node->nid"] = array(0 => ' - '. t('not assigned') .' -') + $available["$assigned-$node->nid"];
+    }
   }
 
-  if ($assigned && $assigned != $user->uid) {
-    $account = user_load($assigned);
-    $available[$account->uid] = $account->name;
-  }
-
-  // can always re-assign ticket to self
-  $available[$user->uid] = $user->name;
-
-  if ($node->client && user_access('administer support')) {
-    $roles = array();
-    $client = db_result(db_query('SELECT name FROM {jobtrack_client} WHERE clid = %d', $node->client));
-    // retrieve all roles giving permission to access current tickets
-    $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%'", "access $client tickets");
-    while ($role = db_fetch_object($result)) {
-      $roles[$role->rid] = $role->rid;
-    }
-    // retrieve all users in appropriate roles
-    $accounts = array();
-    $all = FALSE;
-    foreach ($roles as $rid) {
-      if ($rid == DRUPAL_AUTHENTICATED_RID) {
-        $all = TRUE;
-        $result = db_query('SELECT uid FROM {users} WHERE status = 1');
-      }
-      else {
-        $result = db_query('SELECT r.uid FROM {users_roles} r LEFT JOIN {users} u ON r.uid = u.uid WHERE r.rid = %d AND u.status = 1', $rid);
-      }
-      while ($account = db_fetch_object($result)) {
-        $accounts[$account->uid] = $account->uid;
-      }
-      // we've already retrieved all active users, no need to search more roles
-      if ($all) break;
-    }
-    // load users and allow them to be assigned
-    foreach ($accounts as $uid) {
-      $account = user_load(array('uid' => $uid));
-      $available[$account->uid] = $account->name;
-    }
-  }
-
-  return $available;
+  return $available["$assigned-$node->nid"];
 }
 
 /**
@@ -853,8 +1571,11 @@ function support_subscribe_form(&$form_state, $edit, $title) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
-  if (is_array($edit)) {
-    $notification = db_result(db_query('SELECT active FROM {jobtrack_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
+  if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
+    $notification = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
+  }
+  else if (is_object($edit) && isset($edit->notification)) {
+    $notification = $edit->notification;
   }
   else {
     $notification = TRUE;
@@ -865,6 +1586,57 @@ function support_subscribe_form(&$form_state, $edit, $title) {
     '#description' => t('Receive email notifications when this ticket is updated.'),
     '#default_value' => isset($notification) ? $notification : TRUE,
   );
+  if (user_access('can suppress notification')) {
+    $form['subscribe']['suppress'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Suppress notification'),
+      '#description' => t('By checking this box you will prevent notification emails from being sent for this ticket update.  It is recommended that you check this box if you are adding sensitive information such as passwords which should not be mailed out in plain text.'),
+      '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
+    );
+  }
+  if (is_array($edit) && (user_access('administer support') || user_access('can subscribe other users to notifications'))) {
+    $form['subscribe']['subscribed'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Subscribed'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $node = node_load($edit['nid']['#value']);
+    $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
+    if ($available === FALSE) {
+      $account = user_load(array('uid' => $node->assigned));
+      $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $node->nid);
+      $accounts = array();
+      while ($a = db_fetch_object($result)) {
+        $account = user_load(array('uid' => $a->uid));
+        $accounts[] = $account->name;
+      }
+      if (!empty($accounts)) {
+        $default = implode(', ', $accounts);
+      }
+      else {
+        $default = '';
+      }
+      $form['subscribe']['subscribed']['subscribed-users'] = array(
+        '#type' => 'textfield',
+        '#autocomplete_path' => 'support/autocomplete/autosubscribe/'. $node->client,
+        '#default_value' => $default,
+        '#description' => t('Enter a comma separated list of users that should receive notifications when this ticket is updated.'),
+      );
+    }
+    else {
+      foreach ($available as $uid => $name) {
+        if (!$uid) continue;
+        $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+        $form['subscribe']['subscribed']["notify-$uid"] = array(
+          '#type' => 'checkbox',
+          '#title' => $name,
+          '#default_value' => $enabled,
+          '#disabled' => $uid == $user->uid ? TRUE : FALSE,
+        );
+      }
+    }
+  }
   return $form;
 }
 
@@ -872,13 +1644,13 @@ function support_subscribe_form(&$form_state, $edit, $title) {
  * Load all active clients.
  */
 function _support_clients_load($path = FALSE) {
-  $result = db_query('SELECT clid, path, name FROM {jobtrack_client} WHERE status = 1');
+  $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = 1 ORDER BY name');
   while ($client = db_fetch_object($result)) {
     if ($path) {
-      $clients[$client->clid] = $client->path;
+      $clients[$client->clid] = check_plain($client->path);
     }
     else {
-      $clients[$client->clid] = $client->name;
+      $clients[$client->clid] = check_plain($client->name);
     }
   }
   return $clients;
@@ -900,20 +1672,20 @@ function _support_states($all = TRUE, $sid = NULL) {
 
   if (!isset($states["$admin-$all-$sid"])) {
     if ($admin || $all) {
-      $result = db_query("SELECT sid, state FROM {jobtrack_states} ORDER BY weight");
+      $result = db_query("SELECT sid, state FROM {support_states} ORDER BY weight");
     }
     else if (!$all && !$sid) {
-      $result = db_query("SELECT sid, state FROM {jobtrack_states} WHERE phase1 = 1 ORDER BY weight");
+      $result = db_query("SELECT sid, state FROM {support_states} WHERE phase1 = 1 ORDER BY weight");
     }
     else if (!$all) {
-      $result = db_query("SELECT sid, state FROM {jobtrack_states} WHERE phase2 = 1 ORDER BY weight");
+      $result = db_query("SELECT sid, state FROM {support_states} WHERE phase2 = 1 ORDER BY weight");
     }
     while ($state = db_fetch_object($result)) {
       $states["$admin-$all-$sid"][$state->sid] = $state->state;
     }
     // include the current state, even if user doesn't actually have access
     if ($sid && !in_array($sid, $states["$admin-$all-$sid"])) {
-      $states["$admin-$all-$sid"][$sid] = db_result(db_query("SELECT state FROM {jobtrack_states} WHERE sid = %d", $sid));
+      $states["$admin-$all-$sid"][$sid] = db_result(db_query("SELECT state FROM {support_states} WHERE sid = %d", $sid));
     }
   }
 
@@ -926,9 +1698,20 @@ function _support_states($all = TRUE, $sid = NULL) {
 function _support_state_default() {
   static $default = NULL;
   if (!$default) {
-    $default = db_result(db_query_range('SELECT sid FROM {jobtrack_states} WHERE isdefault = 1', 0, 1));
+    $default = db_result(db_query_range('SELECT sid FROM {support_states} WHERE isdefault = 1 ORDER BY weight ASC', 0, 1));
   }
   return $default;
+}
+
+/**
+ * Return secondary sid.
+ */
+ function _support_state_secondary() {
+  static $secondary = NULL;
+  if (!$secondary) {
+    $secondary = db_result(db_query_range('SELECT sid FROM {support_states} WHERE phase2 = 1 ORDER BY weight ASC', 0, 1));
+  }
+  return $secondary;
 }
 
 /**
@@ -938,7 +1721,7 @@ function _support_priorities($pid = NULL) {
   static $priorities = array();
 
   if (empty($priorities)) {
-    $result = db_query('SELECT pid, priority FROM {jobtrack_priority} ORDER BY weight');
+    $result = db_query('SELECT pid, priority FROM {support_priority} ORDER BY weight');
     while ($priority = db_fetch_object($result)) {
       $priorities[$priority->pid] = $priority->priority;
     }
@@ -961,7 +1744,7 @@ function _support_priorities($pid = NULL) {
 function _support_priority_default() {
   static $default = NULL;
   if (!$default) {
-    $default = db_result(db_query_range('SELECT pid FROM {jobtrack_priority} WHERE isdefault = 1', 0, 1));
+    $default = db_result(db_query_range('SELECT pid FROM {support_priority} WHERE isdefault = 1', 0, 1));
   }
   return $default;
 }
@@ -980,7 +1763,7 @@ function _support_state($state) {
   static $state_name = array();
 
   if (!isset($state_name[$state])) {
-    $state_name[$state] = db_result(db_query('SELECT state FROM {jobtrack_states} WHERE sid = %d', $state));
+    $state_name[$state] = db_result(db_query('SELECT state FROM {support_states} WHERE sid = %d', $state));
   }
 
   return $state_name[$state];
@@ -994,10 +1777,15 @@ function _support_available_clients() {
 
   if (empty($valid)) {
     $clients = _support_clients_load();
-    foreach ($clients as $clid => $name) {
-      if (user_access("access $name tickets")) {
-        $valid[$clid] = $name;
+    if (is_array($clients) && !empty($clients)) {
+      foreach ($clients as $clid => $name) {
+        if (user_access('administer support') || user_access("access $name tickets")) {
+          $valid[$clid] = $name;
+        }
       }
+    }
+    else {
+      drupal_set_message('There are no support clients configured/enabled.', 'error');
     }
   }
   return $valid;
@@ -1013,11 +1801,29 @@ function _support_get_state($state) {
   else if ($state == 'all open') {
     return -1;
   }
-  $sid = db_result(db_query("SELECT sid FROM {jobtrack_states} WHERE state = '%s'", $state));
+  else if ($state == 'my open') {
+    return -2;
+  }
+  else if ($state == SUPPORT_STATE_CLOSED) {
+    $result = db_query("SELECT sid FROM {support_states} WHERE isclosed = 1");
+    $states = array();
+    while ($state = db_fetch_object($result)) {
+      $states[$state->sid] = $state->sid;
+    }
+    return $states;
+  }
+  $sid = db_result(db_query("SELECT sid FROM {support_states} WHERE state = '%s'", $state));
   if (!$sid) {
     $sid = _support_state_default();
   }
   return $sid;
+}
+
+function _support_truncate($text, $maxlen = 64) {
+  if (strlen($text) > $maxlen) {
+    return substr($text, 0, $maxlen - 1) .'...';
+  }
+  return check_plain($text);
 }
 
 /**
@@ -1027,16 +1833,31 @@ function support_page($client = NULL, $state = NULL) {
   global $user;
 
   if (!$client) {
-    $clients = _support_available_clients();
-    if (sizeof($clients) > 1) {
-      return t('Please select a client.');
+    if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
+      drupal_goto("support/$client->path");
     }
-    else if (sizeof($clients) == 1) {
+    $clients = _support_available_clients();
+    if (sizeof($clients)) {
       foreach ($clients as $key => $name) {
-        $client = $key;
+        $client = support_client_load($key);
+        drupal_goto("support/$client->path");
       }
     }
   }
+  else {
+    if (is_numeric($client)) {
+      $_SESSION['support_client'] = $client;
+    }
+    else {
+      drupal_set_message(t('Client does not exist or is not enabled.'), 'error');
+      if (isset($_SESSION['support_client'])) {
+        unset($_SESSION['support_client']);
+      }
+      drupal_goto('');
+    }
+  }
+
+  drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
 
   if (!$state) {
     $state = 'all open';
@@ -1045,43 +1866,58 @@ function support_page($client = NULL, $state = NULL) {
 
   $rows = array();
   $header = array(
+    array('data' => t('Id'), 'field' => 'n.nid'),
     array('data' => t('Ticket'), 'field' => 'n.title'),
     array('data' => t('Updated'), 'field' => 'last_updated', 'sort' => 'desc'),
-    array('data' => t('Reporter'), 'field' => 'n.uid'),
+    array('data' => t('Reported by'), 'field' => 'n.uid'),
+    array('data' => t('Assigned to'), 'field' => 't.assigned'),
     array('data' => t('State'), 'field' => 't.state'),
-    array('data' => t('Prioriy'), 'field' => 't.priority'),
+    array('data' => t('Priority'), 'field' => 't.priority'),
     array('data' => t('Updates'), 'field' => 'l.comment_count'),
   );
+  if ($state == -2) {
+    $my_open = " AND t.assigned = $user->uid";
+  }
+  else {
+    $my_open = "";
+  }
+
   if ($state < 0) {
-    // TODO: Make this configurable.
-    $state = 'AND t.state != '. _support_get_state('closed');
+    $state = 'AND t.state NOT IN ('. implode(', ', _support_get_state(SUPPORT_STATE_CLOSED)) .')';
   }
   else {
     $state = $state ? "AND t.state = $state" : '';
   }
-  $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority FROM {node} n LEFT JOIN {jobtrack_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND client = $client $state";
+
+  $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.assigned FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND client = $client $state $my_open";
+  if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
+    $sql .= " AND n.uid = $user->uid";
+  }
   $sql = db_rewrite_sql($sql);
   $sql .= tablesort_sql($header);
-  $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {comments} c ON n.nid = c.nid AND (c.status = %d OR c.status IS NULL) WHERE n.status = 1 AND client = $client $state";
+  $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {comments} c ON n.nid = c.nid AND (c.status = %d OR c.status IS NULL) LEFT JOIN {support_ticket} t ON n.nid = t.nid WHERE n.status = 1 AND client = $client $state $my_open";
   $sql_count = db_rewrite_sql($sql_count);
-  $result = pager_query($sql, 50, 0, $sql_cont);
+  $result = pager_query($sql, 50, 0, $sql_count);
   $rows = array();
   while ($ticket = db_fetch_object($result)) {
     $account = user_load(array('uid' => $ticket->uid));
+    $assigned = user_load(array('uid' => $ticket->assigned));
     $comments = l($ticket->comment_count, "node/$ticket->nid", array('fragment' => 'comments'));
     if ($new = comment_num_new($ticket->nid)) {
       $node = node_load($ticket->nid);
       $comments .= '&nbsp;('. l(format_plural($new, '1 new', '@count new'), "node/$ticket->nid", array('query' => comment_new_page_count($node->comment_count, $new, $node), 'fragment' => 'new')) .')';
     }
-    $rows[] = array(
-      l($ticket->title, "node/$ticket->nid"),
-      format_date($ticket->last_updated, 'small'),
-      l($account->name, "user/$account->uid"),
-      _support_state($ticket->state),
-      _support_priorities($ticket->priority),
-      $comments);
+    $rows[] = array('data' => array(
+      array('data' => l($ticket->nid, "node/$ticket->nid"), 'class' => 'ticket-id'),
+      array('data' => l(_support_truncate($ticket->title), "node/$ticket->nid"), 'class' => 'ticket-title'),
+      array('data' => format_date($ticket->last_updated, 'small'), 'class' => 'ticket-updated'),
+      array('data' => l(_support_truncate($account->name, 24), "user/$account->uid"), 'class' => 'ticket-reported'),
+      array('data' => l(_support_truncate($assigned->name, 24), "user/$assigned->uid"), 'class' => 'ticket-assigned'),
+      array('data' => _support_state($ticket->state), 'class' => 'ticket-state'),
+      array('data' => _support_priorities($ticket->priority), 'class' => 'ticket-priority'),
+      array('data' => $comments)), 'class' => "state-$ticket->state priority-$ticket->priority");
   }
-  return theme('table', $header, $rows);
+  return theme('table', $header, $rows, array('class' => 'support')) . theme('pager');
 }
 
 /**
@@ -1091,7 +1927,7 @@ function _support_client($clid) {
   static $client_name = array();
 
   if (!isset($client_name[$clid])) {
-    $client_name[$clid] = db_result(db_query('SELECT name FROM {jobtrack_client} WHERE clid = %d', $clid));
+    $client_name[$clid] = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $clid));
   }
 
   return $client_name[$clid];
@@ -1101,6 +1937,13 @@ function _support_client($clid) {
  * Fetch mail for a specific client.
  */
 function support_client_fetch($client, $manual = TRUE) {
+  if (!isset($client->integrate_email) || $client->integrate_email != TRUE) {
+    if ($manual) {
+      drupal_set_message(t('Client not integrated with email, unable to fetch mail for !client.', array('!client' => $client->name)));
+      drupal_goto('admin/support/clients');
+    }
+    return;
+  }
   set_time_limit(0);
   if ($manual) {
     drupal_set_message(t('Fetching mail for !client...', array('!client' => $client->name)));
@@ -1109,18 +1952,19 @@ function support_client_fetch($client, $manual = TRUE) {
   $connect = '{'. $client->server_name .':'. $client->port;
   $username = $client->server_username;
   $password = $client->server_password;
+  $extra = $client->extra;
   switch ($client->protocol) {
     case 0: // POP3
-      $connect .= '/pop3/novalidate-cert}'. $client->mailbox;
+      $connect .= "/pop3$extra}". $client->mailbox;
       break;
     case 1: // POP3S
-      $connect .= '/pop3/ssl/novalidate-cert}'. $client->mailbox;
+      $connect .= "/pop3/ssl$extra}". $client->mailbox;
       break;
     case 2: // IMAP
-      $connect .= '/novalidate-cert}'. $client->mailbox;
+      $connect .= "$extra}". $client->mailbox;
       break;
     case 3: // IMAPS
-      $connect .= '/imap/ssl/novalidate-cert}'. $client->mailbox;
+      $connect .= "/imap/ssl$extra}". $client->mailbox;
       break;
     case 4: // Local file
       $connect = $client->mailbox;
@@ -1141,18 +1985,35 @@ function support_client_fetch($client, $manual = TRUE) {
   // Make a connection to the mail server.
   $stream = imap_open($connect, $username, $password);
   if ($stream === FALSE) {
-    drupal_set_message(t('Failed to download messages for %client, connection to mail server failed.', array('%client' => $client->name), 'error'));
+    if ($manual) {
+      drupal_set_message(t('Failed to download messages for %client, connection to mail server failed.', array('%client' => $client->name), 'error'));
+      if (user_access('administer support')) {
+        // Dump additional debug if manually calling as administrator
+        drupal_set_message(t('Mail server connection failure: connect(!connect), username(!username), password(!password)', array('!connect' => $connect, '!username' => $username, '!password' => $password)), 'error');
+      }
+    }
     if ($alerts = imap_alerts()) {
       foreach ($alerts as $alert) {
-        drupal_set_message(t('Imap alert: %alert>', array('%alert' => $alert)), 'error');
+        watchdog('support', 'Imap alert: %alert', array('%alert' => $alert));
+        if ($manual) {
+          drupal_set_message(t('Imap alert: %alert>', array('%alert' => $alert)), 'error');
+        }
       }
     }
     if ($errors = imap_errors()) {
       foreach ($errors as $error) {
-        drupal_set_message(t('Imap error: %error', array('%error' => $error)), 'error');
+        watchdog('support', 'Imap error: %error', array('%error' => $error), WATCHDOG_NOTICE);
+        if ($manual) {
+          drupal_set_message(t('Imap error: %error', array('%error' => $error)), 'error');
+        }
       }
     }
-    return (-1);
+    if ($manual) {
+      drupal_goto('admin/support/clients');
+    }
+    else {
+      return (-1);
+    }
   }
 
   $messages_downloaded = 0;
@@ -1170,15 +2031,65 @@ function support_client_fetch($client, $manual = TRUE) {
     if (is_array($header->from)) {
       $from = $header->from[0]->mailbox .'@'. $header->from[0]->host;
     }
-    $subject = $header->subject;
+    $subject = '';
+    $strings = imap_mime_header_decode($header->subject);
+    foreach ($strings as $string) {
+      if ($string->charset == 'default') {
+        $subject .= $string->text;
+      }
+      else {
+        $subject .= drupal_convert_to_utf8($string->text, $string->charset);
+      }
+    }
+
+    // Search for the the ticket number in the subject.
     $key = variable_get('support_key', 'tkt');
-    preg_match("/(\[$key:)([0-9]*)(\])/", $subject, &$tickets);
+    $tickets = array();
+    preg_match("/(\[$key:)([0-9]*)(\])/", $subject, $tickets);
     $ticket = $tickets[2];
+
+    // If not found in subject, search for the ticket number based on the
+    // in_reply_to field of the header.
+    if (!is_numeric($ticket) && isset($header->in_reply_to)) {
+      preg_match_all("/<[^<^>]*/", $header->in_reply_to, $in_reply_tos);
+      foreach ($in_reply_tos[0] as $in_reply_to) {
+        $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $in_reply_to .'>'));
+        if (isset($nid) && is_numeric($nid)) {
+          $ticket = $nid;
+        }
+        else {
+          $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $in_reply_to .'>'));
+          if (isset($nid) && is_numeric($nid)) {
+            $ticket = $nid;
+          }
+        }
+      }
+    }
+
+    // If still not found, search for the ticket number based on the references
+    // field of the header.
+    if (!is_numeric($ticket) && isset($header->references)) {
+      preg_match_all("/<[^<^>]*/", $header->references, $references);
+      foreach ($references[0] as $reference) {
+        $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $reference .'>'));
+        if (isset($nid) && is_numeric($nid)) {
+          $ticket = $nid;
+        }
+        else {
+          $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $reference .'>'));
+          if (isset($nid) && is_numeric($nid)) {
+            $ticket = $nid;
+          }
+        }
+        // If found, no need to search further.
+        if (is_numeric($ticket)) break;
+      }
+    }
 
     $structure = imap_fetchstructure($stream, $message);
     $body = _support_get_message_body($stream, $message, $structure);
 
-    $saved = support_save_message($subject, $body, $from, $ticket, $client);
+    $saved = support_save_message($subject, $body, $from, $ticket, $client, $header);
 
     $messages_downloaded++;
 
@@ -1188,6 +2099,7 @@ function support_client_fetch($client, $manual = TRUE) {
   imap_close($stream, CL_EXPUNGE);
 
   if ($manual) {
+    drupal_set_message(t('Downloaded !count', array('!count' => format_plural($messages_downloaded, '1 message', '@count messages'))));
     drupal_goto('admin/support/clients');
   }
 }
@@ -1199,9 +2111,9 @@ function _support_access_tickets() {
   static $count = NULL;
   if (is_null($count)) {
     $count = 0;
-    $result = db_query('SELECT name FROM {jobtrack_client} WHERE status = 1');
+    $result = db_query('SELECT name FROM {support_client} WHERE status = 1');
     while ($client = db_fetch_object($result)) {
-      if (user_access("access $client->name tickets")) {
+      if (user_access('administer support') || user_access("access $client->name tickets")) {
         $count++;
       }
     }

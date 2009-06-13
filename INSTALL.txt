@@ -1,9 +1,14 @@
-0) Apply the patch to the comment module.
+
+0) Optionally apply the supplied patch to the comment module.  This patch is
+   not necessary, but it streamlines support tickets by removing
+   comment-specific titles and links when used for support tickets.  A more
+   graceful method of streamlining support tickets would be to use CSS in your
+   theme to hide unwanted comment elements.
 
 1) Enable the module.
 
 2) Edit 'Administer >> Content management >> Content types >> Support ticket'
- a) Set the desired Submission form settings (such as Title field label, Body 
+ a) Set the desired Submission form settings (such as Title field label, Body
     field label, Minimum number of words, etc)
  b) Set the desired Workflow settings
  c) Set the desired Comment settings (recommended):
@@ -14,4 +19,81 @@
     - do not display comment controls
     - disable the comment subject field
     - display comment submission form below post or comments
+
+3) Go to "Administer >> Support >> Clients >> Add client" and create one or
+   more Support clients.
+
+   If you only want to track tickets online, and send out notifications as
+   tickets are created and updated, simply define the 'Client name' and 'Path'.
+   If you want the ability to create and update tickets via email, you will
+   need to open the 'Inbound email integration' section, check 'Integrate
+   email', and fill out the rest of the information in that section.  If
+   integrating inbound email, you will need to create an email account for
+   each client -- support will use this account to send and receive email.
+
+4) If creating multiple Support clients, go to "Administer >> User management
+   >> Roles" and create one role for each Support client.  (This is an optional
+   step and is only required if you want to prevent one client from viewing and
+   updating the tickets of another client.  If you are using this ticketing
+   system internally, this may not be important to you.)
+
+5) Go to "Administer >> User management >> Permissions" and assign the desired
+   permissions.  A user will need at least one "access CLIENT tickets"
+   permission and "create tickets" permission to be able to create tickets.
+   Users can only create and update tickets for clients they can access.
+
+   Users with "can suppress notification" permissions have the option to
+   manually disable a notification email from being sent out.  An email will
+   still get sent to admins telling them that an update has been made but not
+   showing the contents of the update.  This feature allows passwords and other
+   sensitive information to be added to tickets without being sent out as a
+   plain text email.
+
+   Users with "can assign tickets to other users" permissions are able to assign
+   a ticket to another user.  Users without this permission can only assign
+   tickets to themselves.  Only users with permission to view a given ticket
+   can be assigned to it.
+
+   Users with "can subscribe other users to notifications" permissions are able
+   to subscribe other users to email notifications when a ticket is updated.
+   Users without this permission can only subscribe themselves.  Only users
+   with permission to view a given ticket can be subscribed to notifications
+   for it.
+
+   Users with "download mail via support/fetch" permissions can access the path
+   "support/fetch" which will cause the Support module to download all client
+   email.  Mail is also fetched when Drupal's cron is run, but this allows mail
+   to be checked at a different frequency than cron is run, if desired.  If you
+   are using Support's mail integration features and you are running Drupal's
+   cron, you do not ever need to access support/fetch.
+
+   Users with "view other users tickets" permissions can view all tickets for
+   any client that they have "access CLIENT NAME tickets" permissions.  Users
+   that do not have this permission can only view tickets that they themselves
+   have created. Users with "administer support", "edit any ticket" and/or
+   "delete any ticket" permissions can always "view other users tickets" whether
+   or not they are explicitly granted this permission.
+   >> NOTE:  This permission is new and changes the default behavior found in
+   JobTrack 1.5 and earlier where by default users could see all tickets for
+   any client they had access to. <<
+
+   Users with "view ticket status bar" permissions will see the State, Priority,
+   Client and Assigned select menus for tickets.  Users with "administer
+   support", "administer state", and/or "can assign tickets to other users"
+   permissions can always "view ticket status bar" whether or not they are
+   explicitly granted this permission.
+   >> NOTE:  This permission is new and changes the default behavior found in
+   JobTrack 1.5 and earlier where by default users could view the ticket status
+   bar. <<
+
+   Users with "administer state" permissions can change the state of any ticket
+   from any state to any other state.  Users without "administer state"
+   permissions can only adjust state based on the workflow defined in the
+   support_states database table.  By default, this means that new tickets
+   must be in the 'new' state, and only upon updating a ticket can the user set
+   the state to 'active', 'pending', or 'closed'.
+
+   Users with "administer support" permissions can access and update all
+   clients and client tickets, and automatically have all support permissions
+   available to them.
 

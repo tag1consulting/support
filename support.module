@@ -1166,6 +1166,15 @@ function support_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
   if (variable_get('support_remove_tickets', TRUE) && $query == '' && $primary_table == 'n' && $primary_field = 'nid' && empty($args)) {
     return array('where' => " n.type != 'support_ticket'");
   }
+  if ($primary_table == 'n' AND $primary_field == 'nid' && !strpos($query, '{support_ticket}')) {
+    $clients = support_search_available_clients();
+    if (!empty($clients)) {
+      return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' st.client IN ('. implode(',', support_search_available_clients()) .')  OR st.client IS NULL');
+    }
+    else {
+      return array('where' => " n.type != 'support_ticket'");
+    }
+  }
 }
 
 /**

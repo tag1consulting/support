@@ -2,6 +2,8 @@ June 17th, 2009
  - support.module
     o bug #491308: properly download mail from cron when $extra is set
     o bug #492218: display subscribe field if set to always use autocomplete
+    o feature #490992: allow admin to disable support links from user page
+      (based on patch from "ozon", http://drupal.org/user/130503)
  - support.user.inc
     o bug #490768: detect if a user is unable to access tickets for any client,
       avoid throwing an error

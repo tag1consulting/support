@@ -475,18 +475,20 @@ function support_perm() {
  */
 function support_user($type, &$edit, &$account) {
   global $user;
-  if ($type == 'view' &&
-     ((user_access('create tickets', $account) && $user->uid == $account->uid) ||
-       user_access('administer support'))) {
-    $items = array();
-    $items[] = l(t('View recent tickets'), "support/user/$account->uid", array('attributes' => array('title' => t("Read @username's latest tickets.", array('@username' => check_plain($account->name))))));
-    $items[] = l(t('Create new ticket'), 'node/add/support-ticket');
-    $account->content['summary']['support'] = array(
-      '#type' => 'user_profile_item',
-      '#title' => t('Tickets'),
-      '#value' => theme('item_list', $items),
-      '#attributes' => array('class' => 'support'),
-    );
+  if (variable_get('support_display_user_links', TRUE)) {
+    if ($type == 'view' &&
+       ((user_access('create tickets', $account) && $user->uid == $account->uid)
+         || user_access('administer support'))) {
+      $items = array();
+      $items[] = l(t('View recent tickets'), "support/user/$account->uid", array('attributes' => array('title' => t("Read @username's latest tickets.", array('@username' => check_plain($account->name))))));
+      $items[] = l(t('Create new ticket'), 'node/add/support-ticket');
+      $account->content['summary']['support'] = array(
+        '#type' => 'user_profile_item',
+        '#title' => t('Tickets'),
+        '#value' => theme('item_list', $items),
+        '#attributes' => array('class' => 'support'),
+      );
+    }
   }
 }
 

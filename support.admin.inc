@@ -286,6 +286,17 @@ function support_admin_settings() {
     '#default_value' => variable_get('support_override_block', FALSE),
   );
 
+  $form['user'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User profile'),
+  );
+  $form['user']['support_display_user_links'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display support ticket links'),
+    '#description' => t('Check this box to display links from a user\'s profile page to create new and view their existing support tickets.'),
+    '#default_value' => variable_get('support_display_user_links', TRUE),
+  );
+
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General'),

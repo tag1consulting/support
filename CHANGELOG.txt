@@ -1,6 +1,9 @@
 June 17th, 2009
  - jobtrack.module
     o bug #491308: properly download mail from cron when $extra is set
+ - jobtrack.user.inc
+    o bug #490768: detect if a user is unable to access tickets for any client,
+      avoid throwing an error
 
 June 13th, 2009
  - jobtrack.install

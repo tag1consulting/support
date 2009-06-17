@@ -40,19 +40,21 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
   }
 
   $clients = support_search_available_clients();
-  $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.client FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND client IN (". implode(', ', $clients) .") $state";
-  if ($assigned) {
-    $sql .= " AND t.assigned = $user->uid";
-  }
-  if (!$assigned || (user_access('only view own tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket'))) {
-    $sql .= " AND n.uid = $user->uid";
-  }
-  $sql = db_rewrite_sql($sql);
-  $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND t.assigned = $user->uid $state";
-  $sql_count = db_rewrite_sql($sql_count);
+  if (sizeof($clients)) {
+    $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.client FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND client IN (". implode(', ', $clients) .") $state";
+    if ($assigned) {
+      $sql .= " AND t.assigned = $user->uid";
+    }
+    if (!$assigned || (user_access('only view own tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket'))) {
+      $sql .= " AND n.uid = $user->uid";
+    }
+    $sql = db_rewrite_sql($sql);
+    $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND t.assigned = $user->uid $state";
+    $sql_count = db_rewrite_sql($sql_count);
 
-  $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0, $sql_count);
+    $sql .= tablesort_sql($header);
+    $result = pager_query($sql, 50, 0, $sql_count);
+  }
   $row = 0;
   $rows = array();
   while ($ticket = db_fetch_object($result)) {

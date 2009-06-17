@@ -83,7 +83,7 @@ function support_menu() {
       'page callback' => 'support_page',
       'page arguments' => array($client->clid),
       'access callback' => 'support_access_clients',
-      'access arguments' => array($client, TRUE),
+      'access arguments' => array($client),
     );
     $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
     foreach ($states as $sid => $state) {
@@ -92,7 +92,7 @@ function support_menu() {
         'page callback' => 'support_page',
         'page arguments' => array($client->clid, $state),
         'access callback' => 'support_access_clients',
-        'access arguments' => array($client, TRUE),
+        'access arguments' => array($client),
         'weight' => $sid,
         'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
@@ -121,7 +121,7 @@ function support_menu() {
       'page callback' => 'support_page_user',
       'page arguments' => array(1, TRUE, $state),
       'access callback' => 'support_access_clients',
-      'access arguments' => array($client, TRUE),
+      'access arguments' => array($client),
       'file' => 'support.user.inc',
       'weight' => $sid,
       'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,

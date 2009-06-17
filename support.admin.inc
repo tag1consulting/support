@@ -176,6 +176,9 @@ function support_admin_client(&$form_state, $client = NULL) {
 }
 
 function support_admin_client_validate($form, &$form_state) {
+  if (preg_match('/[&*(),<>?\[\]]/', $form_state['values']['name'])) {
+    form_set_error('name', t('You have entered an unsupported character.  The following characters can not be used in the client name: &*(),<>?[]'));
+  }
   if (!empty($form_state['values']['autosubscribe'])) {
     $subscribe = array();
     $autosubscribe = explode(',', $form_state['values']['autosubscribe']);

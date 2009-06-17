@@ -15,10 +15,18 @@ can ignore the contents of this file.
    A backup is worthless if it doesn't work.  Test that you can restore your
    backup onto a development server.
 
-3) Disable the 'jobtrack' module.
+3) Upgrade to jobtrack-6.x-1.6-rc1, the final JobTrack release.  This is a 
+   mandatory step!  If you are running an older version of JobTrack and attempt
+   to upgrade to the Support module things WILL break.  Be sure to run
+   update.php after installing jobtrack-6.x-1.6-rc1.
+
+   The final jobtrack release, 6.x-1.6-rc1, can be found here:
+     http://drupal.org/node/468726
+
+4) Disable the 'jobtrack' module (be sure you completed step #3 first).
    The jobtrack module is no longer necessary.
 
-4) Enable the 'support' module.
-   The support module replaces the jobtrack module.
-
-That's all, folks!
+5) Enable the 'support' module.
+   The support module replaces the jobtrack module.  When you enable the
+   module, it will automatically your tickets from jobtrack-6.x-1.6-rc1 to the
+   latest version of the support module.

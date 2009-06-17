@@ -306,7 +306,7 @@ function support_active_clients() {
   static $clients = NULL;
 
   if (is_null($clients)) {
-    $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, port, notes, autosubscribe, domains FROM {support_client} WHERE status = 1');
+    $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, extra, protocol, port, notes, autosubscribe, domains FROM {support_client} WHERE status = 1');
     while ($client = db_fetch_object($result)) {
       $clients[$client->clid] = $client;
     }

@@ -1,3 +1,7 @@
+June 17th, 2009
+ - jobtrack.module
+    o bug #491308: properly download mail from cron when $extra is set
+
 June 13th, 2009
  - jobtrack.install
     o bug #485318: do not set default value for text column

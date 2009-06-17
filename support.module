@@ -467,7 +467,7 @@ function support_client_name_load($name) {
  * Implementation of hook_perm().
  */
 function support_perm() {
-  $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'administer state', 'can suppress notification', 'can assign tickets to other users', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'view ticket status bar');
+  $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'can administer state', 'can suppress notification', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'can select state', 'can select priority', 'can select client', 'can assign tickets to self', 'can assign tickets to any user');
   $result = db_query('SELECT name FROM {support_client} WHERE status = 1');
   while ($client = db_fetch_object($result)) {
     $perm[] = 'access '. check_plain($client->name) .' tickets';
@@ -1390,9 +1390,12 @@ function support_status_form(&$form_state, $edit, $title) {
       $node->priority = $comment->priority;
     }
   }
-  if (user_access('view ticket status bar') ||
-      user_access('administer support') || user_access('administer state') ||
-      user_access('can assign tickets to other users')) {
+  if (user_access('can select state') ||
+      user_access('can select priority') ||
+      user_access('can select client') ||
+      user_access('can assign tickets to self') ||
+      user_access('can assign tickets to any user') ||
+      user_access('administer support') || user_access('can administer state')) {
     $form['support'] = array(
       '#type' => 'fieldset',
       '#prefix' => '<div class="container-inline">',
@@ -1405,9 +1408,9 @@ function support_status_form(&$form_state, $edit, $title) {
     // no longer be marked as new.
     $default = _support_state_secondary();
   }
-  if (!user_access('view ticket status bar') &&
+  if (!user_access('can select state') &&
       !user_access('administer support') &&
-       !user_access('administer state')) {
+       !user_access('can administer state')) {
     $form['support']['state'] = array(
       '#type' => 'hidden',
       '#value' => $default,
@@ -1427,7 +1430,7 @@ function support_status_form(&$form_state, $edit, $title) {
       '#default_value' => $default,
     );
   }
-  if (!user_access('view ticket status bar') &&
+  if (!user_access('can select priority') &&
       !user_access('administer support')) {
     $form['support']['priority'] = array(
       '#type' => 'hidden',
@@ -1448,13 +1451,19 @@ function support_status_form(&$form_state, $edit, $title) {
     $node->client = key($clients);
   }
   else {
-    $clients = array(0 => '- select client -') + $clients;
     if (is_numeric($_SESSION['support_client'])) {
       $node->client = $_SESSION['support_client'];
     }
+    else if (!user_access('can select client')) {
+      // TODO: It should be possible to set a default client.  Perhaps allow
+      // a weight to be assigned to clients -- then we select the heaviest
+      // matching client...?
+      $node->client = key($clients);
+    }
+    $clients = array(0 => '- select client -') + $clients;
   }
   if ((sizeof($clients) == 1) ||
-      (!user_access('view ticket status bar') &&
+      (!user_access('can select client') &&
        !user_access('administer support'))) {
     $form['support']['client'] = array(
       '#type' => 'hidden',
@@ -1471,9 +1480,9 @@ function support_status_form(&$form_state, $edit, $title) {
       '#default_value' => is_numeric($node->client) ? $node->client : 0,
     );
   }
-  if (!user_access('view ticket status bar') &&
-      !user_access('administer support') &&
-      !user_access('can assign tickets to other users')) {
+  if (!user_access('can assign tickets to self') &&
+      !user_access('can assign tickets to other users') &&
+      !user_access('administer support')) {
     $form['support']['assigned'] = array(
       '#type' => 'hidden',
       '#value' => $node->assigned ? $node->assigned : 0,
@@ -1688,7 +1697,7 @@ function support_page_user_access($account) {
  */
 function _support_states($all = TRUE, $sid = NULL) {
   static $states = array();
-  $admin = user_access('administer state');
+  $admin = user_access('can administer state');
 
   if (!isset($states["$admin-$all-$sid"])) {
     if ($admin || $all) {

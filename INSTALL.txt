@@ -49,10 +49,12 @@
    sensitive information to be added to tickets without being sent out as a
    plain text email.
 
-   Users with "can assign tickets to other users" permissions are able to assign
-   a ticket to another user.  Users without this permission can only assign
-   tickets to themselves.  Only users with permission to view a given ticket
-   can be assigned to it.
+   Users with "can assign tickets to self" permissions are able to assign a
+   ticket to themselves, or to assign the ticket to nobody.
+
+   Users with "can assign tickets to any user" permissions are able to assign
+   a ticket to themselves or to another user.  Only users with permission to 
+   view a given ticket can be assigned to it.
 
    Users with "can subscribe other users to notifications" permissions are able
    to subscribe other users to email notifications when a ticket is updated.
@@ -73,25 +75,23 @@
    have created. Users with "administer support", "edit any ticket" and/or
    "delete any ticket" permissions can always "view other users tickets" whether
    or not they are explicitly granted this permission.
-   >> NOTE:  This permission is new and changes the default behavior found in
-   JobTrack 1.5 and earlier where by default users could see all tickets for
-   any client they had access to. <<
 
-   Users with "view ticket status bar" permissions will see the State, Priority,
-   Client and Assigned select menus for tickets.  Users with "administer
-   support", "administer state", and/or "can assign tickets to other users"
-   permissions can always "view ticket status bar" whether or not they are
-   explicitly granted this permission.
-   >> NOTE:  This permission is new and changes the default behavior found in
-   JobTrack 1.5 and earlier where by default users could view the ticket status
-   bar. <<
+   When creating and modifying tickets, users with "can select client"
+   permissions can assign the ticket to any client that they have permission
+   to access tickets for.
 
-   Users with "administer state" permissions can change the state of any ticket
-   from any state to any other state.  Users without "administer state"
-   permissions can only adjust state based on the workflow defined in the
-   support_states database table.  By default, this means that new tickets
-   must be in the 'new' state, and only upon updating a ticket can the user set
-   the state to 'active', 'pending', or 'closed'.
+   When creating and modifying tickets, users with "can select priority"
+   permissions can set the priority of the ticket.
+
+   When creating and modifying tickets, users with "can select state" 
+   permissions can set the state that the ticket is currently in, based on
+   the workflow defined in the support_states database table.  By default, this
+   means that new tickets must be in the 'new' state, and only upon updating a
+   ticket can the user set the state to 'active', 'pending', or 'closed'.
+
+   Users with "can administer state" permissions can change the state of any
+   ticket from any state to any other state, ignoring the workflow defined in
+   the support_states database table.
 
    Users with "administer support" permissions can access and update all
    clients and client tickets, and automatically have all support permissions

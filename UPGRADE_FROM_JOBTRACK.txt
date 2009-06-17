@@ -30,3 +30,13 @@ can ignore the contents of this file.
    The support module replaces the jobtrack module.  When you enable the
    module, it will automatically your tickets from jobtrack-6.x-1.6-rc1 to the
    latest version of the support module.
+
+6) Go to "Administer >> User management >> Permissions" and set permissions.
+   For more information about how permissions work, review INSTALL.txt.
+   The names of permissions have changed, so you can not skip this step.
+
+   Specifically, the following permissions have been removed: "administer
+   state", "can assign tickets to other users", and "view ticket status bar".
+   The following permissions have been added: "can select state", "can
+   administer state", "can select priority", "can select client", "can assign
+   tickets to self", and "can assign tickets to any user".

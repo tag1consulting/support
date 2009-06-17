@@ -6,6 +6,10 @@ June 17th, 2009
       (based on patch from "ozon", http://drupal.org/user/130503)
     o feature #472426: remove tickets from tracker and other node views if the
       current user doesn't have permission to view them
+    o feature #446318: new/changed permissions: 'can select state', 'can select
+      priority', 'can select client', 'can assign tickets to self', 'can assign
+      tickets to any user', 'can administer state'.  Provides more granular
+      control over what settings users can change.
  - support.user.inc
     o bug #490768: detect if a user is unable to access tickets for any client,
       avoid throwing an error

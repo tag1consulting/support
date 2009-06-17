@@ -141,11 +141,13 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#default_value' => isset($client->domains) ? check_plain($client->domains) : '',
     '#description' => t('Enter one or more comma-seperated domains which are allowed to automatically generate new tickets.  If no domains are entered, tickets are allowed from all domains (unless you globally define allowed domains).  If you globally define allowed domains but want this client to receive emails from all domains, enter a domain of "*".'),
   );
+  $id = isset($client->clid) ? $client->clid : 0;
+  $path = 'support/autocomplete/autosubscribe/'. $id;
   $form['autosubscribe'] = array(
     '#type' => 'textfield',
     '#title' => t('Auto-subscribe'),
-    '#autocomplete_path' => 'support/autocomplete/autosubscribe/'. $client->clid,
-    '#default_value' => isset($client->autosubscribe) ? $client->autosubscribe : '',
+    '#autocomplete_path' => $path,
+    '#default_value' => !empty($client->autosubscribe) ? $client->autosubscribe : '',
     '#description' => t('Enter one or more comma-seperated usernames to auto-subscribe to !client issues.  These users will receive email notifications for all new tickets and ticket updates for this client.', array('!client' => $client->name)),
   );
   $form['notes'] = array(
@@ -185,7 +187,10 @@ function support_admin_client_validate($form, &$form_state) {
     foreach ($autosubscribe as $name) {
       $account = user_load(array('name' => trim($name)));
       if (!is_object($account) || !$account->uid) {
-        form_set_error('autosubscribe', t('User !username does not exist.', array('!username' => $name)));
+        form_set_error('autosubscribe', t('User %username does not exist.', array('%username' => $name)));
+      }
+      else if (!user_access('access '. $form_state['values']['name'] .' tickets', $account)) {
+        form_set_error('autosubscribe', t('User %username does not have permission to access %client tickets.', array('%username' => $name, '%client' => $form_state['values']['name'])));
       }
     }
   }
@@ -209,7 +214,7 @@ function support_admin_client_submit($form, &$form_state) {
     db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autosubscribe = '%s', domains = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes'], $form_state['values']['clid']);
     if (!db_affected_rows()) {
       drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
-      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autosubscribe, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, %d, '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes']);
+      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autosubscribe, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes']);
     }
     else {
       drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));

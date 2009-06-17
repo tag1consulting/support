@@ -7,6 +7,8 @@ June 17th, 2009
  - support.user.inc
     o bug #490768: detect if a user is unable to access tickets for any client,
       avoid throwing an error
+ - support.admin.inc
+    o bug #477680: fix autocomplete when adding/editing support clients
 
 June 13th, 2009
  - support.install

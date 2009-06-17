@@ -245,7 +245,12 @@ function support_autocomplete_autosubscribe($clid, $string = '') {
     while ($role = db_fetch_object($result)) {
       $roles[$role->rid] = $role->rid;
     }
-    $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')", implode(', ', $roles), $last_string, 0, 10);
+    if (!$clid) {
+      $result = db_query_range("SELECT name FROM {users} WHERE status = 1 AND LOWER(name) LIKE LOWER('%s%%')", $last_string, 0, 10);
+    }
+    else if (!empty($roles)) {
+      $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(u.name) LIKE LOWER('%s%%')", implode(', ', $roles), $last_string, 0, 10);
+    }
 
     $prefix = count($array) ? implode(', ', $array) .', ': '';
 

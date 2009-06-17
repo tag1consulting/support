@@ -1498,6 +1498,10 @@ function _support_assigned($assigned, $node, $limit = 9999) {
   static $available = array();
   $counter = 0;
 
+  if (!$limit) {
+    return FALSE;
+  }
+
   if (!isset($available["$assigned-$node->nid"])) {
     if ($assigned && $assigned != $user->uid) {
       $account = user_load($assigned);

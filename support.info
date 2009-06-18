@@ -1,5 +1,6 @@
 ; $Id$
 name = Support
+package = Support
 description = A simple helpdesk and support ticketing system.
 dependencies[] = comment
 core = 6.x

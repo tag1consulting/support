@@ -1,3 +1,7 @@
+June 19th, 2009
+ - support.module
+    o bug #471752: fix 'can assign tickets to any user' permission
+
 June 17th, 2009
  - support.module
     o bug #491308: properly download mail from cron when $extra is set

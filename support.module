@@ -1481,7 +1481,7 @@ function support_status_form(&$form_state, $edit, $title) {
     );
   }
   if (!user_access('can assign tickets to self') &&
-      !user_access('can assign tickets to other users') &&
+      !user_access('can assign tickets to any user') &&
       !user_access('administer support')) {
     $form['support']['assigned'] = array(
       '#type' => 'hidden',
@@ -1538,7 +1538,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
     $available["$assigned-$node->nid"][$user->uid] = $user->name;
     $counter++;
 
-    if (is_numeric($node->client) && (user_access('administer support') || user_access('can assign tickets to other users'))) {
+    if (is_numeric($node->client) && (user_access('administer support') || user_access('can assign tickets to any user'))) {
       $roles = array();
       $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
       // retrieve all roles giving permission to access current tickets
@@ -1580,7 +1580,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
     // can only unassign tickets if assigned to self, or have admin permissions
     // (always put this at the top of the array)
     if (!$assigned || $assigned == $user->uid ||
-        user_access('can assign tickets to other users') || user_access('administer support')) {
+        user_access('can assign tickets to any user') || user_access('administer support')) {
       $available["$assigned-$node->nid"] = array(0 => ' - '. t('not assigned') .' -') + $available["$assigned-$node->nid"];
     }
   }

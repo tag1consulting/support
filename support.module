@@ -530,6 +530,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
     switch ($op) {
       case 'view':
         // viewing a ticket
+        drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
         $breadcrumb = array();
         $breadcrumb[] = l(t('Home'), NULL);
         $breadcrumb[] = l(t('Support tickets'), 'support');

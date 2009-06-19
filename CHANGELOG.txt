@@ -1,6 +1,9 @@
 June 19th, 2009
  - support.module
     o bug #471752: fix 'can assign tickets to any user' permission
+ - support-tickets.css
+    o add some additional default styling to try and improve the "out of the
+      box" feel of the module
 
 June 17th, 2009
  - support.module

@@ -59,3 +59,40 @@
 .support tr.state-4 td.active {
   background-color: #e1e1e1
 }
+
+/* Theme ticket status/priority/client/assigned changes. */
+.support-state {
+  padding: 3px;
+  padding-left: 16px;
+  background: #edf4f9;
+  font-size: .85em;
+}
+.support-priority {
+  padding: 3px;
+  padding-left: 16px;
+  background: #edf4f9;
+  font-size: .85em;
+}
+.support-client {
+  padding: 3px;
+  padding-left: 16px;
+  background: #edf4f9;
+  font-size: .85em;
+}
+.support-assigned {
+  padding: 3px;
+  padding-left: 16px;
+  background: #edf4f9;
+  font-size: .85em;
+}
+
+/* Theme ticket id in ticket listing. */
+.ticket-id:before {
+  font-size: .95em;
+  color: #999;
+  content: '#';
+}
+.ticket-id {
+  font-size: .75em;
+}
+

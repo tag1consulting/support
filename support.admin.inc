@@ -313,6 +313,13 @@ function support_admin_settings() {
     '#options' => array(0 => t('always')) + drupal_map_assoc(array(5, 10, 15, 20, 25, 50, 75, 100, 250, 500, 750, 1000)),
     '#default_value' => variable_get('support_autocomplete_limit', 15),
   );
+  $form['general']['support_autoassign_ticket'] = array(
+    '#type' => 'radios',
+    '#title' => 'Autoassign ticket to',
+    '#description' => t('New tickets can either be assigned to nobody, or assigned to the user that created the ticket.'),
+    '#options' => array(t('Nobody'), t('The user that created the ticket')),
+    '#default_value' => variable_get('support_autoassign_ticket', 0),
+  );
 
   return system_settings_form($form);
 }

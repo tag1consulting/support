@@ -4,6 +4,8 @@ July 9th, 2009
       fully supports comment_upload module if enabled
     o bug #507968: remove double-encoding of certain text fields, patch thanks
       to court-jus.
+    o bug #501982: don't loose assigned user of new ticket when previewing and
+      assignment with an autocomplete textfield.
 
 June 19th, 2009
  - support.module

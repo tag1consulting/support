@@ -1591,13 +1591,24 @@ function support_status_form(&$form_state, $edit, $title) {
   else {
     $options = _support_assigned($node->assigned, $node, variable_get('support_autocomplete_limit', 15));
     if ($options === FALSE) {
-      $account = user_load(array('uid' => $node->assigned));
+      if (isset($node->assigned)) {
+        if (is_numeric($node->assigned)) {
+          $account = user_load(array('uid' => $node->assigned));
+          $assigned = $account->name;
+        }
+        else {
+          $assigned = $node->assigned;
+        }
+      }
+      else {
+        $assigned = '';
+      }
       $form['support']['assigned'] = array(
         '#type' => 'textfield',
         '#prefix' => '&nbsp;&nbsp',
         '#title' => t('Assigned'),
         '#autocomplete_path' => 'support/autocomplete/assigned/'. $node->client,
-        '#default_value' => isset($account->name) ? $account->name : '',
+        '#default_value' => $assigned,
         '#size' => '15',
       );
     }

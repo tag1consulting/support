@@ -1,3 +1,8 @@
+July 9th, 2009
+ - support.module
+    o feature: save attachments when creating/updating tickets from emails,
+      fully supports comment_upload module if enabled
+
 June 19th, 2009
  - support.module
     o bug #471752: fix 'can assign tickets to any user' permission

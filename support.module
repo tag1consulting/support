@@ -792,7 +792,7 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
 /**
  * Save the message.
  */
-function support_save_message($subject, $body, $from, $ticket, $client, $header = NULL) {
+function support_save_message($subject, $body, $attachments, $from, $ticket, $client, $header = NULL) {
   $account = support_account_load($from, $ticket, $subject, $client);
   $ticket = support_ticket_load($ticket);
 
@@ -830,6 +830,18 @@ function support_save_message($subject, $body, $from, $ticket, $client, $header 
     $comment['support_email'] = TRUE;
     comment_invoke_comment($comment, 'insert');
 
+    $fids = _support_save_attachments($attachments, $account);
+    if (is_array($fids)) {
+      foreach ($fids as $fid => $filename) {
+        if (module_exists('comment_upload')) {
+          db_query("INSERT INTO {comment_upload} (fid, nid, cid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $ticket->nid, $comment['cid'], $filename, 1, 0);
+        }
+        else {
+          db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $nid, $nid, $filename, 1, 0);
+        }
+      }
+    }
+
     // Add an entry to the watchdog log.
     watchdog('content', 'Comment: added %subject.', array('%subject' => $comment['subject']), WATCHDOG_NOTICE, l(t('view'), 'node/'. $comment['nid'], array('fragment' => 'comment-'. $comment['cid'])));
     _comment_update_node_statistics($comment['nid']);
@@ -854,7 +866,87 @@ function support_save_message($subject, $body, $from, $ticket, $client, $header 
     $node->support_email = TRUE;
     $node->language = $account->language;
     node_save($node);
+    $nid = db_last_insert_id('node', 'nid');
+
+    // Save/record attachments
+    $fids = _support_save_attachments($attachments, $account);
+    if (is_array($fids)) {
+      foreach ($fids as $fid => $filename) {
+        db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $nid, $nid, $filename, 1, 0);
+      }
+    }
   }
+}
+
+function _support_save_attachments($attachments, $account) {
+  $fids = array();
+  if (count($attachments)) {
+    foreach ($attachments as $attachment) {
+      if (is_array($attachment->parameters)) {
+        foreach ($attachment->parameters as $parm) {
+          switch(strtoupper($parm->attribute)) {
+            case 'NAME':
+            case 'FILENAME':
+              $attachment->filename = $parm->value;
+              break;
+          }
+        }
+      }
+      if ($attachment->type != TYPETEXT && is_array($attachment->dparameters)) {
+        foreach ($attachment->dparameters as $parm) {
+          switch(strtoupper($parm->attribute)) {
+            case 'NAME':
+            case 'FILENAME':
+              $attachment->filename = $parm->value;
+              break;
+          }
+        }
+      }
+      if (!isset($attachment->filename) || empty($attachment->filename)) {
+        $attachment->filename = 'noname';
+      }
+      $attachment->filepath = file_save_data($attachment->attachment, file_directory_path() .'/'. $attachment->filename);
+      if ($attachment->filepath) {
+        watchdog('support', 'Saved attachment %file.', array('%file' => $attachment->filename), WATCHDOG_INFO);
+        db_query("INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp) VALUES(%d, '%s', '%s', '%s', %d, %d, %d)", $account->uid, $attachment->filename, $attachment->filepath, $attachment->filemime, $attachment->bytes, 1, time());
+        $fid = db_last_insert_id('files', 'fid');
+        $fids[$fid] = $attachment->filename;
+      }
+      else {
+        watchdog('support', 'Failed to save attachment %file, file_save_data() returned error.', array('%file' => $attachment->filename));
+      }
+    }
+  }
+  return $fids;
+}
+
+
+/**
+ * Retrieve MIME type of the message structure.
+ */
+function _support_get_filemime(&$structure) {
+  static $primary_mime_type = array('TEXT', 'MULTIPART', 'MESSAGE', 'APPLICATION', 'AUDIO', 'IMAGE', 'VIDEO', 'OTHER');
+  $type_id = (int)$structure->type;
+  if (isset($primary_mime_type[$type_id]) && !empty($structure->subtype)) {
+    return $primary_mime_type[$type_id] .'/'. $structure->subtype;
+  }
+  return 'application/octet-stream';
+}
+
+function _support_get_attachments($stream, $message, $structure, $parts) {
+  $attachments = array();
+  for ($part = 2; $part <= $parts; $part++) {
+    $attachment = imap_fetchbody($stream, $message, $part);
+    $details = imap_bodystruct($stream, $message, $part);
+    if ($details->encoding != 0) {
+      // Non-text attachment, decode it.
+      $attachment = imap_base64($attachment);
+    }
+    $details->filemime = _support_get_filemime($details);
+    $details->attachment = $attachment;
+    $attachments[] = $details;
+  }
+  return $attachments;
 }
 
 function _support_get_message_body($stream, $message, $structure, $part = 1) {
@@ -2126,7 +2218,12 @@ function support_client_fetch($client, $manual = TRUE) {
     $structure = imap_fetchstructure($stream, $message);
     $body = _support_get_message_body($stream, $message, $structure);
 
-    $saved = support_save_message($subject, $body, $from, $ticket, $client, $header);
+    $parts = count($structure->parts);
+    if ($parts > 1) {
+      $attachments = _support_get_attachments($stream, $message, $structure, $parts);
+    }
+
+    $saved = support_save_message($subject, $body, $attachments, $from, $ticket, $client, $header);
 
     $messages_downloaded++;
 

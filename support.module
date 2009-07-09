@@ -907,7 +907,7 @@ function _support_save_attachments($attachments, $account) {
       }
       $attachment->filepath = file_save_data($attachment->attachment, file_directory_path() .'/'. $attachment->filename);
       if ($attachment->filepath) {
-        watchdog('support', 'Saved attachment %file.', array('%file' => $attachment->filename), WATCHDOG_INFO);
+        watchdog('support', 'Saved %size byte %type attachment %file to %path.', array('%size' => number_format($attachment->bytes), '%type' => $attachment->filemime, '%file' => $attachment->filename, '%path' => $attachment->filepath), WATCHDOG_INFO);
         db_query("INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp) VALUES(%d, '%s', '%s', '%s', %d, %d, %d)", $account->uid, $attachment->filename, $attachment->filepath, $attachment->filemime, $attachment->bytes, 1, time());
         $fid = db_last_insert_id('files', 'fid');
         $fids[$fid] = $attachment->filename;

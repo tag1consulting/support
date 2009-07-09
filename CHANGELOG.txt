@@ -1,4 +1,4 @@
-July 9th, 2009
+July 9th, 2009 (6.x-1.1-rc1)
  - support.module
     o feature: save attachments when creating/updating tickets from emails,
       fully supports comment_upload module if enabled
@@ -9,7 +9,7 @@ July 9th, 2009
     o feature #498812: allow admins to configure a secondary sort column
     o feature #496686: export client_name to notification emails
 
-June 19th, 2009
+June 19th, 2009 (6.x-1.0)
  - support.module
     o bug #471752: fix 'can assign tickets to any user' permission
     o feature #496320: add option allowing tickets to be auto-assigned to their

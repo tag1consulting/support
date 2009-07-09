@@ -2,6 +2,8 @@ July 9th, 2009
  - support.module
     o feature: save attachments when creating/updating tickets from emails,
       fully supports comment_upload module if enabled
+    o bug #507968: remove double-encoding of certain text fields, patch thanks
+      to court-jus.
 
 June 19th, 2009
  - support.module

@@ -507,7 +507,7 @@ function support_form(&$node) {
     '#type' => 'textfield',
     '#title' => check_plain($type->title_label),
     '#required' => TRUE,
-    '#default_value' => !empty($node->title) ? check_plain($node->title) : NULL,
+    '#default_value' => !empty($node->title) ? $node->title : NULL,
     '#weight' => -5,
   );
 
@@ -1952,7 +1952,7 @@ function _support_truncate($text, $maxlen = 64) {
   if (strlen($text) > $maxlen) {
     return substr($text, 0, $maxlen - 1) .'...';
   }
-  return check_plain($text);
+  return $text;
 }
 
 /**

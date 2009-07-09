@@ -2035,6 +2035,28 @@ function support_page($client = NULL, $state = NULL) {
   }
   $sql = db_rewrite_sql($sql);
   $sql .= tablesort_sql($header);
+  switch (variable_get('support_secondary_sort_order', 0)) {
+    case 0:
+      $order = 'ASC';
+      break;
+    case 1:
+      $order = 'DESC';
+      break;
+  }
+  switch (variable_get('support_secondary_sort_tickets', 0)) {
+    case 1:
+      $sql .= ", last_updated $order";
+      break;
+    case 2:
+      $sql .= ", n.nid $order";
+      break;
+    case 3:
+      $sql .= ", t.state $order";
+      break;
+    case 4:
+      $sql .= ", t.priority $order";
+      break;
+  }
   $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {comments} c ON n.nid = c.nid AND (c.status = %d OR c.status IS NULL) LEFT JOIN {support_ticket} t ON n.nid = t.nid WHERE n.status = 1 AND client = $client $state $my_open";
   $sql_count = db_rewrite_sql($sql_count);
   $result = pager_query($sql, 50, 0, $sql_count);

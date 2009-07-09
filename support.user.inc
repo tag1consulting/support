@@ -49,10 +49,31 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       $sql .= " AND n.uid = $user->uid";
     }
     $sql = db_rewrite_sql($sql);
+    $sql .= tablesort_sql($header);
+    switch (variable_get('support_secondary_sort_order', 0)) {
+      case 0:
+        $order = 'ASC';
+        break;
+      case 1:
+        $order = 'DESC';
+        break;
+    }
+    switch (variable_get('support_secondary_sort_tickets', 0)) {
+      case 1:
+        $sql .= ", last_updated $order";
+        break;
+      case 2:
+        $sql .= ", n.nid $order";
+        break;
+      case 3:
+        $sql .= ", t.state $order";
+        break;
+      case 4:
+        $sql .= ", t.priority $order";
+        break;
+    }
     $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND t.assigned = $user->uid $state";
     $sql_count = db_rewrite_sql($sql_count);
-
-    $sql .= tablesort_sql($header);
     $result = pager_query($sql, 50, 0, $sql_count);
   }
   $row = 0;

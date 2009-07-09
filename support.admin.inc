@@ -320,6 +320,20 @@ function support_admin_settings() {
     '#options' => array(t('Nobody'), t('The user that created the ticket')),
     '#default_value' => variable_get('support_autoassign_ticket', 0),
   );
+  $form['general']['support_secondary_sort_tickets'] = array(
+    '#type' => 'radios',
+    '#title' => 'Secondary sort column',
+    '#description' => t('Ticket views are sorted by clicking on the title of any given column.  This option allows you to set a secondary sort column.  For example, you can sort tickets by priority, and configure the secondary sort field here to sort all tickets of the same priority by node id. For best performance, do not set a secondary sort column.'),
+    '#options' => array(t('None'), t('Last update'), t('Node ID'), t('State'), t('Priority')),
+    '#default_value' => variable_get('support_secondary_sort_tickets', 0),
+  );
+  $form['general']['support_secondary_sort_order'] = array(
+    '#type' => 'radios',
+    '#title' => 'Secondary sort order',
+    '#description' => t('If specifying a secondary sort column, you can also specify a secondary sort order.'),
+    '#options' => array(t('Ascending'), t('Descending')),
+    '#default_value' => variable_get('support_secondary_sort_order', 0),
+  );
 
   return system_settings_form($form);
 }

@@ -6,6 +6,7 @@ July 9th, 2009
       to court-jus.
     o bug #501982: don't loose assigned user of new ticket when previewing and
       assignment with an autocomplete textfield.
+    o feature #498812: allow admins to configure a secondary sort column
 
 June 19th, 2009
  - support.module

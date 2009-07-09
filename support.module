@@ -727,6 +727,7 @@ function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
   $reset = FALSE;
   $comment = _comment_load($cid);
   $update_account = $comment->uid ? user_load($comment->uid) : user_load($node->uid);
+  $client = support_client_load($node->client);
   $ticket_unsubscribe_key = md5($account->uid . $node->nid);
   $all_unsubscribe_key = md5($account->uid);
   $previous_comment = db_result(db_query_range('SELECT cid FROM {comments} WHERE nid = %d ORDER BY cid DESC', $nid, 1, 1));
@@ -735,6 +736,8 @@ function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
   }
   $tokens = array(
     '!username' => $account->name,
+    '!client_name' => $client->name,
+    '!client_path' => $client->path,
     '!key' => '['. variable_get('support_key', 'tkt') .":$nid]",
     '!update_username' => $update_account->name,
     '!site' => variable_get('site_name', 'Drupal'),

@@ -1,3 +1,7 @@
+July 16th, 2009
+ - support.module
+    o allow admins to be autosubscribed to any client tickets
+
 July 9th, 2009 (6.x-1.1-rc1)
  - support.module
     o feature: save attachments when creating/updating tickets from emails,

@@ -189,7 +189,7 @@ function support_admin_client_validate($form, &$form_state) {
       if (!is_object($account) || !$account->uid) {
         form_set_error('autosubscribe', t('User %username does not exist.', array('%username' => $name)));
       }
-      else if (!user_access('access '. $form_state['values']['name'] .' tickets', $account)) {
+      else if (!user_access('access '. $form_state['values']['name'] .' tickets', $account) && !user_access('administer support')) {
         form_set_error('autosubscribe', t('User %username does not have permission to access %client tickets.', array('%username' => $name, '%client' => $form_state['values']['name'])));
       }
     }

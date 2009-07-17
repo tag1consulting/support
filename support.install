@@ -97,12 +97,10 @@ function support_schema() {
       'domains' => array(
         'type' => 'text',
         'size' => 'big',
-        'default' => '',
       ),
       'notes' => array(
         'type' => 'text',
         'size' => 'big',
-        'default' => '',
       ),
     ),
     'primary key' => array('clid'),

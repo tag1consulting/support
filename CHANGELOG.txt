@@ -1,3 +1,7 @@
+July 17th, 2009
+ - support.install
+    o bug #515346: can't define a default value for TEXT fields
+
 July 16th, 2009
  - support.module
     o allow admins to be autosubscribed to any client tickets

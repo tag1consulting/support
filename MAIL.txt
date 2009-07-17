@@ -63,6 +63,8 @@ Supported tokens:
  !key: the [tkt:#] format key identifying the ticket.
  !update_username: the name of the user who created/updated the ticket.
  !site: the name of your website.
+ !client_name: the name of the client the ticket is assigned to
+ !client_path: the path name of the client the ticket is assigned to
  !uri: the fully qualified base path to your website.
  !uri_brief: The base path to your website without http:// or https://.
  !mailto: The email address receiving the notification.

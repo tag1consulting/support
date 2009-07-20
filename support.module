@@ -2000,6 +2000,8 @@ function support_page($client = NULL, $state = NULL) {
     }
   }
 
+  $output = l(t('Post new support ticket'), 'node/add/support-ticket');
+
   drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
 
   if (!$state) {
@@ -2082,7 +2084,8 @@ function support_page($client = NULL, $state = NULL) {
       array('data' => _support_priorities($ticket->priority), 'class' => 'ticket-priority'),
       array('data' => $comments)), 'class' => "state-$ticket->state priority-$ticket->priority");
   }
-  return theme('table', $header, $rows, array('class' => 'support')) . theme('pager');
+  $output .= theme('table', $header, $rows, array('class' => 'support')) . theme('pager');
+  return $output;
 }
 
 /**

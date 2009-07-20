@@ -1,5 +1,9 @@
+July 20th, 2009
+ - support.module
+    o feature #515760: display 'post new support ticket' on ticket listings
+
 July 17th, 2009
- - support.install
+ - support.install (6.x-1.1)
     o bug #515346: can't define a default value for TEXT fields
 
 July 16th, 2009

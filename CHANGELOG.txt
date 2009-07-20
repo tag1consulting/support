@@ -1,6 +1,8 @@
 July 20th, 2009
  - support.module
     o feature #515760: display 'post new support ticket' on ticket listings
+    o feature #525180: provide interface for moving ticket to be an update of
+      another ticket
 
 July 17th, 2009
  - support.install (6.x-1.1)

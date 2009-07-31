@@ -3,6 +3,7 @@ July 31st, 2009
     o bug #536398: fix typo, Prioriy -> Priority. Patch thanks to niebegeg.net.
  - support.module
     o bug #534178: add missing calls to t() to better support translations
+    o feature #531138: only add [##:HEX] to emails sent for integrated clients
 
 July 20th, 2009
  - support.module

@@ -737,10 +737,16 @@ function support_mail($key, &$message, $params) {
   $variables = support_mail_tokens($params['account'], $language, $params['nid'], $params['cid'], $params['suppress']);
   $message['subject'] .= _support_mail_text($key .'_subject', $language, $variables, $params['integrate_email']);
   $message['body'] = _support_mail_text($key .'_body', $language, $variables, $params['integrate_email']);
-  $array = explode("\n", $message['body']);
-  $length = sizeof($array);
-  $md5 = md5($length);
-  $message['body'] .= "\n\n[$length:$md5]\n";
+  $node = node_load($params['nid']);
+  $client = support_client_load($node->client);
+  if ($client->integrate_email) {
+    // Add a string allowing the support module to try and strip previously
+    // quoted ticket notifications from emailed replies.
+    $array = explode("\n", $message['body']);
+    $length = sizeof($array);
+    $md5 = md5($length);
+    $message['body'] .= "\n\n[$length:$md5]\n";
+  }
 }
 
 function _support_node_move($node, $destination) {

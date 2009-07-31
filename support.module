@@ -956,7 +956,7 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
           db_query("INSERT INTO {comment_upload} (fid, nid, cid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $ticket->nid, $comment['cid'], $filename, 1, 0);
         }
         else {
-          db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $ticket->nid, $ticket->nid, $filename, 1, 0);
+          db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $ticket->nid, $ticket->vid, $filename, 1, 0);
         }
       }
     }
@@ -990,7 +990,7 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
     $fids = _support_save_attachments($attachments, $account);
     if (is_array($fids)) {
       foreach ($fids as $fid => $filename) {
-        db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $node->nid, $node->nid, $filename, 1, 0);
+        db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $node->nid, $node->vid, $filename, 1, 0);
       }
     }
   }

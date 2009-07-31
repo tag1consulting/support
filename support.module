@@ -712,19 +712,19 @@ function support_comment_view(&$comment) {
   if ($assigned != $current->assigned) {
     $previous_account = user_load(array('uid' => $assigned));
     $current_account = user_load(array('uid' => $current->assigned));
-    $comment->comment = '<div class="support-assigned">Assigned: '. ($previous_account->name ? $previous_account->name : '<em>'. t('unassigned') .'</em>') .' -> '. ($current_account->name ? $current_account->name : '<em>'. t('unassigned') .'</em>') ."</div>\n". $comment->comment;
+    $comment->comment = '<div class="support-assigned">'. t('Assigned') .': '. ($previous_account->name ? $previous_account->name : '<em>'. t('unassigned') .'</em>') .' -> '. ($current_account->name ? $current_account->name : '<em>'. t('unassigned') .'</em>') ."</div>\n". $comment->comment;
     $assigned = $current->assigned;
   }
   if ($client != $current->client) {
-    $comment->comment = '<div class="support-client">Client: '. _support_client($client) .' -> '. _support_client($current->client) ."</div>\n". $comment->comment;
+    $comment->comment = '<div class="support-client">'. t('Client') .': '. _support_client($client) .' -> '. _support_client($current->client) ."</div>\n". $comment->comment;
     $client = $current->client;
   }
   if ($state != $current->state) {
-    $comment->comment = '<div class="support-state">State: '. _support_state($state) .' -> '. _support_state($current->state) ."</div>\n" . $comment->comment;
+    $comment->comment = '<div class="support-state">'. t('State') .': '. _support_state($state) .' -> '. _support_state($current->state) ."</div>\n" . $comment->comment;
     $state = $current->state;
   }
   if ($priority != $current->priority) {
-    $comment->comment = '<div class="support-priority">Priority: '. _support_priorities($priority) .' -> '. _support_priorities($current->priority) ."</div>\n" . $comment->comment;
+    $comment->comment = '<div class="support-priority">'. t('Priority') .': '. _support_priorities($priority) .' -> '. _support_priorities($current->priority) ."</div>\n" . $comment->comment;
     $priority = $current->priority;
   }
 }

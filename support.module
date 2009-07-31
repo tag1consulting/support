@@ -989,6 +989,8 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
     // Save/record attachments
     $fids = _support_save_attachments($attachments, $account);
     if (is_array($fids)) {
+      // Refresh node to be sure we have the correct vid when saving attachments
+      $node = node_load($node->nid);
       foreach ($fids as $fid => $filename) {
         db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $node->nid, $node->vid, $filename, 1, 0);
       }

@@ -97,3 +97,39 @@
    clients and client tickets, and automatically have all support permissions
    available to them.
 
+--------
+Optional
+--------
+
+Comment Upload:
+---------------
+If you would like to be able to attach files to support ticket updates, you
+can install the comment_upload module:
+  http://drupal.org/project/comment_upload
+Once the module is enabled, visit "Administer >> User management >> Permissions"
+and grant "upload files to commnts" and "view files uploaded to comments" to all
+roles that should be allowed to attach files to support tickets.  Finally, visit
+"Administer >> Content management >> Content types" and click "Support ticket".
+In the "Comment settings" section enable "Attachments on comments".
+
+Support Timer:
+--------------
+If you would like to enhance the support ticket system to also be a time tracker
+you can install the support_timer module:
+  http://drupal.org/project/support_timer
+(This project seeks one or more co-maintainers.)
+
+Support Nag:
+------------
+If you would like the support ticket system to remind users about open tickets,
+and to automatically update the status of old tickets, you can install the
+support_nag module:
+  http://drupal.org/project/support_nag
+(This project seeks one or more co-maintainers.)
+
+Support SMS:
+------------
+If you would like to schedule SMS notifications to be sent for tickets, you can
+install the support_sms module:
+  http://drupal.org/project/support_sms
+(This project seeks one or more co-maintainers.)

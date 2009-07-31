@@ -5,6 +5,8 @@ July 31st, 2009
     o bug #534178: add missing calls to t() to better support translations
     o feature #531138: only add [##:HEX] to emails sent for integrated clients
     o bug #531074: properly save attachments sent via integrated email
+    o feature #515982: add update_realname token for displaying a user's real
+      name in ticket notifications, based on patch by roball.
 
 July 20th, 2009
  - support.module

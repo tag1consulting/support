@@ -835,7 +835,7 @@ function _support_node_move($node, $destination) {
  * Return an array of token to value mappings for support e-mail messages.
  */
 function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
-  global $base_url;
+  global $base_url, $user;
   static $reset = TRUE;
   // force reload node from database to get updated state/priority information,
   // but no need to reset it multiple times when sending multiple notifications
@@ -856,6 +856,7 @@ function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
     '!client_path' => $client->path,
     '!key' => '['. variable_get('support_key', 'tkt') .":$nid]",
     '!update_username' => $update_account->name,
+    '!update_realname' => theme('username', $user, array('plain' => TRUE)),
     '!site' => variable_get('site_name', 'Drupal'),
     '!uri' => $base_url,
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),

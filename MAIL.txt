@@ -61,7 +61,9 @@ Support module.
 Supported tokens:
  !username: the name of the user who is receiving the notification.
  !key: the [tkt:#] format key identifying the ticket.
- !update_username: the name of the user who created/updated the ticket.
+ !update_username: the username of the user who created/updated the ticket.
+ !update_realname: the real name of the user who created/updated the ticket if
+                   defined, otherwise it will display the username.
  !site: the name of your website.
  !client_name: the name of the client the ticket is assigned to
  !client_path: the path name of the client the ticket is assigned to

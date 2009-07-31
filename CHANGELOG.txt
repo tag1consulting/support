@@ -4,6 +4,7 @@ July 31st, 2009
  - support.module
     o bug #534178: add missing calls to t() to better support translations
     o feature #531138: only add [##:HEX] to emails sent for integrated clients
+    o bug #531074: properly save attachments sent via integrated email
 
 July 20th, 2009
  - support.module

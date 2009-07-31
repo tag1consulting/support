@@ -24,7 +24,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     array('data' => t('Updated'), 'field' => 'last_updated', 'sort' => 'desc'),
     array('data' => t('Reported by'), 'field' => 'n.uid'),
     array('data' => t('State'), 'field' => 't.state'),
-    array('data' => t('Prioriy'), 'field' => 't.priority'),
+    array('data' => t('Priority'), 'field' => 't.priority'),
     array('data' => t('Updates'), 'field' => 'l.comment_count'),
   );
 

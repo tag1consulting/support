@@ -1,3 +1,7 @@
+July 31st, 2009
+ - support.user.inc
+    o bug #536398: fix typo, Prioriy -> Priority. Patch thanks to niebegeg.net.
+
 July 20th, 2009
  - support.module
     o feature #515760: display 'post new support ticket' on ticket listings

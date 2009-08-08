@@ -611,7 +611,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           // auto-subscribe ticket creator
           support_subscribe_user($node->nid, $node->uid, $node->notification);
           // generate notification emails
-          support_notification(0, $node->nid, 'ticket_new', $node->suppress);
+          support_notification(array(), $node->nid, 'ticket_new', $node->suppress);
         }
         cache_clear_all();
         break;
@@ -674,7 +674,7 @@ function support_comment(&$comment, $op) {
           support_subscribe_user($comment['nid'], $comment['assigned']);
         }
         // generate notification emails
-        support_notification($comment['cid'], $comment['nid'], 'ticket_comment_new', $comment['suppress']);
+        support_notification($comment, $comment['nid'], 'ticket_comment_new', $comment['suppress']);
       }
       // if admin, can update who is assignd to the ticket
       if (user_access('administer support') && !$comment['support_email']) {
@@ -734,7 +734,7 @@ function support_comment_view(&$comment) {
  */
 function support_mail($key, &$message, $params) {
   $language = $message['language'];
-  $variables = support_mail_tokens($params['account'], $language, $params['nid'], $params['cid'], $params['suppress']);
+  $variables = support_mail_tokens($params['account'], $language, $params['nid'], $params['comment'], $params['suppress']);
   $message['subject'] .= _support_mail_text($key .'_subject', $language, $variables, $params['integrate_email']);
   $message['body'] = _support_mail_text($key .'_body', $language, $variables, $params['integrate_email']);
   $node = node_load($params['nid']);
@@ -834,15 +834,21 @@ function _support_node_move($node, $destination) {
 /**
  * Return an array of token to value mappings for support e-mail messages.
  */
-function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
+function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
   global $base_url, $user;
   static $reset = TRUE;
   // force reload node from database to get updated state/priority information,
   // but no need to reset it multiple times when sending multiple notifications
   $node = node_load($nid, NULL, $reset);
   $reset = FALSE;
-  $comment = _comment_load($cid);
-  $update_account = $comment->uid ? user_load($comment->uid) : user_load($node->uid);
+  if (isset($comment['cid'])) {
+    $cid = $comment['cid'];
+    $update_account = user_load($comment['uid']);
+  }
+  else {
+    $cid = 0;
+    $update_account = user_load($node->uid);
+  }
   $client = support_client_load($node->client);
   $ticket_unsubscribe_key = md5($account->uid . $node->nid);
   $all_unsubscribe_key = md5($account->uid);
@@ -863,10 +869,10 @@ function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
     '!mailto' => $account->mail,
     '!date' => format_date(time(), 'medium', '', NULL, $language->language),
     '!ticket_subject' => check_plain($node->title),
-    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') : drupal_html_to_text(check_markup($node->body)),
+    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') : drupal_html_to_text(check_markup($node->body) . _support_mail_list_attachments($node, $comment)),
     '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid")),
     '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form")),
-    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') : drupal_html_to_text(check_markup($comment->comment)),
+    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') : drupal_html_to_text(check_markup($comment['comment']) . _support_mail_list_attachments($node, $comment)),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) .' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) .' -> ' : '') . _support_priorities($node->priority),
     '!unsubscribe_ticket' => url("support/$nid/unsubscribe/$account->uid/$ticket_unsubscribe_key", array('absolute' => TRUE, 'language' => $language)),
@@ -876,6 +882,24 @@ function support_mail_tokens($account, $language, $nid, $cid, $suppress) {
     $tokens['!password'] = $account->password;
   }
   return $tokens;
+}
+
+/**
+ * List all ticket attachments associated with this update, if any.
+ */
+function _support_mail_list_attachments($node, $comment) {
+  $attachments = array();
+  if (empty($comment) && is_object($node) && is_array($node->files)) {
+    foreach ($node->files as $fid => $file) {
+      $attachments[] = url($file->filepath, array('absolute' => TRUE));
+    }
+  }
+  else if (!empty($comment) && is_array($comment['files'])) {
+    foreach ($comment['files'] as $fid => $file) {
+      $attachments[] = url($file['filepath'], array('absolute' => TRUE));
+    }
+  }
+  return (!empty($attachments) ?  "<br />" . t('Attachments:') ."<br />" . implode("<br />", $attachments) : '');
 }
 
 /**
@@ -900,11 +924,11 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
       case 'ticket_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_new_body':
-        return t("!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
+        return t("!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
       case 'ticket_comment_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_comment_new_body':
-        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
+        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
     }
   }
 }
@@ -1179,13 +1203,13 @@ function _support_autosubscribe($nid, $client) {
 /**
  * Send notification emails to everyone subscribed to the updated ticket.
  */
-function support_notification($cid, $nid, $op = 'ticket_comment_new', $suppress = FALSE) {
+function support_notification($comment = array(), $nid, $op = 'ticket_comment_new', $suppress = FALSE) {
   $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $nid);
   while ($account = db_fetch_object($result)) {
     $account = user_load(array('uid' => $account->uid));
     // always send emails to admins, even if update was suppressed
     if (!$suppress || user_access('administer support', $account)) {
-      _support_mail_notify($op, $account, $cid, $nid, $suppress);
+      _support_mail_notify($op, $account, $comment, $nid, $suppress);
     }
   }
 }
@@ -1193,13 +1217,19 @@ function support_notification($cid, $nid, $op = 'ticket_comment_new', $suppress 
 /**
  * Use drupal_mail to send email.
  */
-function _support_mail_notify($op, $account, $cid = NULL, $nid = NULL, $suppress = FALSE, $language = NULL) {
+function _support_mail_notify($op, $account, $comment = array(), $nid = NULL, $suppress = FALSE, $language = NULL) {
   $notify = variable_get('support_mail_'. $op .'_notify', TRUE);
   if ($notify) {
     $node = node_load($nid);
     $params['account'] = $account;
     $params['nid'] = $nid;
-    $params['cid'] = $cid;
+    if (isset($comment['cid'])) {
+      $params['cid'] = $cid;
+      $params['comment'] = $comment;
+    }
+    else {
+      $params['cid'] = 0;
+    }
     $params['suppress'] = $suppress;
     $language = $language ? $language : user_preferred_language($account);
     $params['integrate_email'] = db_result(db_query('SELECT integrate_email FROM {support_client} WHERE clid = %d', $node->client));

@@ -300,6 +300,10 @@ function support_help($path, $arg) {
       break;
     case 'admin/support/settings':
       $output = '<p>'. t('Global settings for the support module.') .'</p>';
+      break;
+    default:
+      $output = '';
+      break;
   }
   return $output;
 }

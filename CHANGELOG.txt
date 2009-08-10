@@ -1,3 +1,7 @@
+August 10th, 2009
+ - support.module
+    o bug #544202: initialize $output variable
+
 August 8th, 2009
  - support.module
     o feature #542936: add links to attachments in notification emails

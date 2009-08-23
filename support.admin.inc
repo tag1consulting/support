@@ -147,6 +147,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#type' => 'textfield',
     '#title' => t('Auto-subscribe'),
     '#autocomplete_path' => $path,
+    '#maxlength' => 2048,
     '#default_value' => !empty($client->autosubscribe) ? $client->autosubscribe : '',
     '#description' => t('Enter one or more comma-seperated usernames to auto-subscribe to !client issues.  These users will receive email notifications for all new tickets and ticket updates for this client.', array('!client' => $client->name)),
   );

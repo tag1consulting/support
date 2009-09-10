@@ -1,0 +1,228 @@
+<?php
+
+/**
+* @file 
+* Support charting.
+* @author Jeremy Andrews <jeremy@tag1consulting.com>
+* @package Support
+*/
+ 
+/**
+* Implementation of hook_perm();
+*/
+function support_charts_perm() {
+  return array('access support charts');
+}
+  
+/**
+* Implementation of hook_menu().
+*/  
+function support_charts_menu() {
+  $items = array();
+  
+  $items['admin/support/charts'] = array(
+    'title' => 'Charts',
+    'page callback' => 'support_charts',
+    'page arguments' => array('global'),
+    'access arguments' => array('access support charts'),
+  ); 
+  $items['admin/support/charts/global'] = array(
+    'title' => 'Global',
+    'page callback' => 'system_charts',
+    'page arguments' => array('global'),
+    'access arguments' => array('access support charts'),
+    'type' => MENU_DEFAULT_LOCAL_TASK, 
+  );
+
+  return $items;
+}
+
+/**     
+* Page callback.
+*/
+function support_charts($page = 'global') {
+  return '<div id="support-charts">' . support_charts_display($page) . '</div>';
+}
+
+/**
+* Display charts and content in context to the current page.
+* 
+* @return string
+*   markup, chart images.
+*/
+function support_charts_display($page = 'global') {
+  $output = '';
+
+  switch ($page) {
+    case 'global':
+      $output .= support_charts_build_pie('tickets_open'); 
+      $output .= support_charts_build_pie('tickets_per_state'); 
+      $output .= support_charts_build_pie('tickets_per_priority'); 
+      $output .= support_charts_build_pie('tickets_per_client'); 
+      $output .= support_charts_build_pie('tickets_per_assigned'); 
+      $output .= support_charts_build_graph('tickets_created');
+      $output .= support_charts_build_graph('tickets_updated');
+      $output .= support_charts_build_graph('tickets_closed');
+      break;
+  }
+                                
+  return $output;
+}
+
+/**
+ * Gather data and build a chart API structure.
+ * 
+ * @return array
+ *   chart API structure.
+ */
+function support_charts_build_pie($type) {
+  $chart = array();                                      
+  $chart['#type'] = CHART_TYPE_PIE;
+  $chart['#size'] = chart_size(600, 350); 
+
+  switch ($type) {
+    case 'tickets_open':
+      $chart['#title'] = t('Open tickets');
+      $chart['#chart_id'] = 'tickets_open';
+
+      $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label, s.isclosed FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid GROUP BY s.isclosed ORDER BY s.isclosed');
+      break;
+
+    case 'tickets_per_state':
+      $chart['#title'] = t('Open tickets per state');
+      $chart['#chart_id'] = 'tickets_per_state';
+
+      $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY s.state ORDER BY s.state');
+      break;
+
+    case 'tickets_per_priority':
+      $chart['#title'] = t('Open tickets per priority');
+      $chart['#chart_id'] = 'tickets_per_priority';
+
+      $result = db_query('SELECT COUNT(t.nid) AS count, p.priority as label FROM {support_ticket} t LEFT JOIN {support_priority} p ON t.priority = p.pid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY t.priority ORDER BY t.priority');
+      break;
+
+    case 'tickets_per_client':
+      $chart['#title'] = t('Open tickets per client');
+      $chart['#chart_id'] = 'tickets_per_client';
+
+      $result = db_query('SELECT COUNT(t.nid) AS count, c.name as label FROM {support_ticket} t LEFT JOIN {support_client} c ON t.client = c.clid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY t.client ORDER BY t.client');
+      break;
+
+    case 'tickets_per_assigned':
+      $chart['#title'] = t('Assigned open tickets');
+      $chart['#chart_id'] = 'tickets_per_assigned';
+
+      $result = db_query('SELECT COUNT(t.nid) AS count, u.name as label FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY t.assigned ORDER BY t.assigned');
+      break;
+  }
+
+  while ($data = db_fetch_object($result)) {
+    if ($type == 'tickets_open') {
+      if ($data->isclosed) {
+        $label = t('closed');
+      }
+      else {
+        $label = t('open');
+      }
+    }
+    else if ($type == 'tickets_per_assigned') {
+      if (empty($data->label)) {
+        $label = t('Not assigned');
+      }
+      else {
+        $label = $data->label;
+      }
+    }
+    else {
+      $label = isset($data->label) ? $data->label : t('unknown');
+    }
+    $chart['#data'][] = $data->count;
+    $chart['#labels'][] = "$label: $data->count";
+    $chart['#data_colors'][] = chart_unique_color($label);
+  }
+  
+  return chart_render($chart);  
+}
+
+/**
+ * Gather data and build a chart API structure.
+ * 
+ * @return array
+ *   chart API structure.
+ */
+function support_charts_build_graph($type) {
+  $chart = array();                                      
+  $chart['#type'] = CHART_TYPE_LINE;
+  $chart['#size'] = chart_size(620, 250);
+  $chart['#grid_lines'] = chart_grid_lines(25, 9.5, 1, 3);
+  $chart['#adjust_resolution'] = TRUE;
+
+  $now = (isset($_GET['year']) && isset($_GET['month'])) ? mktime(0, 0, 0, $_GET['month'], 30, $_GET['year']) : time();
+
+  switch ($type) {
+    case 'tickets_created':
+      $chart['#title'] = chart_title(t('Tickets created in !date', array('!date' => date('F Y', $now))));
+      $chart['#chart_id'] = $type;
+
+      $result = db_query("SELECT created AS timestamp FROM {node} WHERE type = 'support_ticket' AND created < %d AND created > %d ORDER BY created", $now, mktime(0, 0, 0, date('m', $now), 1, date('Y', $now)));
+      break;
+
+    case 'tickets_updated':
+      $chart['#title'] = chart_title(t('Tickets updated in !date', array('!date' => date('F Y', $now))));
+      $chart['#chart_id'] = $type;
+
+      $time = mktime(0, 0, 0, date('m', $now), 1, date('Y', $now));
+      $result = db_query("SELECT GREATEST(n.changed, l.last_comment_timestamp) AS timestamp FROM {node} n LEFT JOIN {node_comment_statistics} l ON n.nid = l.nid WHERE n.type = 'support_ticket' AND (n.changed < %d OR l.last_comment_timestamp < %d) AND (n.changed > %d OR l.last_comment_timestamp > %d) ORDER BY timestamp", $now, $now, $time, $time);
+      break;
+
+    case 'tickets_closed':
+      $chart['#title'] = chart_title(t('Tickets closed in !date', array('!date' => date('F Y', $now))));
+      $chart['#chart_id'] = $type;
+
+      $time = mktime(0, 0, 0, date('m', $now), 1, date('Y', $now));
+      $result = db_query("SELECT GREATEST(n.changed, l.last_comment_timestamp) AS timestamp FROM {node} n LEFT JOIN {node_comment_statistics} l ON n.nid = l.nid LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = TRUE AND n.type = 'support_ticket' AND (n.changed < %d OR l.last_comment_timestamp < %d) AND (n.changed > %d OR l.last_comment_timestamp > %d) ORDER BY timestamp", $now, $now, $time, $time);
+      break;
+  }
+
+  $max = array();
+  $counts = array();
+  $types = array();
+ 
+  while ($data = db_fetch_object($result)) {
+    $day = ltrim(date('d', $data->timestamp), '0');
+    $types[$data->type] = $data->type;
+    $counts[$day][$data->type]++;
+    $max[$data->type]++;
+  }
+
+  // Generate data and labels
+  if (count($counts) && count($types)) {
+    for($i = 0; $i <= date('d', $now); $i++) {
+      $chart['#labels'][] = $i;
+
+      foreach ($types as $type) {
+        if ($counts[$i][$type]) {
+          $chart['#data'][$type][] = $counts[$i][$type];   
+        }
+        else {
+          $chart['#data'][$type][] = '0';
+        }
+      }
+    }
+  }          
+
+  // Data colors, legends, line styles, and labels
+  if (count($types)) {
+    foreach($types as $type) {
+      $chart['#data_colors'][] = chart_unique_color($type);
+      $chart['#legends'][] = $type; 
+      $chart['#line_styles'][] = chart_line_style(2);
+    }
+  }  
+
+  $max = count($max) ? max($max) : 0;
+  $chart['#mixed_axis_labels'][CHART_AXIS_Y_LEFT][0][] = chart_mixed_axis_range_label(0, $max);
+  return chart_render($chart);
+}
+

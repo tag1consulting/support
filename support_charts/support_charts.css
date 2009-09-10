@@ -1,0 +1,20 @@
+/**
+* Support Charts 
+*/
+#support-charts {
+  margin: 15px;
+}
+
+/**
+* @group overview sections 
+*/
+#support-charts .support-chart-section {
+  margin: 25px 0;
+}
+
+/**
+* @group charts 
+*/
+#support-charts img {
+  margin: 25px 5px;
+}

@@ -1,0 +1,6 @@
+name = Support Charting
+description = Charting for the helpdesk and support ticketing system.
+package = Support
+dependencies[] = support
+dependencies[] = chart
+core = 6.x

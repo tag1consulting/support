@@ -1,3 +1,8 @@
+September 10th, 2009
+ - support_charts.module
+    o feature #565018: add basic reporting functionality using Google's chart
+      API, dependent on the chart module
+
 August 23rd, 2009
  - support.admin.inc
     o increase allowed length of autosubscribe field, as is a text field in

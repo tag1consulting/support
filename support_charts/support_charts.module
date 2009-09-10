@@ -85,35 +85,35 @@ function support_charts_build_pie($type) {
       $chart['#title'] = t('Open tickets');
       $chart['#chart_id'] = 'tickets_open';
 
-      $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label, s.isclosed FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid GROUP BY s.isclosed ORDER BY s.isclosed');
+      $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label, s.isclosed FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 GROUP BY s.isclosed ORDER BY s.isclosed');
       break;
 
     case 'tickets_per_state':
       $chart['#title'] = t('Open tickets per state');
       $chart['#chart_id'] = 'tickets_per_state';
 
-      $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY s.state ORDER BY s.state');
+      $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE GROUP BY s.state ORDER BY s.state');
       break;
 
     case 'tickets_per_priority':
       $chart['#title'] = t('Open tickets per priority');
       $chart['#chart_id'] = 'tickets_per_priority';
 
-      $result = db_query('SELECT COUNT(t.nid) AS count, p.priority as label FROM {support_ticket} t LEFT JOIN {support_priority} p ON t.priority = p.pid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY t.priority ORDER BY t.priority');
+      $result = db_query('SELECT COUNT(t.nid) AS count, p.priority as label FROM {support_ticket} t LEFT JOIN {support_priority} p ON t.priority = p.pid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE GROUP BY t.priority ORDER BY t.priority');
       break;
 
     case 'tickets_per_client':
       $chart['#title'] = t('Open tickets per client');
       $chart['#chart_id'] = 'tickets_per_client';
 
-      $result = db_query('SELECT COUNT(t.nid) AS count, c.name as label FROM {support_ticket} t LEFT JOIN {support_client} c ON t.client = c.clid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY t.client ORDER BY t.client');
+      $result = db_query('SELECT COUNT(t.nid) AS count, c.name as label FROM {support_ticket} t LEFT JOIN {support_client} c ON t.client = c.clid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE GROUP BY t.client ORDER BY t.client');
       break;
 
     case 'tickets_per_assigned':
       $chart['#title'] = t('Assigned open tickets');
       $chart['#chart_id'] = 'tickets_per_assigned';
 
-      $result = db_query('SELECT COUNT(t.nid) AS count, u.name as label FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = FALSE GROUP BY t.assigned ORDER BY t.assigned');
+      $result = db_query('SELECT COUNT(t.nid) AS count, u.name as label FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE GROUP BY t.assigned ORDER BY t.assigned');
       break;
   }
 

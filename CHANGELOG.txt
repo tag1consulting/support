@@ -2,6 +2,8 @@ September 10th, 2009
  - support.module
     o feature #511940: add ability to auto-assign tickets to a specific user on
       creation, globally and/or per-client
+    o bug #571600: don't show support admin menus unless user has 'administer
+      support' permissions
 
 September 10th, 2009
  - support_charts.module

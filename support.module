@@ -145,7 +145,7 @@ function support_menu() {
     'position' => 'right',
     'weight' => 5,
     'page callback' => 'support_admin_menu_block_page',
-    'access arguments' => array('access administration pages'),
+    'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
   $items['admin/support/clients'] = array(

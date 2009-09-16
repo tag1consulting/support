@@ -151,6 +151,13 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#default_value' => !empty($client->autosubscribe) ? $client->autosubscribe : '',
     '#description' => t('Enter one or more comma-seperated usernames to auto-subscribe to !client issues.  These users will receive email notifications for all new tickets and ticket updates for this client.', array('!client' => $client->name)),
   );
+  $form['autoassign'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Auto-assign'),
+    '#autocomplete_path' => 'support/autocomplete/assigned/'. $id,
+    '#default_value' => !empty($client->autoassign) ? $client->autoassign : '',
+    '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!client' => $client->name, '!settings' => l(t('general support settings'), 'admin/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
+  );
   $form['notes'] = array(
     '#title' => t('Notes'),
     '#type' => 'textarea',
@@ -195,6 +202,25 @@ function support_admin_client_validate($form, &$form_state) {
       }
     }
   }
+  if (!empty($form_state['values']['autoassign'])) {
+    $autoassign = $form_state['values']['autoassign'];
+    switch ($autoassign) {
+      case '<nobody>':
+      case '<creator>':
+        break;
+      default:
+        $account = user_load(array('name' => trim($form_state['values']['autoassign'])));
+        $client = $form_state['values']['name'];
+        if (empty($account)) {
+          form_set_error('autoassign', t('Invalid %field user, %username does not exist.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']))));
+        }
+        else if (!user_access('administer support', $account) &&
+                 !user_access("access $client tickets", $account)) {
+          form_set_error('autoassign', t('Invalid %field  user, %username does not have permission to access %client tickets.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']), '%client' => $client)));
+        }
+        break;
+    }
+  }
   if (!empty($form_state['values']['domains'])) {
     _support_validate_domains('domains', explode(',', $form['domains']['#value']));
   }
@@ -212,10 +238,10 @@ function support_admin_client_submit($form, &$form_state) {
     db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']);
   }
   else {
-    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autosubscribe = '%s', domains = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes'], $form_state['values']['clid']);
+    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', domains = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes'], $form_state['values']['clid']);
     if (!db_affected_rows()) {
       drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
-      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autosubscribe, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes']);
+      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes']);
     }
     else {
       drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));
@@ -309,17 +335,17 @@ function support_admin_settings() {
   );
   $form['general']['support_autocomplete_limit'] = array(
     '#type' => 'select',
-    '#title' => t('Autocomplete limit'),
+    '#title' => t('Auto-complete limit'),
     '#description' => t('A threshold above which select fields and checkboxes will turn into autocomplete text fields.  For example, if set to 20 and a ticket can be assigned to 25 users, the assigned widget will be a textfield requiring you to type the user name.  If set to 20 and a ticket can only be assigned to 10 users, the assigned widget will be a drop down select menu listing all matching users.'),
     '#options' => array(0 => t('always')) + drupal_map_assoc(array(5, 10, 15, 20, 25, 50, 75, 100, 250, 500, 750, 1000)),
     '#default_value' => variable_get('support_autocomplete_limit', 15),
   );
   $form['general']['support_autoassign_ticket'] = array(
-    '#type' => 'radios',
-    '#title' => 'Autoassign ticket to',
-    '#description' => t('New tickets can either be assigned to nobody, or assigned to the user that created the ticket.'),
-    '#options' => array(t('Nobody'), t('The user that created the ticket')),
-    '#default_value' => variable_get('support_autoassign_ticket', 0),
+    '#type' => 'textfield',
+    '#autocomplete_path' => 'support/autocomplete/assigned',
+    '#title' => 'Auto-assign new tickets to',
+    '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') .'>', '%nobody' => '<' . t('nobody') .'>')),
+    '#default_value' => variable_get('support_autoassign_ticket', '<nobody>'),
   );
   $form['general']['support_secondary_sort_tickets'] = array(
     '#type' => 'radios',
@@ -343,11 +369,28 @@ function support_admin_settings() {
  * Be sure valid domains are entered.
  */
 function support_admin_settings_validate($form, &$form_state) {
-  if (!empty($form['support_global_domains']['#value'])) {
-    _support_validate_domains('support_global_domains', explode(',', trim($form['support_global_domains']['#value'])));
+  if (!empty($form_state['values']['support_global_domains'])) {
+    _support_validate_domains('support_global_domains', explode(',', trim($form_state['values']['support_global_domains'])));
   }
-  if (!empty($form['support_global_mailfrom']['#value']) && !valid_email_address($form['support_global_mailfrom']['#value'])) {
+  if (!empty($form_state['values']['support_global_mailfrom']) && !valid_email_address($form_state['values']['support_global_mailfrom'])) {
     form_set_error('support_global_mailfrom', t('You must enter a valid email address or leave the default mail from address field blank.'));
+  }
+  if (!empty($form_state['values']['support_autoassign_ticket'])) {
+    $autoassign = $form_state['values']['support_autoassign_ticket'];
+    switch ($autoassign) {
+      case '':
+      case '<nobody>':
+      case '<creator>':
+        break;
+      default:
+        $account = user_load(array('name' => trim($form_state['values']['support_autoassign_ticket'])));
+        if (empty($account) || !$account->uid) {
+          form_set_error('support_autoassign_ticket', t('Invalid %field user, %username is not a valid user.', array('%field' => t('auto-assign'), '%username' => $form_state['values']['support_autoassign_ticket'])));
+        }
+        else if (!user_access('administer support', $account)) {
+          form_set_error('support_autoassign_ticket', t('Invalid %field user, %username does not have %admin permission.', array('%field' => t('auto-assign'), '%username' => $account->name, '%admin' => t('administer support'))));
+        }
+    }
   }
 }
 

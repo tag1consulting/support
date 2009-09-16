@@ -206,13 +206,18 @@ function support_cron() {
 /**
  * Autocomplete usernames to assign to ticket.
  */
-function support_autocomplete_assigned($clid, $string = '') {
+function support_autocomplete_assigned($clid = 0, $string = '') {
   $matches = array();
   if ($string) {
+    if ($clid) {
+      $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $clid));
+      // retrieve all roles giving permission to access current tickets
+      $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'", "access $client tickets", 'administer support');
+    }
+    else {
+      $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%'", 'administer support');
+    }
     $roles = array();
-    $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $clid));
-    // retrieve all roles giving permission to access current tickets
-    $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'", "access $client tickets", 'administer support');
     while ($role = db_fetch_object($result)) {
       $roles[$role->rid] = $role->rid;
     }
@@ -375,7 +380,7 @@ function support_access_clients($client = NULL, $account = NULL) {
 function support_client_load($clid) {
   static $clients = array();
   if (!isset($clients[$clid])) {
-    $clients[$clid] = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autosubscribe, domains FROM {support_client} WHERE clid = %d', $clid));
+    $clients[$clid] = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, domains FROM {support_client} WHERE clid = %d', $clid));
   }
   return $clients[$clid];
 }
@@ -1631,12 +1636,12 @@ function support_status_form(&$form_state, $edit, $title) {
   else {
     $node = $edit;
   }
-  if (variable_get('support_autoassign_ticket', 0) &&
-      !isset($node->assigned) &&
+  $autoassign = _support_autoassign(_support_current_client(), $user->uid);
+  if ($autoassign && !isset($node->assigned) &&
       (!isset($node->nid) || !$node->nid)) {
     // This ticket is being created, and this module is configured to
-    // auto-assign new tickets to the user creating them.
-    $node->assigned = $node->uid;
+    // auto-assign new tickets.
+    $node->assigned = $autoassign;
   }
   if ($cid) {
     $comment = db_fetch_object(db_query('SELECT state, priority FROM {support_ticket_comment} WHERE cid = %d', $cid));
@@ -2445,3 +2450,71 @@ function _support_access_tickets() {
   }
   return $count;
 }
+
+/**
+ * Return an autoassigned user for a given client.
+ */
+function _support_autoassign($clid, $uid = 0) {
+  static $autoassign = array();
+  if (!isset($autoassign[$client])) {
+    $name = db_result(db_query('SELECT autoassign FROM {support_client} WHERE clid = %d', $clid));
+    switch ($name) {
+      case '<nobody>':
+        $autoassign[$client] = 0;
+        break;
+      case '<creator>':
+        $autoassign[$client] = $uid;
+        break;
+      default:
+        // no per-client auto-assign, or an invalid auto-assign
+        $account = user_load(array('name' => trim($name)));
+        if (empty($account) || !$account->uid) {
+          $assign = variable_get('support_autoassign_ticket', '<nobody>');
+          switch ($assign) {
+            case '<nobody>':
+              $autoassign[$client] = 0;
+              break;
+            case '<creator>':
+              $autoassign[$client] = $uid;
+              break;
+            default:
+              $account = user_load(array('name' => trim($assign)));
+              if (empty($account) || !$account->uid) {
+                $autoassign[$client] = 0;
+              }
+              else {
+                $autoassign[$client] = $account->uid;
+              }
+              break;
+          }
+        }
+        else {
+          $autoassign[$client] = $account->uid;
+        }
+    }
+  }
+  return $autoassign[$client];
+}
+
+/**
+ * Return the currently active client.
+ */
+function _support_current_client() {
+  $clients = _support_available_clients();
+  if (sizeof($clients) == 1) {
+    $client = key($clients);
+  }
+  else {
+    if (is_numeric($_SESSION['support_client'])) {
+      $client = $_SESSION['support_client'];
+    }
+    else if (!user_access('can select client')) {
+      // TODO: It should be possible to set a default client.  Perhaps allow
+      // a weight to be assigned to clients -- then we select the heaviest
+      // matching client...?
+      $client = key($clients);
+    }
+  }
+  return $client;
+}
+

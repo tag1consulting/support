@@ -91,6 +91,13 @@ function support_schema() {
         'unsigned' => TRUE,
         'default' => 0,
       ),
+      'autoassign' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Optionally assign new tickets to this user.',
+      ),
       'autosubscribe' => array(
         'type' => 'text',
       ),
@@ -104,7 +111,7 @@ function support_schema() {
       ),
     ),
     'primary key' => array('clid'),
-    'indexes' => array('status' => array('status')),
+    'indexes' => array('status' => array('status'), 'autoassign' => array('autoassign')),
     'unique keys' => array('name' => array('name')),
   );
 
@@ -377,3 +384,34 @@ function support_uninstall() {
   drupal_uninstall_schema('support');
 }
 
+
+/**
+ * Introduce "autoassign" field for storing a per-client autoassign value.
+ */
+function support_update_6001() {
+  $ret = array();
+  db_add_field($ret, 'support_client', 'autoassign',
+    array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+      'default' => '',
+      'description' => 'Optionally assign new tickets to this user.',
+    ),
+    array('indexes' => array(
+      'autoassign' => array('autoassign'))
+    )
+  );
+  $autoassign = variable_get('support_autoassign_ticket', 0);
+  if (variable_get('support_autoassign_ticket', 0) == 0) {
+    variable_set('support_autoassign_ticket', '<nobody>');
+  }
+  else if (variable_get('support_autoassign_ticket', 0) == 1) {
+    variable_set('support_autoassign_ticket', '<creator>');
+  }
+  else {
+    variable_del('support_autoassign_ticket');
+  }
+  drupal_flush_all_caches();
+  return $ret;
+}

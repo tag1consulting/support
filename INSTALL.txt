@@ -30,6 +30,7 @@
    email', and fill out the rest of the information in that section.  If
    integrating inbound email, you will need to create an email account for
    each client -- support will use this account to send and receive email.
+   More information can be found in MAIL.txt.
 
 4) If creating multiple Support clients, go to "Administer >> User management
    >> Roles" and create one role for each Support client.  (This is an optional

@@ -1015,6 +1015,7 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
     $node->state = _support_state_default();
     $node->priority = _support_priority_default();
     $node->client = $client->clid;
+    $node->assigned = _support_autoassign($client->clid, $account->uid);
     $node->notification = TRUE;
     $node->support_email = TRUE;
     $node->language = $account->language;

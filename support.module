@@ -849,6 +849,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
   // force reload node from database to get updated state/priority information,
   // but no need to reset it multiple times when sending multiple notifications
   $node = node_load($nid, NULL, $reset);
+  $assigned = user_load(array('uid' => $node->assigned));
   $reset = FALSE;
   if (isset($comment['cid'])) {
     $cid = $comment['cid'];
@@ -884,6 +885,8 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') ."\n" : drupal_html_to_text(check_markup($comment['comment']) . _support_mail_list_attachments($node, $comment)),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) .' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) .' -> ' : '') . _support_priorities($node->priority),
+    '!assigned_username' => !empty($assigned) ? $assigned->name : '',
+    '!assigned_realname' => !empty($assigned) ? theme('username', $assigned, array('plain' => TRUE)) : '',
     '!unsubscribe_ticket' => url("support/$nid/unsubscribe/$account->uid/$ticket_unsubscribe_key", array('absolute' => TRUE, 'language' => $language)),
     '!unsubscribe_all' => url("support/all/unsubscribe/$account->uid/$all_unsubscribe_key", array('absolute' => TRUE, 'language' => $language)),
   );

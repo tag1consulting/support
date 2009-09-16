@@ -78,5 +78,8 @@ Supported tokens:
  !update: The body of a ticket update.
  !state: The state of the ticket (new and old if changed).
  !priority: The priority of the ticket (new and old if changed).
+ !assigned_username: the username of the user who the ticket is assigned to.
+ !assigned_realname: the real name of the user who the ticket is assigned to if
+                     defined, otherwise it will display the username.
  !unsubscribe_ticket: A url for unsubscribing for the current ticket.
  !unsubscribe_all: A url for unsubscribing from all tickets.

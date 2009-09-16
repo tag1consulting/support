@@ -5,6 +5,7 @@ September 10th, 2009
     o bug #571600: don't show support admin menus unless user has 'administer
       support' permissions
     o bug #579648: fix formatting for supressed notifications
+    o feature #573768: export assigned_username and assigned_realname
 
 September 10th, 2009
  - support_charts.module

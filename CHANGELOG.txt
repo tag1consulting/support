@@ -6,6 +6,8 @@ September 10th, 2009
       support' permissions
     o bug #579648: fix formatting for supressed notifications
     o feature #573768: export assigned_username and assigned_realname
+ - support.info
+    o bug #531074: declare dependency on upload module
 
 September 10th, 2009
  - support_charts.module

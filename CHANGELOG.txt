@@ -1,6 +1,8 @@
 September 17th, 2009
  - support.module
     o bug #542802: improve attachment handling for non-english characters
+ - support_charts.module
+    o feature #544826: display per-user statistics in user profiles
 
 September 16th, 2009
  - support.module

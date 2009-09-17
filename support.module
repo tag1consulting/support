@@ -1980,6 +1980,9 @@ function support_subscribe_form(&$form_state, $edit, $title) {
         }
         else {
           $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+          if (empty($enabled)) {
+            $enabled = _support_enabled($node->client, $uid);
+          }
         }
         $notifications[] = $uid;
         $form['subscribe']['subscribed']["notify-$uid"] = array(
@@ -2576,3 +2579,15 @@ function _support_current_client() {
   return $client;
 }
 
+function _support_enabled($clid, $uid) {
+  static $enabled = array();
+  if (!isset($enabled[$clid])) {
+    $autosubscribe = db_result(db_query('SELECT autosubscribe FROM {support_client} WHERE clid = %d', $clid));
+    $names = explode(',', $autosubscribe);
+    foreach ($names as $name) {
+      $account = user_load(array('name' => trim($name)));
+      $enabled[$clid][$account->uid] = TRUE;
+    }
+  }
+  return isset($enabled[$clid][$uid]);
+}

@@ -138,8 +138,8 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['mail']['domains'] = array(
     '#title' => t('Valid email domains'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->domains) ? check_plain($client->domains) : '',
-    '#description' => t('Enter one or more comma-seperated domains which are allowed to automatically generate new tickets.  If no domains are entered, tickets are allowed from all domains (unless you globally define allowed domains).  If you globally define allowed domains but want this client to receive emails from all domains, enter a domain of "*".'),
+    '#default_value' => isset($client->domains) ? check_plain($client->domains) : '*',
+    '#description' => t('Enter one or more comma-seperated domains which are allowed to automatically generate new tickets.  If you enter "*" tickets will be allowed from all domains.'),
   );
   $id = isset($client->clid) ? $client->clid : 0;
   $path = 'support/autocomplete/autosubscribe/'. $id;
@@ -285,8 +285,8 @@ function support_admin_settings() {
   $form['mail']['support_global_domains'] = array(
     '#type' => 'textfield',
     '#title' => t('Globally allowed domains'),
-    '#description' => t('Optionally enter one or more domains which are allowed to automatically create tickets by sending an email.  If no domains are entered, or you specify "*", all domains are allowed.  If entering multiple domains, separate them by commas.  These domains will be allowed for all clients.'),
-    '#default_value' => check_plain(variable_get('support_global_domains', '')),
+    '#description' => t('Optionally enter one or more comma separated domains which are allowed to automatically create tickets via email.  To allow tickets to be created by any domain enter "*". This value can be overridden on a per-client basis.'),
+    '#default_value' => check_plain(variable_get('support_global_domains', '*')),
   );
   $form['mail']['support_global_mailfrom'] = array(
     '#type' => 'textfield',

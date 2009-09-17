@@ -3,6 +3,8 @@ September 17th, 2009
     o bug #542802: improve attachment handling for non-english characters
  - support_charts.module
     o feature #544826: display per-user statistics in user profiles
+ - support_admin.inc
+    o bug #580132: properly document configuration of allowed domains
 
 September 16th, 2009
  - support.module

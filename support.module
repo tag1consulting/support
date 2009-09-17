@@ -1109,7 +1109,12 @@ function _support_save_attachments($attachments, $account) {
         }
       }
       if (!isset($attachment->filename) || empty($attachment->filename)) {
-        $attachment->filename = 'noname';
+        if ($attachment->subtype == 'HTML') {
+          $attachment->filename = 'noname.html';
+        }
+        else {
+          $attachment->filename = 'noname';
+        }
       }
       $attachment->filepath = file_save_data($attachment->attachment, file_directory_path() .'/'. utf8_encode($attachment->filename));
       if ($attachment->filepath) {
@@ -1162,76 +1167,92 @@ function _support_get_attachments($stream, $message, $structure, $parts) {
   return $attachments;
 }
 
-function _support_get_message_body($stream, $message, $structure, $part = 1) {
+function _support_get_message_body_part($stream, $message, $mime_type, $structure = FALSE, $part = FALSE) {
+  if (!$structure) {
+    $structure = imap_fetchstructure($stream, $message, FTUID);
+  }
   if (!empty($structure)) {
-    $body = imap_fetchbody($stream, $message, $part);
     foreach ($structure->parameters as $parameter) {
       if (strtoupper($parameter->attribute) == 'CHARSET') {
         $encoding = $parameter->value;
         break;
       }
     }
-    switch ($structure->encoding) {
-      case 3: // base64
-        $decoded = drupal_convert_to_utf8(imap_base64($body), $encoding);
-        break;
-      case 4: // quoted-printable
-        $decoded = drupal_convert_to_utf8(quoted_printable_decode($body), $encoding);
-        break;
-      default:
-        $decoded = drupal_convert_to_utf8($body, $encoding);
-        break;
-    }
-
-    if ($decoded) {
-      $body = $decoded;
-    }
-    else {
-      watchdog('support', t("Failed to convert message to utf8 -- using unconverted message.  To fix this, try installing iconv, GNU recode, or mbstring for PHP."));
-    }
-
-    // If reply includes complete unchanged copy of ticket notification, strip
-    // it.
-    $stripped = FALSE;
-    $array = explode("\n", $body);
-    foreach ($array as $line => $text) {
-      // Look for last occurrance of magic in previous ticket.
-      preg_match_all("/([0-9]*):([0-9a-f]*)\]/", $text, $magic);
-      if (!empty($magic[0][0])) {
-        foreach ($magic[1] as $key => $length) {
-          $last_line = $line;
-          $last_length = $length;
+    if ($structure->type == TYPEMULTIPART) {
+      $prefix = '';
+      while (list($index, $sub_structure) = each ($structure->parts)) {
+        if ($part) {
+          $prefix = $part .'.';
+        }
+        $mime_type = _support_get_filemime($sub_structure);
+        $data = _support_get_message_body_part($stream, $message, $mime_type, $sub_structure, $prefix . ($index + 1));
+        if ($data) {
+          return $data;
         }
       }
     }
-    // Strip old ticket if quoted with "> " as most mail clients do.
-    $start = $last_line - $last_length;
-    if ($last_length) {
-      for ($current = $last_line; substr($array[$current], 0, 2) == '> '; $current--) {
-        $stripped = TRUE;
-        unset($array[$current]);
+    else if ($mime_type == _support_get_filemime($structure)) {
+      if (!$part) {
+        $part = 1;
       }
-      // If stripped entire ticket, strip one more line as most mail clients
-      // include a line saying who the message was by.  If we only stripped
-      // part of the message, someone probably edited inline so we just stop
-      // at first unquoted line.
-      if ($current <= $start) {
-        unset($array[$current]);
-      }
-    }
-
-    if ($stripped) {
-      // The ticket has been stripped of previous ticket text, rebuild it.
-      $body = '';
-      foreach ($array as $line) {
-        $body .= $line ."\n";
+      $body = imap_fetchbody($stream, $message, $part, FT_UID);
+      switch ($structure->encoding) {
+        case ENCBASE64:
+          return drupal_convert_to_utf8(imap_base64($body), $encoding);
+          break;
+        case ENCQUOTEDPRINTABLE:
+          return drupal_convert_to_utf8(quoted_printable_decode($body), $encoding);
+          break;
+        default:
+          return drupal_convert_to_utf8($body, $encoding);
+          break;
       }
     }
-
-    return $body;
-
   }
-  return NULL;
+}
+
+function _support_get_message_body($stream, $message, $mime_type, $structure = FALSE, $part = FALSE) {
+  $body = _support_get_message_body_part($stream, $message, $mime_type, $structure, $part);
+
+  // If reply includes complete unchanged copy of ticket notification, strip
+  // it.
+  $stripped = FALSE;
+  $array = explode("\n", $body);
+  foreach ($array as $line => $text) {
+    // Look for last occurrance of magic in previous ticket.
+    preg_match_all("/([0-9]*):([0-9a-f]*)\]/", $text, $magic);
+    if (!empty($magic[0][0])) {
+      foreach ($magic[1] as $key => $length) {
+        $last_line = $line;
+        $last_length = $length;
+      }
+    }
+  }
+  // Strip old ticket if quoted with "> " as most mail clients do.
+  $start = $last_line - $last_length;
+  if ($last_length) {
+    for ($current = $last_line; substr($array[$current], 0, 2) == '> '; $current--) {
+      $stripped = TRUE;
+      unset($array[$current]);
+    }
+    // If stripped entire ticket, strip one more line as most mail clients
+    // include a line saying who the message was by.  If we only stripped
+    // part of the message, someone probably edited inline so we just stop
+    // at first unquoted line.
+    if ($current <= $start) {
+      unset($array[$current]);
+    }
+  }
+
+  if ($stripped) {
+    // The ticket has been stripped of previous ticket text, rebuild it.
+    $body = '';
+    foreach ($array as $line) {
+      $body .= $line ."\n";
+    }
+  }
+
+  return $body;
 }
 
 /**
@@ -2490,7 +2511,8 @@ function support_client_fetch($client, $manual = TRUE) {
     }
 
     $structure = imap_fetchstructure($stream, $message);
-    $body = _support_get_message_body($stream, $message, $structure);
+    $mime = _support_get_filemime($structure);
+    $body = _support_get_message_body($stream, $message, $mime, $structure);
 
     $parts = count($structure->parts);
     if ($parts > 1) {

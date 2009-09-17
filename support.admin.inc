@@ -272,63 +272,6 @@ function support_admin_menu_block_page() {
 function support_admin_settings() {
   $form = array();
 
-  $form['mail'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Mail'),
-  );
-  $form['mail']['support_cron_download_mail'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Download mail via cron'),
-    '#description' => t('When checked, support will try to download client emails each time cron is run.  You may want to disable this if you are not integrating support with email, or if you only wish to download mail manually or via the !path.  If automating the download of mail through the support fetch mail path, be sure to !assign permissions to the necessary role(s).', array('!path' => l(t('support fetch mail path'), 'support/fetch'), '!assign' => l(t('assign "download mail via support/fetch"'), 'admin/user/permissions', array('fragment' => 'module-support')))),
-    '#default_value' => variable_get('support_cron_download_mail', TRUE),
-  );
-  $form['mail']['support_global_domains'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Globally allowed domains'),
-    '#description' => t('Optionally enter one or more comma separated domains which are allowed to automatically create tickets via email.  To allow tickets to be created by any domain enter "*". This value can be overridden on a per-client basis.'),
-    '#default_value' => check_plain(variable_get('support_global_domains', '*')),
-  );
-  $form['mail']['support_global_mailfrom'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default mail from address'),
-    '#description' => t('Optionally specify a default <em>from</em> address where support notifications will originate from for clients whose inbound email is not integrated.  If a client\'s inbound email is integrated, you will need to specify the <em>from</em> address on the client\'s configuration page as each client gets a unique <em>from</em> address to allow support to process replies to tickets via email.'),
-    '#default_value' => _support_admin_default_mail(),
-  );
-
-  $form['search'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Search'),
-  );
-  $form['search']['support_remove_tickets'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Remove tickets from content search results'),
-    '#description' => t('When checked, support will remove tickets from content search results, and tickets can only be searched in their own search tab.  This is necessary to enforce proper access control, only letting a user\'s search return tickets that they have access to.'),
-    '#default_value' => variable_get('support_remove_tickets', TRUE),
-  );
-  $form['search']['support_override_theme'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Override theme search form'),
-    '#description' => t('When checked, support will override the theme search box so that it searches tickets.  When not checked, the theme search box will work normally.'),
-    '#default_value' => variable_get('support_override_theme', FALSE),
-  );
-  $form['search']['support_override_block'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Override block search form'),
-    '#description' => t('When checked, support will override the default search block so that it searches tickets.  When not checked, the block search form will work normally.'),
-    '#default_value' => variable_get('support_override_block', FALSE),
-  );
-
-  $form['user'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('User profile'),
-  );
-  $form['user']['support_display_user_links'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Display support ticket links'),
-    '#description' => t('Check this box to display links from a user\'s profile page to create new and view their existing support tickets.'),
-    '#default_value' => variable_get('support_display_user_links', TRUE),
-  );
-
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General'),
@@ -360,6 +303,63 @@ function support_admin_settings() {
     '#description' => t('If specifying a secondary sort column, you can also specify a secondary sort order.'),
     '#options' => array(t('Ascending'), t('Descending')),
     '#default_value' => variable_get('support_secondary_sort_order', 0),
+  );
+
+  $form['user'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User profile'),
+  );
+  $form['user']['support_display_user_links'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display support ticket links'),
+    '#description' => t('Check this box to display links from a user\'s profile page to create new and view their existing support tickets.'),
+    '#default_value' => variable_get('support_display_user_links', TRUE),
+  );
+
+  $form['search'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Search'),
+  );
+  $form['search']['support_remove_tickets'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove tickets from content search results'),
+    '#description' => t('When checked, support will remove tickets from content search results, and tickets can only be searched in their own search tab.  This is necessary to enforce proper access control, only letting a user\'s search return tickets that they have access to.'),
+    '#default_value' => variable_get('support_remove_tickets', TRUE),
+  );
+  $form['search']['support_override_theme'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Override theme search form'),
+    '#description' => t('When checked, support will override the theme search box so that it searches tickets.  When not checked, the theme search box will work normally.'),
+    '#default_value' => variable_get('support_override_theme', FALSE),
+  );
+  $form['search']['support_override_block'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Override block search form'),
+    '#description' => t('When checked, support will override the default search block so that it searches tickets.  When not checked, the block search form will work normally.'),
+    '#default_value' => variable_get('support_override_block', FALSE),
+  );
+
+  $form['mail'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Mail'),
+  );
+  $form['mail']['support_global_mailfrom'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default mail from address'),
+    '#description' => t('Optionally specify a default <em>from</em> address where support notifications will originate from for clients whose inbound email is not integrated.  If a client\'s inbound email is integrated, you will need to specify the <em>from</em> address on the client\'s configuration page as each client gets a unique <em>from</em> address to allow support to process replies to tickets via email.'),
+    '#default_value' => _support_admin_default_mail(),
+  );
+  $form['mail']['support_cron_download_mail'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Download mail via cron'),
+    '#description' => t('When checked, support will try to download client emails each time cron is run.  You may want to disable this if you are not integrating support with email, or if you only wish to download mail manually or via the !path.  If automating the download of mail through the support fetch mail path, be sure to !assign permissions to the necessary role(s).', array('!path' => l(t('support fetch mail path'), 'support/fetch'), '!assign' => l(t('assign "download mail via support/fetch"'), 'admin/user/permissions', array('fragment' => 'module-support')))),
+    '#default_value' => variable_get('support_cron_download_mail', TRUE),
+  );
+  $form['mail']['support_global_domains'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Globally allowed domains'),
+    '#description' => t('Optionally enter one or more comma separated domains which are allowed to automatically create tickets via email.  To allow tickets to be created by any domain enter "*". This value can be overridden on a per-client basis.'),
+    '#default_value' => check_plain(variable_get('support_global_domains', '*')),
   );
 
   return system_settings_form($form);

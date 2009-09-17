@@ -6,6 +6,7 @@ September 10th, 2009
       support' permissions
     o bug #579648: fix formatting for supressed notifications
     o feature #573768: export assigned_username and assigned_realname
+    o feature #377708: allow subscription of other users during ticket creation
  - support.info
     o bug #531074: declare dependency on upload module
 

@@ -554,6 +554,7 @@ function support_form(&$node) {
  */
 function support_nodeapi(&$node, $op, $teaser, $page) {
   if ($node->type == 'support_ticket') {
+    $autocomplete = 'subscribed-users';
     switch ($op) {
       case 'view':
         // viewing a ticket
@@ -571,6 +572,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
       case 'load':
         return db_fetch_array(db_query('SELECT message_id, state, priority, client, assigned FROM {support_ticket} WHERE nid = %d', $node->nid));
       case 'validate':
+        $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
         if (!isset($node->client) || $node->client == 0) {
           form_set_error('client', t('You must select a client'));
         }
@@ -580,7 +582,6 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
             form_set_error('assigned', t('You must specify a valid user.'));
           }
           else if ($assigned) {
-            $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
             $valid = _support_validate_assigned_user($assigned, $client);
             if (!$valid) {
               form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
@@ -591,6 +592,27 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           $destination = node_load(array('nid' => $node->move));
           if (!is_object($destination) || !$destination->nid) {
             form_set_error('move', t('Destination node does not exist.'));
+          }
+        }
+        // check for users subscribed during ticket creation (checkboxes)
+        if (isset($node->notifications)) {
+          $notifications = explode(',', $node->notifications);
+          foreach ($notifications as $notify) {
+            $valid = _support_validate_assigned_user($notify, $client);
+            if (!$valid) {
+              $account = user_load(array('uid' => $notify));
+              form_set_error("notify-$notify", t('Unable to subscribe user, %user does not have permission to view this ticket.', array('%user' => $account->name)));
+            }
+          }
+        }
+        // check for users subscribed during ticket creation (autocomplete)
+        else if (!empty($node->$autocomplete)) {
+          $notifications = explode(',', $node->$autocomplete);
+          foreach ($notifications as $notify) {
+            $account = user_load(array('name' => trim($notify)));
+            if (empty($account) || (!user_access("access $client tickets", $account) && !user_access('administer support', $account))) {
+              form_set_error('subscribed-users', t('Unable to subscribe user, %user does not have permission to view this ticket.', array('%user' => $notify)));
+            }
           }
         }
         break;
@@ -619,6 +641,22 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           _support_autosubscribe($node->nid, $node->client);
           // auto-subscribe ticket creator
           support_subscribe_user($node->nid, $node->uid, $node->notification);
+          if (isset($node->notifications)) {
+            $notifications = explode(',', $node->notifications);
+            foreach ($notifications as $notify) {
+              $enabled = "notify-$notify";
+              support_subscribe_user($node->nid, $notify, $node->$enabled);
+            }
+          }
+          else if (isset($node->$autocomplete)) {
+            $notifications = explode(',', $node->$autocomplete);
+            foreach ($notifications as $notify) {
+              $account = user_load(array('name' => trim($notify)));
+              if (!empty($account)) {
+                support_subscribe_user($node->nid, $account->uid, TRUE);
+              }
+            }
+          }
           // generate notification emails
           support_notification(array(), $node->nid, 'ticket_new', $node->suppress);
         }
@@ -1898,14 +1936,19 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
     );
   }
-  if (is_array($edit) && (user_access('administer support') || user_access('can subscribe other users to notifications'))) {
+  if (isset($edit) && (user_access('administer support') || user_access('can subscribe other users to notifications'))) {
     $form['subscribe']['subscribed'] = array(
       '#type' => 'fieldset',
       '#title' => t('Subscribed'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    $node = node_load($edit['nid']['#value']);
+    if (is_array($edit)) {
+      $node = node_load($edit['nid']['#value']);
+    }
+    else {
+      $node = $edit;
+    }
     $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
     if ($available === FALSE) {
       $account = user_load(array('uid' => $node->assigned));
@@ -1929,9 +1972,16 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       );
     }
     else {
+      $notifications = array();
       foreach ($available as $uid => $name) {
         if (!$uid) continue;
-        $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+        if ($uid == $user->uid) {
+          $enabled = TRUE;
+        }
+        else {
+          $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+        }
+        $notifications[] = $uid;
         $form['subscribe']['subscribed']["notify-$uid"] = array(
           '#type' => 'checkbox',
           '#title' => $name,
@@ -1939,6 +1989,10 @@ function support_subscribe_form(&$form_state, $edit, $title) {
           '#disabled' => $uid == $user->uid ? TRUE : FALSE,
         );
       }
+      $form['subscribe']['subscribed']['notifications'] = array(
+        '#type' => 'hidden',
+        '#value' => implode(',', $notifications),
+      );
     }
   }
   return $form;

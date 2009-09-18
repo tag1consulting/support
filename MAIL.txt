@@ -31,7 +31,7 @@ ticket_new_subject:
 "!key !ticket_subject"
 
 ticket_new_body:
-"!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all"
+"!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\nYou can visit the following URL to update this ticket:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all"
 
 The default text for notifications sent when tickets are updated is as follows:
 
@@ -39,19 +39,21 @@ ticket_comment_new_subject:
 "!key !ticket_subject"
 
 ticket_comment_new_body:
-"!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all"
+"!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\nYou can visit the following URL to update this ticket:\n!update_url\n\nUpdate text:\n------------------------------\n!update\n------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all"
 
 Any of these values can be modified by setting them in your settings.php Drupal
 configuration file.  For example, to modify the subject for all notifications,
 you could define the following lines in your settings.php:
-$conf['support_mail_ticket_new_subject'] = '[My Website] !key !ticket_subject';
-$conf['support_mail_ticket_comment_new_subject'] = '[My Website] !key !ticket_subject';
+  $conf['support_mail_ticket_new_subject'] = '[My Website] !key !ticket_subject';
+  $conf['support_mail_ticket_comment_new_subject'] = '[My Website] !key !ticket_subject';
 
 This modification appends "[My Website] " to the start of the subject of all
 notifications.
 
 To modify the notification bodies, you can set the support_mail_ticket_new_body
-and support_mail_ticket_comment_new_body variables in your settings.php.
+and support_mail_ticket_comment_new_body variables in your settings.php.  For example, to create a very simple notification email you could add the following to your settings.php configuration file:
+  $conf['support_mail_ticket_new_body'] = "!update_username has created the ticket '!ticket_subject'.  View the ticket online at:\n!update_url";
+  $conf['support_mail_ticket_comment_new_body'] = "!update_username has updated the ticket '!ticket_subject'.  View the ticket online at:\n!update_url";
 
 The various "!key" and "!ticket_subject" words are tokens which are
 automatically replaced by the Support module when notifications are mailed

@@ -1,4 +1,4 @@
-September 17th, 2009
+September 17th, 2009 (6.x-1.2-rc1, 6.x-1.2)
  - support.module
     o bug #542802: improve attachment handling for non-english characters
  - support_charts.module

@@ -2472,42 +2472,49 @@ function support_client_fetch($client, $manual = TRUE) {
     preg_match("/(\[$key:)([0-9]*)(\])/", $message['subject'], $tickets);
     $message['nid'] = $tickets[2];
 
-    // If not found in subject, search for the ticket number based on the
-    // in_reply_to field of the header.
-    if (!is_numeric($message['nid']) && isset($message['headers']->in_reply_to)) {
-      preg_match_all("/<[^<^>]*/", $message['headers']->in_reply_to, $in_reply_tos);
-      foreach ($in_reply_tos[0] as $in_reply_to) {
-        $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $in_reply_to .'>'));
-        if (isset($nid) && is_numeric($nid)) {
-          $message['nid'] = $nid;
-        }
-        else {
-          $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $in_reply_to .'>'));
+    if (variable_get('support_thread_by_mail_headers', TRUE)) {
+      // If not found in subject, search for the ticket number based on the
+      // in_reply_to field of the header.
+      if (!is_numeric($message['nid']) && isset($message['headers']->in_reply_to)) {
+        preg_match_all("/<[^<^>]*/", $message['headers']->in_reply_to, $in_reply_tos);
+        foreach ($in_reply_tos[0] as $in_reply_to) {
+          $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $in_reply_to .'>'));
           if (isset($nid) && is_numeric($nid)) {
             $message['nid'] = $nid;
           }
+          else {
+            $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $in_reply_to .'>'));
+            if (isset($nid) && is_numeric($nid)) {
+              $message['nid'] = $nid;
+            }
+          }
+        }
+      }
+
+      // If still not found, search for the ticket number based on the 
+      // references field of the header.
+      if (!is_numeric($message['nid']) && isset($message['headers']->references)) {
+        preg_match_all("/<[^<^>]*/", $message['headers']->references, $references);
+        foreach ($references[0] as $reference) {
+          $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $reference .'>'));
+          if (isset($nid) && is_numeric($nid)) {
+            $message['nid'] = $nid;
+          }
+          else {
+            $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $reference .'>'));
+            if (isset($nid) && is_numeric($nid)) {
+              $message['nid'] = $nid;
+            }
+          }
+          // If found, no need to search further.
+          if (is_numeric($message['nid'])) break;
         }
       }
     }
 
-    // If still not found, search for the ticket number based on the references
-    // field of the header.
-    if (!is_numeric($message['nid']) && isset($message['headers']->references)) {
-      preg_match_all("/<[^<^>]*/", $message['headers']->references, $references);
-      foreach ($references[0] as $reference) {
-        $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $reference .'>'));
-        if (isset($nid) && is_numeric($nid)) {
-          $message['nid'] = $nid;
-        }
-        else {
-          $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $reference .'>'));
-          if (isset($nid) && is_numeric($nid)) {
-            $message['nid'] = $nid;
-          }
-        }
-        // If found, no need to search further.
-        if (is_numeric($message['nid'])) break;
-      }
+    // If still not found, look for tickets that have an identical subject.
+    if (!is_numeric($message['nid']) && variable_get('support_thread_by_subject', TRUE)) {
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = %d AND n.title = '%s' ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
     }
 
     $structure = imap_fetchstructure($stream, $number);

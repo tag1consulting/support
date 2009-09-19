@@ -361,6 +361,18 @@ function support_admin_settings() {
     '#description' => t('Optionally enter one or more comma separated domains which are allowed to automatically create tickets via email.  To allow tickets to be created by any domain enter "*". This value can be overridden on a per-client basis.'),
     '#default_value' => check_plain(variable_get('support_global_domains', '*')),
   );
+  $form['mail']['support_thread_by_mail_headers'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Thread emails using mail headers'),
+    '#description' => t('When checked, the %message_id, %in_reply_to and %references mail headers wil be used to match replies with the original tickets.', array('%message_id' => t('message_id'), '%in_reply_to' => t('in_reply_to'), '%references' => t('references'))),
+    '#default_value' => variable_get('support_thread_by_mail_headers', TRUE),
+  );
+  $form['mail']['support_thread_by_subject'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Thread emails using subject'),
+    '#description' => t('When checked, the message subject will be used to match replies with the original tickets.'),
+    '#default_value' => variable_get('support_thread_by_subject', TRUE),
+  );
 
   return system_settings_form($form);
 }

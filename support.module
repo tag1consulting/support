@@ -986,12 +986,12 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
 /**
  * Save the message.
  */
-function support_save_message($subject, $body, $attachments, $from, $ticket, $client, $header = NULL) {
-  $account = support_account_load($from, $ticket, $subject, $client);
-  $ticket = support_ticket_load($ticket);
+function support_save_message($message, $client) {
+  $account = support_account_load($message['from'], $message['nid'], $message['subject'], $client);
+  $ticket = support_ticket_load($message['nid']);
 
-  if (is_object($header) && isset($header->message_id)) {
-    $message_id = $header->message_id;
+  if (is_object($message['headers']) && isset($message['headers']->message_id)) {
+    $message_id = $message['headers']->message_id;
   }
   else {
     $message_id = NULL;
@@ -1007,12 +1007,12 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
 
     // TODO: format?
     // TODO: ip_address?
-    db_query("INSERT INTO {comments} (nid, pid, uid, subject, comment, format, hostname, timestamp, status, thread, name, mail, homepage) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, %d, '%s', '%s', '%s', '%s')", $ticket->nid, 0, $account->uid, $subject, $body, 1, ip_address(), time(), 0, $thread, $account->name, $account->mail, $account->homepage);
+    db_query("INSERT INTO {comments} (nid, pid, uid, subject, comment, format, hostname, timestamp, status, thread, name, mail, homepage) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, %d, '%s', '%s', '%s', '%s')", $ticket->nid, 0, $account->uid, $message['subject'], $message['body'], 1, ip_address(), time(), 0, $thread, $account->name, $account->mail, $account->homepage);
 
     // Tell the other modules a new comment has been submitted.
     $comment['cid'] = db_last_insert_id('comments', 'cid');
-    $comment['subject'] = $subject;
-    $comment['comment'] = $body;
+    $comment['subject'] = $message['subject'];
+    $comment['comment'] = $message['body'];
     $comment['nid'] = $ticket->nid;
     $comment['uid'] = $account->uid;
     $comment['message_id'] = $message_id;
@@ -1024,7 +1024,7 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
     $comment['support_email'] = TRUE;
     comment_invoke_comment($comment, 'insert');
 
-    $fids = _support_save_attachments($attachments, $account);
+    $fids = _support_save_attachments($message['attachments'], $account);
     if (is_array($fids)) {
       foreach ($fids as $fid => $filename) {
         if (module_exists('comment_upload')) {
@@ -1046,8 +1046,8 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
   }
   else if (is_object($account)) {
     // Create new ticket if none matches and valid from address.
-    $node->title = $subject;
-    $node->body = $body;
+    $node->title = $message['subject'];
+    $node->body = $message['body'];
     $node->type = 'support_ticket';
     $node->log = t('Support ticket created from email.');
     $node->comment = COMMENT_NODE_READ_WRITE;
@@ -1063,7 +1063,7 @@ function support_save_message($subject, $body, $attachments, $from, $ticket, $cl
     node_save($node);
 
     // Save/record attachments
-    $fids = _support_save_attachments($attachments, $account);
+    $fids = _support_save_attachments($message['attachments'], $account);
     if (is_array($fids)) {
       // Refresh node to be sure we have the correct vid when saving attachments
       $node = node_load($node->nid);
@@ -2449,42 +2449,42 @@ function support_client_fetch($client, $manual = TRUE) {
     $messages_to_download = $messages_limit;
   }
 
-  for ($message = 1; $message <= $messages_to_download; $message++) {
-    $header = imap_headerinfo($stream, $message);
+  for ($number = 1; $number <= $messages_to_download; $number++) {
+    $message = array();
+    $message['headers'] = imap_headerinfo($stream, $number);
 
-    if (is_array($header->from)) {
-      $from = $header->from[0]->mailbox .'@'. $header->from[0]->host;
+    if (is_array($message['headers']->from)) {
+      $message['from'] = $message['headers']->from[0]->mailbox .'@'. $message['headers']->from[0]->host;
     }
-    $subject = '';
-    $strings = imap_mime_header_decode($header->subject);
+    $strings = imap_mime_header_decode($message['headers']->subject);
     foreach ($strings as $string) {
       if ($string->charset == 'default') {
-        $subject .= $string->text;
+        $message['subject'] .= $string->text;
       }
       else {
-        $subject .= drupal_convert_to_utf8($string->text, $string->charset);
+        $message['subject'] .= drupal_convert_to_utf8($string->text, $string->charset);
       }
     }
 
     // Search for the the ticket number in the subject.
     $key = variable_get('support_key', 'tkt');
     $tickets = array();
-    preg_match("/(\[$key:)([0-9]*)(\])/", $subject, $tickets);
-    $ticket = $tickets[2];
+    preg_match("/(\[$key:)([0-9]*)(\])/", $message['subject'], $tickets);
+    $message['nid'] = $tickets[2];
 
     // If not found in subject, search for the ticket number based on the
     // in_reply_to field of the header.
-    if (!is_numeric($ticket) && isset($header->in_reply_to)) {
-      preg_match_all("/<[^<^>]*/", $header->in_reply_to, $in_reply_tos);
+    if (!is_numeric($message['nid']) && isset($message['headers']->in_reply_to)) {
+      preg_match_all("/<[^<^>]*/", $message['headers']->in_reply_to, $in_reply_tos);
       foreach ($in_reply_tos[0] as $in_reply_to) {
         $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $in_reply_to .'>'));
         if (isset($nid) && is_numeric($nid)) {
-          $ticket = $nid;
+          $message['nid'] = $nid;
         }
         else {
           $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $in_reply_to .'>'));
           if (isset($nid) && is_numeric($nid)) {
-            $ticket = $nid;
+            $message['nid'] = $nid;
           }
         }
       }
@@ -2492,39 +2492,40 @@ function support_client_fetch($client, $manual = TRUE) {
 
     // If still not found, search for the ticket number based on the references
     // field of the header.
-    if (!is_numeric($ticket) && isset($header->references)) {
-      preg_match_all("/<[^<^>]*/", $header->references, $references);
+    if (!is_numeric($message['nid']) && isset($message['headers']->references)) {
+      preg_match_all("/<[^<^>]*/", $message['headers']->references, $references);
       foreach ($references[0] as $reference) {
         $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $reference .'>'));
         if (isset($nid) && is_numeric($nid)) {
-          $ticket = $nid;
+          $message['nid'] = $nid;
         }
         else {
           $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $reference .'>'));
           if (isset($nid) && is_numeric($nid)) {
-            $ticket = $nid;
+            $message['nid'] = $nid;
           }
         }
         // If found, no need to search further.
-        if (is_numeric($ticket)) break;
+        if (is_numeric($message['nid'])) break;
       }
     }
 
-    $structure = imap_fetchstructure($stream, $message);
+    $structure = imap_fetchstructure($stream, $number);
     $mime = _support_get_filemime($structure);
-    $body = _support_get_message_body($stream, $message, $mime, $structure);
+    $message['body'] = _support_get_message_body($stream, $number, $mime, $structure);
 
     $parts = count($structure->parts);
     if ($parts > 1) {
-      $attachments = _support_get_attachments($stream, $message, $structure, $parts);
+      $message['attachments'] = _support_get_attachments($stream, $number, $structure, $parts);
     }
 
-    $saved = support_save_message($subject, $body, $attachments, $from, $ticket, $client, $header);
+    drupal_alter('support_fetch_message', $message, $client);
+    $saved = support_save_message($message, $client);
 
     $messages_downloaded++;
 
     // mark message for deletion
-    imap_delete($stream, $message);
+    imap_delete($stream, $number);
   }
   imap_close($stream, CL_EXPUNGE);
 

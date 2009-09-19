@@ -1,3 +1,8 @@
+September 18th, 2009
+ - support.module
+    o feature #581806: add hook_support_fetch_message_alter for altering
+      messages when they are downloaded from the server
+
 September 17th, 2009 (6.x-1.2-rc1, 6.x-1.2)
  - support.module
     o bug #542802: improve attachment handling for non-english characters

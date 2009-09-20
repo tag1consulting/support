@@ -1,3 +1,8 @@
+September 20th, 2009
+ - support.module
+    o feature #582168: make option to thread tickets based on the subject
+                       a per-client setting
+
 September 18th, 2009
  - support.module
     o feature #581806: add hook_support_fetch_message_alter for altering

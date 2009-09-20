@@ -384,7 +384,6 @@ function support_uninstall() {
   drupal_uninstall_schema('support');
 }
 
-
 /**
  * Introduce "autoassign" field for storing a per-client autoassign value.
  */
@@ -402,7 +401,6 @@ function support_update_6001() {
       'autoassign' => array('autoassign'))
     )
   );
-  $autoassign = variable_get('support_autoassign_ticket', 0);
   if (variable_get('support_autoassign_ticket', 0) == 0) {
     variable_set('support_autoassign_ticket', '<nobody>');
   }
@@ -413,5 +411,22 @@ function support_update_6001() {
     variable_del('support_autoassign_ticket');
   }
   drupal_flush_all_caches();
+  return $ret;
+}
+
+/**
+ * Introduce "thread_subject" field for configured per-client thread settings.
+ */
+function support_update_6002() {
+  $ret = array();
+  db_add_field($ret, 'support_client', 'thread_subject',
+    array(
+      'type' => 'int',
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+      'description' => 'Optionally configure per-client subject threading settings.',
+    )
+  );
   return $ret;
 }

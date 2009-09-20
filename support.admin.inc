@@ -135,6 +135,13 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#description' => t('The %pop3, %imap and %ssl flags will be automatically set for you depending on your configuration above.  Additional flags can be manually specified here.  If you are having trouble downloading messages, you may need to change these extra flags as !defined.  These flags are ignored when using the %local protocol.', array('!defined' => l(t('defined here'), 'http://php.net/imap_open#function.imap-open.parameters'), '%local' => t('local file'), '%pop3' => t('/pop3'), '%imap' => t('/imap'), '%ssl' => t('/ssl'))),
   );
 
+  $form['mail']['thread_subject'] = array(
+    '#type' => 'select',
+    '#title' => t('Thread emails using subject'),
+    '#options' => array('Use global setting', 'Disabled', 'Match against new tickets', 'Match against open tickets', 'Match against all tickets'),
+    '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the !settings configuration will be used, however, you can override this global configuration here.', array('!settings' => l(t('general support settings'), 'admin/support/settings'))),
+    '#default_value' => isset($client->thread_subject) ? $client->thread_subject : 0,
+  );
   $form['mail']['domains'] = array(
     '#title' => t('Valid email domains'),
     '#type' => 'textfield',
@@ -238,10 +245,10 @@ function support_admin_client_submit($form, &$form_state) {
     db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']);
   }
   else {
-    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', domains = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes'], $form_state['values']['clid']);
+    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['notes'], $form_state['values']['clid']);
     if (!db_affected_rows()) {
       drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
-      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['domains'], $form_state['values']['notes']);
+      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, thread_subject, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%d', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['notes']);
     }
     else {
       drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));
@@ -368,10 +375,11 @@ function support_admin_settings() {
     '#default_value' => variable_get('support_thread_by_mail_headers', TRUE),
   );
   $form['mail']['support_thread_by_subject'] = array(
-    '#type' => 'checkbox',
+    '#type' => 'select',
     '#title' => t('Thread emails using subject'),
-    '#description' => t('When checked, the message subject will be used to match replies with the original tickets.'),
-    '#default_value' => variable_get('support_thread_by_subject', TRUE),
+    '#options' => array(1 => 'Disabled', 2 => 'Match against new tickets', 3 => 'Match against open tickets', 4 => 'Match against all tickets'),
+    '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the subject will only be matched against other open tickets.'),
+    '#default_value' => variable_get('support_thread_by_subject', 3),
   );
 
   return system_settings_form($form);

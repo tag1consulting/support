@@ -553,6 +553,7 @@ function support_form(&$node) {
  * Implementation of hook_nodeapi().
  */
 function support_nodeapi(&$node, $op, $teaser, $page) {
+  global $user;
   if ($node->type == 'support_ticket') {
     $autocomplete = 'subscribed-users';
     switch ($op) {
@@ -637,10 +638,10 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
         }
         if ($op == 'insert') {
-          // auto-subscribe configured users
-          _support_autosubscribe($node->nid, $node->client);
-          // auto-subscribe ticket creator
-          support_subscribe_user($node->nid, $node->uid, $node->notification);
+          // force auto-subscribe configured users
+          if (variable_get('support_autosubscribe_force', FALSE)) {
+            _support_autosubscribe($node->nid, $node->client);
+          }
           if (isset($node->notifications)) {
             $notifications = explode(',', $node->notifications);
             foreach ($notifications as $notify) {
@@ -656,6 +657,13 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
                 support_subscribe_user($node->nid, $account->uid, TRUE);
               }
             }
+          }
+          // auto-subscribe ticket creator
+          if (variable_get('support_autosubscribe_creator', FALSE)) {
+            support_subscribe_user($node->nid, $node->uid);
+          }
+          else {
+            support_subscribe_user($node->nid, $node->uid, $node->notification);
           }
           // generate notification emails
           support_notification(array(), $node->nid, 'ticket_new', $node->suppress);
@@ -712,18 +720,25 @@ function support_comment(&$comment, $op) {
       }
       _support_comment_update_node($comment['nid']);
       if ($op == 'insert') {
-        // auto-subscribe configured users
-        _support_autosubscribe($comment['nid'], $comment['client']);
         // auto-subscribe ticket-comment creator
-        support_subscribe_user($comment['nid'], $comment['uid'], $comment['notification']);
+        if (variable_get('support_autosubscribe_creator', FALSE)) {
+          support_subscribe_user($comment['nid'], $comment['uid']);
+        }
+        else {
+          support_subscribe_user($comment['nid'], $comment['uid'], $comment['notification']);
+        }
+        // force auto-subscribe configured users
+        if (variable_get('support_autosubscribe_force', FALSE)) {
+          _support_autosubscribe($comment['nid'], $comment['client']);
+        }
         // auto-subscribe assigned user
-        if ($comment['assigned']) {
+        if (variable_get('support_autosubscribe_assigned', FALSE) && ($comment['assigned'])) {
           support_subscribe_user($comment['nid'], $comment['assigned']);
         }
         // generate notification emails
         support_notification($comment, $comment['nid'], 'ticket_comment_new', $comment['suppress']);
       }
-      // if admin, can update who is assignd to the ticket
+      // if admin, can update who is assigned to the ticket
       if (user_access('administer support') && (!isset($comment['support_email']) || !$comment['support_email'])) {
         $node = node_load($comment['nid']);
         if (isset($comment['subscribed-users']) &&
@@ -781,7 +796,7 @@ function support_comment_view(&$comment) {
  */
 function support_mail($key, &$message, $params) {
   $language = $message['language'];
-  $variables = support_mail_tokens($params['account'], $language, $params['nid'], isset($params['comment']) ? $params['comment'] : array(), $params['suppress']);
+  $variables = support_mail_tokens($params['account'], $language, $params['nid'], (isset($params['comment']) ? $params['comment'] : array()), $params['suppress']);
   $message['subject'] .= _support_mail_text($key .'_subject', $language, $variables, $params['integrate_email']);
   $message['body'] = _support_mail_text($key .'_body', $language, $variables, $params['integrate_email']);
   $node = node_load($params['nid']);
@@ -920,7 +935,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') ."\n" : drupal_html_to_text(check_markup($node->body) . _support_mail_list_attachments($node, $comment)),
     '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid")),
     '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form")),
-    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') ."\n" : drupal_html_to_text(check_markup($comment['comment']) . _support_mail_list_attachments($node, $comment)),
+    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') ."\n" : drupal_html_to_text(check_markup(isset($comment['comment']) ? $comment['comment'] : '') . _support_mail_list_attachments($node, $comment)),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) .' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) .' -> ' : '') . _support_priorities($node->priority),
     '!assigned_username' => !empty($assigned) ? $assigned->name : '',
@@ -944,7 +959,7 @@ function _support_mail_list_attachments($node, $comment) {
       $attachments[] = url($file->filepath, array('absolute' => TRUE));
     }
   }
-  else if (!empty($comment) && is_array($comment['files'])) {
+  else if (isset($comment['files']) && is_array($comment['files'])) {
     foreach ($comment['files'] as $fid => $file) {
       $attachments[] = url($file['filepath'], array('absolute' => TRUE));
     }
@@ -1278,15 +1293,20 @@ function support_subscribe_user($nid, $uid, $active = 1) {
 /**
  * Autosubscribe users to new client ticket.
  */
-function _support_autosubscribe($nid, $client) {
+function _support_autosubscribe($nid, $client, $save = TRUE) {
+  $accounts = array();
   $autosubscribe = db_result(db_query('SELECT autosubscribe FROM {support_client} WHERE clid = %d', $client));
   $autosubscribe = explode(',', $autosubscribe);
   foreach ($autosubscribe as $name) {
     $account = user_load(array('name' => trim($name)));
     if (is_object($account) && $account->uid) {
-      support_subscribe_user($nid, $account->uid);
+      $accounts[$account->uid] = $account->uid;
+      if ($save) {
+        support_subscribe_user($nid, $account->uid);
+      }
     }
   }
+  return $accounts;
 }
 
 /**
@@ -1314,7 +1334,7 @@ function _support_mail_notify($op, $account, $comment = array(), $nid = NULL, $s
     $params['nid'] = $nid;
     if (isset($comment['cid'])) {
       $params['cid'] = $comment['cid'];
-      $params['comment'] = $comment['comment'];
+      $params['comment'] = $comment;
     }
     else {
       $params['cid'] = 0;
@@ -1829,7 +1849,7 @@ function support_status_form(&$form_state, $edit, $title) {
     );
   }
   else {
-    $options = _support_assigned($node->assigned, $node, variable_get('support_autocomplete_limit', 15));
+    $options = _support_assigned((isset($node->assigned) ? $node->assigned : 0), $node, variable_get('support_autocomplete_limit', 15));
     if ($options === FALSE) {
       if (isset($node->assigned)) {
         if (is_numeric($node->assigned)) {
@@ -1858,7 +1878,7 @@ function support_status_form(&$form_state, $edit, $title) {
         '#prefix' => '&nbsp;&nbsp',
         '#title' => t('Assigned'),
         '#options' => $options,
-        '#default_value' => $node->assigned ? $node->assigned : 0,
+        '#default_value' => isset($node->assigned) ? $node->assigned : 0,
       );
     }
   }
@@ -1949,13 +1969,22 @@ function _support_assigned($assigned, $node, $limit = 9999) {
 function support_subscribe_form(&$form_state, $edit, $title) {
   global $user;
   $form = array();
+  if (is_array($edit)) {
+    $node = node_load($edit['nid']['#value']);
+  }
+  else {
+    $node = $edit;
+  }
   $form['subscribe'] = array(
     '#type' => 'fieldset',
     '#title' => t('Notifications'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
-  if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
+  if (variable_get('support_autosubscribe_creator', FALSE)) {
+    $notification = TRUE;
+  }
+  else if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
     $notification = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
   }
   else if (is_object($edit) && isset($edit->notification)) {
@@ -1969,6 +1998,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
     '#title' => t('Subscribe'),
     '#description' => t('Receive email notifications when this ticket is updated.'),
     '#default_value' => isset($notification) ? $notification : TRUE,
+    '#disabled' => variable_get('support_autosubscribe_creator', FALSE) || (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $user->uid)),
   );
   if (user_access('can suppress notification')) {
     $form['subscribe']['suppress'] = array(
@@ -1985,12 +2015,6 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    if (is_array($edit)) {
-      $node = node_load($edit['nid']['#value']);
-    }
-    else {
-      $node = $edit;
-    }
     $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
     if ($available === FALSE) {
       $account = user_load(array('uid' => $node->assigned));
@@ -2017,21 +2041,43 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       $notifications = array();
       foreach ($available as $uid => $name) {
         if (!$uid) continue;
-        if ($uid == $user->uid) {
+        if (isset($node->nid) && $node->nid) {
+          $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+          if (!isset($enabled)) {
+            $enabled = _support_enabled($node->client, $uid);
+          }
+        }
+        else if ($uid == $user->uid) {
           $enabled = TRUE;
         }
         else {
-          $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
-          if (empty($enabled)) {
+          $autoassign = _support_autoassign($node->client, $node->uid);
+          if ($autoassign && $autoassign != $user->uid) {
+            $enabled = TRUE;
+          }
+          else {
             $enabled = _support_enabled($node->client, $uid);
           }
+        }
+        if (variable_get('support_autosubscribe_force', FALSE)) {
+          $autosubscribed = _support_autosubscribe($node->nid, $node->client, FALSE);
+        }
+        else {
+          $autosubscribed = array();
+        }
+        if (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $uid)) {
+          $enabled = TRUE;
+          $disabled = TRUE;
+        }
+        else {
+          $disabled = FALSE;
         }
         $notifications[] = $uid;
         $form['subscribe']['subscribed']["notify-$uid"] = array(
           '#type' => 'checkbox',
           '#title' => $name,
           '#default_value' => $enabled,
-          '#disabled' => $uid == $user->uid ? TRUE : FALSE,
+          '#disabled' => (($uid == $user->uid || isset($autosubscribed[$uid]) || $disabled) && $enabled) ? TRUE : FALSE,
         );
       }
       $form['subscribe']['subscribed']['notifications'] = array(

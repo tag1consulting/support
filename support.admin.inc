@@ -282,6 +282,8 @@ function support_admin_settings() {
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   );
   $form['general']['support_autocomplete_limit'] = array(
     '#type' => 'select',
@@ -312,9 +314,36 @@ function support_admin_settings() {
     '#default_value' => variable_get('support_secondary_sort_order', 0),
   );
 
+  $form['notification'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Notifications'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  $form['notification']['support_autosubscribe_creator'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Prevent user creating or updating ticket from unsubscribing'),
+    '#description' => t('Check this box to prevent the user creating or updating a ticket from unsubscribing from notifications.'),
+    '#default_value' => variable_get('support_autosubscribe_creator', FALSE),
+  );
+  $form['notification']['support_autosubscribe_force'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Prevent autosubscribed users from unsubscribing'),
+    '#description' => t('Check this box to prevent administratively autosubscribed users from unsubscribing from notifications.'),
+    '#default_value' => variable_get('support_autosubscribe_force', FALSE),
+  );
+  $form['notification']['support_autosubscribe_assigned'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Prevent assigned users from unsubscribing'),
+    '#description' => t('Check this box to prevent assigned users from unsubscribing from notifications.'),
+    '#default_value' => variable_get('support_autosubscribe_assigned', FALSE),
+  );
+
   $form['user'] = array(
     '#type' => 'fieldset',
     '#title' => t('User profile'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   );
   $form['user']['support_display_user_links'] = array(
     '#type' => 'checkbox',
@@ -326,6 +355,8 @@ function support_admin_settings() {
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Search'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   );
   $form['search']['support_remove_tickets'] = array(
     '#type' => 'checkbox',
@@ -349,6 +380,8 @@ function support_admin_settings() {
   $form['mail'] = array(
     '#type' => 'fieldset',
     '#title' => t('Mail'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   );
   $form['mail']['support_global_mailfrom'] = array(
     '#type' => 'textfield',

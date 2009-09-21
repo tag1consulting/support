@@ -1,11 +1,17 @@
 September 20th, 2009
  - support.admin.inc
     o bug #583338: be sure $client is set before using it
+    o feature #481110: add new notification settings, 'Prevent user creating or
+      updating ticket from unsubscribing', 'Prevent autosubscribed users from
+      unsubscribing', and 'Prevent assigned users from unsubscribing', all
+      disabled by default
+ - suppose.module
+    o feature #481110: enforce new administrative notifications settings
 
 September 20th, 2009
  - support.module
     o feature #582168: make option to thread tickets based on the subject
-                       a per-client setting
+      a per-client setting
 
 September 18th, 2009
  - support.module
@@ -13,7 +19,7 @@ September 18th, 2009
       messages when they are downloaded from the server
  - support.admin.inc
     o feature #582168: add configurable option to thread tickets based on the 
-                       subject
+      subject
 
 September 17th, 2009 (6.x-1.2-rc1, 6.x-1.2)
  - support.module

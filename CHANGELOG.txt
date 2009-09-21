@@ -1,4 +1,8 @@
 September 20th, 2009
+ - support.admin.inc
+    o bug #583338: be sure $client is set before using it
+
+September 20th, 2009
  - support.module
     o feature #582168: make option to thread tickets based on the subject
                        a per-client setting

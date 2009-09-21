@@ -156,14 +156,14 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#autocomplete_path' => $path,
     '#maxlength' => 2048,
     '#default_value' => !empty($client->autosubscribe) ? $client->autosubscribe : '',
-    '#description' => t('Enter one or more comma-seperated usernames to auto-subscribe to !client issues.  These users will receive email notifications for all new tickets and ticket updates for this client.', array('!client' => $client->name)),
+    '#description' => t('Enter one or more comma-seperated usernames to auto-subscribe to !client issues.  These users will receive email notifications for all new tickets and ticket updates for this client.', array('!client' => isset($client->name) ? $client->name : 'client')),
   );
   $form['autoassign'] = array(
     '#type' => 'textfield',
     '#title' => t('Auto-assign'),
     '#autocomplete_path' => 'support/autocomplete/assigned/'. $id,
     '#default_value' => !empty($client->autoassign) ? $client->autoassign : '',
-    '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!client' => $client->name, '!settings' => l(t('general support settings'), 'admin/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
+    '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!settings' => l(t('general support settings'), 'admin/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
   );
   $form['notes'] = array(
     '#title' => t('Notes'),
@@ -173,7 +173,7 @@ function support_admin_client(&$form_state, $client = NULL) {
   );
   $form['clid'] = array(
     '#type' => 'hidden',
-    '#value' => $client->clid,
+    '#value' => isset($client->clid) ? $client->clid : 0,
   );
   $form['submit'] = array(
     '#value' => isset($client->clid) ? t('Update client') : t('Add client'),
@@ -229,7 +229,7 @@ function support_admin_client_validate($form, &$form_state) {
     }
   }
   if (!empty($form_state['values']['domains'])) {
-    _support_validate_domains('domains', explode(',', $form['domains']['#value']));
+    _support_validate_domains('domains', explode(',', $form_state['values']['domains']));
   }
   if ($form_state['values']['integrate_email'] && !function_exists('imap_open')) {
     form_set_error('integrate_email', t('PHP must be !compiled in order to enable inbound email integration.  The IMAP functions are required to support the IMAP, POP3, and local mailbox access methods.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))));

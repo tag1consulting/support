@@ -632,9 +632,9 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
             $node->assigned = 0;
           }
         }
-        db_query("UPDATE {support_ticket} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d", $node->message_id, $node->state, $node->priority, $node->client, $node->assigned, $node->nid);
+        db_query("UPDATE {support_ticket} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d", isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned, $node->nid);
         if (!db_affected_rows()) {
-          db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, $node->message_id, $node->state, $node->priority, $node->client, $node->assigned);
+          db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
         }
         if ($op == 'insert') {
           // auto-subscribe configured users
@@ -706,9 +706,9 @@ function support_comment(&$comment, $op) {
           $comment['assigned'] = 0;
         }
       }
-      db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", $comment['message_id'], $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
+      db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
       if (!db_affected_rows()) {
-        db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], $comment['message_id'], $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
+        db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
       }
       _support_comment_update_node($comment['nid']);
       if ($op == 'insert') {
@@ -724,7 +724,7 @@ function support_comment(&$comment, $op) {
         support_notification($comment, $comment['nid'], 'ticket_comment_new', $comment['suppress']);
       }
       // if admin, can update who is assignd to the ticket
-      if (user_access('administer support') && !$comment['support_email']) {
+      if (user_access('administer support') && (!isset($comment['support_email']) || !$comment['support_email'])) {
         $node = node_load($comment['nid']);
         if (isset($comment['subscribed-users']) &&
             !empty($comment['subscribed-users'])) {
@@ -756,21 +756,21 @@ function support_comment_view(&$comment) {
   static $client = 0;
   static $assigned = 0;
   $current = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = %d', $comment->cid));
-  if ($assigned != $current->assigned) {
+  if (!empty($current) && $assigned != $current->assigned) {
     $previous_account = user_load(array('uid' => $assigned));
     $current_account = user_load(array('uid' => $current->assigned));
     $comment->comment = '<div class="support-assigned">'. t('Assigned') .': '. ($previous_account->name ? $previous_account->name : '<em>'. t('unassigned') .'</em>') .' -> '. ($current_account->name ? $current_account->name : '<em>'. t('unassigned') .'</em>') ."</div>\n". $comment->comment;
     $assigned = $current->assigned;
   }
-  if ($client != $current->client) {
+  if (!empty($current) && $client != $current->client) {
     $comment->comment = '<div class="support-client">'. t('Client') .': '. _support_client($client) .' -> '. _support_client($current->client) ."</div>\n". $comment->comment;
     $client = $current->client;
   }
-  if ($state != $current->state) {
+  if (!empty($current) && $state != $current->state) {
     $comment->comment = '<div class="support-state">'. t('State') .': '. _support_state($state) .' -> '. _support_state($current->state) ."</div>\n" . $comment->comment;
     $state = $current->state;
   }
-  if ($priority != $current->priority) {
+  if (!empty($current) && $priority != $current->priority) {
     $comment->comment = '<div class="support-priority">'. t('Priority') .': '. _support_priorities($priority) .' -> '. _support_priorities($current->priority) ."</div>\n" . $comment->comment;
     $priority = $current->priority;
   }
@@ -781,7 +781,7 @@ function support_comment_view(&$comment) {
  */
 function support_mail($key, &$message, $params) {
   $language = $message['language'];
-  $variables = support_mail_tokens($params['account'], $language, $params['nid'], $params['comment'], $params['suppress']);
+  $variables = support_mail_tokens($params['account'], $language, $params['nid'], isset($params['comment']) ? $params['comment'] : array(), $params['suppress']);
   $message['subject'] .= _support_mail_text($key .'_subject', $language, $variables, $params['integrate_email']);
   $message['body'] = _support_mail_text($key .'_body', $language, $variables, $params['integrate_email']);
   $node = node_load($params['nid']);
@@ -909,7 +909,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!client_name' => $client->name,
     '!client_path' => $client->path,
     '!key' => '['. variable_get('support_key', 'tkt') .":$nid]",
-    '!update_username' => $update_account->name,
+    '!update_username' => isset($update_account->name) ? $update_account->name : '',
     '!update_realname' => theme('username', $user, array('plain' => TRUE)),
     '!site' => variable_get('site_name', 'Drupal'),
     '!uri' => $base_url,
@@ -1313,8 +1313,8 @@ function _support_mail_notify($op, $account, $comment = array(), $nid = NULL, $s
     $params['account'] = $account;
     $params['nid'] = $nid;
     if (isset($comment['cid'])) {
-      $params['cid'] = $cid;
-      $params['comment'] = $comment;
+      $params['cid'] = $comment['cid'];
+      $params['comment'] = $comment['comment'];
     }
     else {
       $params['cid'] = 0;
@@ -1742,7 +1742,7 @@ function support_status_form(&$form_state, $edit, $title) {
       '#suffix' => '</div>',
     );
   }
-  $default = $node->state ? $node->state : _support_state_default();
+  $default = isset($node->state) ? $node->state : _support_state_default();
   if ($node->uid != $user->uid && $default == _support_state_default()) {
     // We did not create this ticket, but we're updating it.  Suggest that it
     // no longer be marked as new.
@@ -1783,7 +1783,7 @@ function support_status_form(&$form_state, $edit, $title) {
       '#prefix' => '&nbsp;&nbsp;',
       '#title' => t('Priority'),
       '#options' => _support_priorities(),
-      '#default_value' => $node->priority ? $node->priority : _support_priority_default(),
+      '#default_value' => isset($node->priority) ? $node->priority : _support_priority_default(),
     );
   }
   $clients = _support_available_clients();
@@ -1876,6 +1876,10 @@ function _support_assigned($assigned, $node, $limit = 9999) {
 
   if (!$limit) {
     return FALSE;
+  }
+
+  if (!isset($node->nid)) {
+    $node->nid = 0;
   }
 
   if (!isset($available["$assigned-$node->nid"])) {
@@ -2579,14 +2583,14 @@ function _support_access_tickets() {
  */
 function _support_autoassign($clid, $uid = 0) {
   static $autoassign = array();
-  if (!isset($autoassign[$client])) {
+  if (!isset($autoassign[$clid])) {
     $name = db_result(db_query('SELECT autoassign FROM {support_client} WHERE clid = %d', $clid));
     switch ($name) {
       case '<nobody>':
-        $autoassign[$client] = 0;
+        $autoassign[$clid] = 0;
         break;
       case '<creator>':
-        $autoassign[$client] = $uid;
+        $autoassign[$clid] = $uid;
         break;
       default:
         // no per-client auto-assign, or an invalid auto-assign
@@ -2595,28 +2599,28 @@ function _support_autoassign($clid, $uid = 0) {
           $assign = variable_get('support_autoassign_ticket', '<nobody>');
           switch ($assign) {
             case '<nobody>':
-              $autoassign[$client] = 0;
+              $autoassign[$clid] = 0;
               break;
             case '<creator>':
-              $autoassign[$client] = $uid;
+              $autoassign[$clid] = $uid;
               break;
             default:
               $account = user_load(array('name' => trim($assign)));
               if (empty($account) || !$account->uid) {
-                $autoassign[$client] = 0;
+                $autoassign[$clid] = 0;
               }
               else {
-                $autoassign[$client] = $account->uid;
+                $autoassign[$clid] = $account->uid;
               }
               break;
           }
         }
         else {
-          $autoassign[$client] = $account->uid;
+          $autoassign[$clid] = $account->uid;
         }
     }
   }
-  return $autoassign[$client];
+  return $autoassign[$clid];
 }
 
 /**

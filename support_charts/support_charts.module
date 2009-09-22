@@ -146,7 +146,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
         $filter = '';
       }
 
-      $result = db_query("SELECT COUNT(t.nid) AS count, s.state as label FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE $filter GROUP BY s.state ORDER BY s.state");
+      $result = db_query("SELECT COUNT(t.nid) AS count, s.state as label FROM {support_ticket} t LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = 0 $filter GROUP BY s.state ORDER BY s.state");
       break;
 
     case 'tickets_per_priority':
@@ -165,7 +165,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
         $filter = '';
       }
 
-      $result = db_query("SELECT COUNT(t.nid) AS count, p.priority as label FROM {support_ticket} t LEFT JOIN {support_priority} p ON t.priority = p.pid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE $filter GROUP BY t.priority ORDER BY t.priority");
+      $result = db_query("SELECT COUNT(t.nid) AS count, p.priority as label FROM {support_ticket} t LEFT JOIN {support_priority} p ON t.priority = p.pid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = 0 $filter GROUP BY t.priority ORDER BY t.priority");
       break;
 
     case 'tickets_per_client':
@@ -184,7 +184,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
         $filter = '';
       }
 
-      $result = db_query("SELECT COUNT(t.nid) AS count, c.name as label FROM {support_ticket} t LEFT JOIN {support_client} c ON t.client = c.clid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE $filter GROUP BY t.client ORDER BY t.client");
+      $result = db_query("SELECT COUNT(t.nid) AS count, c.name as label FROM {support_ticket} t LEFT JOIN {support_client} c ON t.client = c.clid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = 0 $filter GROUP BY t.client ORDER BY t.client");
       break;
 
     case 'tickets_per_assigned':
@@ -196,7 +196,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
       }
       else {
         $chart['#title'] = t('Assigned open tickets');
-        $result = db_query('SELECT COUNT(t.nid) AS count, u.name as label FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = FALSE GROUP BY t.assigned ORDER BY t.assigned');
+        $result = db_query('SELECT COUNT(t.nid) AS count, u.name as label FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND s.isclosed = 0 GROUP BY t.assigned ORDER BY t.assigned');
       }
 
       break;
@@ -290,7 +290,7 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
       $chart['#chart_id'] = $id;
 
       $time = mktime(0, 0, 0, date('m', $now), 1, date('Y', $now));
-      $result = db_query("SELECT GREATEST(n.changed, l.last_comment_timestamp) AS timestamp FROM {node} n LEFT JOIN {node_comment_statistics} l ON n.nid = l.nid LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = TRUE AND n.type = 'support_ticket' AND (n.changed < %d OR l.last_comment_timestamp < %d) AND (n.changed > %d OR l.last_comment_timestamp > %d) $filter ORDER BY timestamp", $now, $now, $time, $time);
+      $result = db_query("SELECT GREATEST(n.changed, l.last_comment_timestamp) AS timestamp FROM {node} n LEFT JOIN {node_comment_statistics} l ON n.nid = l.nid LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE s.isclosed = 1 AND n.type = 'support_ticket' AND (n.changed < %d OR l.last_comment_timestamp < %d) AND (n.changed > %d OR l.last_comment_timestamp > %d) $filter ORDER BY timestamp", $now, $now, $time, $time);
       break;
   }
 

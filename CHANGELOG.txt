@@ -7,6 +7,7 @@ September 20th, 2009
       disabled by default
  - suppose.module
     o feature #481110: enforce new administrative notifications settings
+    o bug #584452: list attachments in notifications when posted via email
 
 September 20th, 2009
  - support.module

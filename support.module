@@ -639,7 +639,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
         }
         if ($op == 'insert') {
           // force auto-subscribe configured users
-          if (variable_get('support_autosubscribe_force', FALSE)) {
+          if (variable_get('support_autosubscribe_force', FALSE) || isset($node->created_by_email)) {
             _support_autosubscribe($node->nid, $node->client);
           }
           if (isset($node->notifications)) {
@@ -659,14 +659,22 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
             }
           }
           // auto-subscribe ticket creator
-          if (variable_get('support_autosubscribe_creator', FALSE)) {
+          if (variable_get('support_autosubscribe_creator', FALSE) || isset($node->created_by_email)) {
             support_subscribe_user($node->nid, $node->uid);
           }
           else {
             support_subscribe_user($node->nid, $node->uid, $node->notification);
           }
+          // auto-subscribe assigned user
+          if ((variable_get('support_autosubscribe_assigned', FALSE) && $node->assigned) || isset($node->created_by_email)) {
+            support_subscribe_user($node->nid, $node->assigned);
+          }
+          // auto-subscribe configured users
+          if (variable_get('support_autosubscribe_force', FALSE) || isset($node->created_by_email)) {
+            _support_autosubscribe($node->nid, $node->client);
+          }
           // generate notification emails
-          support_notification(array(), $node->nid, 'ticket_new', $node->suppress);
+          support_notification(array(), $node->nid, 'ticket_new', isset($node->suppress) ? $node->suppress : FALSE);
         }
         cache_clear_all();
         break;
@@ -736,7 +744,7 @@ function support_comment(&$comment, $op) {
           support_subscribe_user($comment['nid'], $comment['assigned']);
         }
         // generate notification emails
-        support_notification($comment, $comment['nid'], 'ticket_comment_new', $comment['suppress']);
+        support_notification($comment, $comment['nid'], 'ticket_comment_new', isset($comment['suppress']) ? $comment['suppress'] : FALSE);
       }
       // if admin, can update who is assigned to the ticket
       if (user_access('administer support') && (!isset($comment['support_email']) || !$comment['support_email'])) {
@@ -1022,7 +1030,7 @@ function support_save_message($message, $client) {
 
     // TODO: format?
     // TODO: ip_address?
-    db_query("INSERT INTO {comments} (nid, pid, uid, subject, comment, format, hostname, timestamp, status, thread, name, mail, homepage) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, %d, '%s', '%s', '%s', '%s')", $ticket->nid, 0, $account->uid, $message['subject'], $message['body'], 1, ip_address(), time(), 0, $thread, $account->name, $account->mail, $account->homepage);
+    db_query("INSERT INTO {comments} (nid, pid, uid, subject, comment, format, hostname, timestamp, status, thread, name, mail, homepage) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, %d, '%s', '%s', '%s', '%s')", $ticket->nid, 0, $account->uid, $message['subject'], $message['body'], 1, ip_address(), time(), 0, $thread, $account->name, $account->mail, isset($account->homepage) ? $account->homepage : '');
 
     // Tell the other modules a new comment has been submitted.
     $comment['cid'] = db_last_insert_id('comments', 'cid');
@@ -1037,19 +1045,12 @@ function support_save_message($message, $client) {
     $comment['assigned'] = $ticket->assigned;
     $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
     $comment['support_email'] = TRUE;
-    comment_invoke_comment($comment, 'insert');
-
-    $fids = _support_save_attachments($message['attachments'], $account);
-    if (is_array($fids)) {
-      foreach ($fids as $fid => $filename) {
-        if (module_exists('comment_upload')) {
-          db_query("INSERT INTO {comment_upload} (fid, nid, cid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $ticket->nid, $comment['cid'], $filename, 1, 0);
-        }
-        else {
-          db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $ticket->nid, $ticket->vid, $filename, 1, 0);
-        }
-      }
+    $comment['files'] = _support_save_attachments($message['attachments'], $account);
+    // convert indivudal files to arrays to work with the comment_upload module
+    foreach ($comment['files'] as $fid => $file) {
+      $comment['files'][$fid] = (array)$file;
     }
+    comment_invoke_comment($comment, 'insert');
 
     // Add an entry to the watchdog log.
     watchdog('content', 'Comment: added %subject.', array('%subject' => $comment['subject']), WATCHDOG_NOTICE, l(t('view'), 'node/'. $comment['nid'], array('fragment' => 'comment-'. $comment['cid'])));
@@ -1060,6 +1061,7 @@ function support_save_message($message, $client) {
     return TRUE;
   }
   else if (is_object($account)) {
+    $node = new stdClass();
     // Create new ticket if none matches and valid from address.
     $node->title = $message['subject'];
     $node->body = $message['body'];
@@ -1075,24 +1077,20 @@ function support_save_message($message, $client) {
     $node->notification = TRUE;
     $node->support_email = TRUE;
     $node->language = $account->language;
-    node_save($node);
-
     // Save/record attachments
-    $fids = _support_save_attachments($message['attachments'], $account);
-    if (is_array($fids)) {
-      // Refresh node to be sure we have the correct vid when saving attachments
-      $node = node_load($node->nid);
-      foreach ($fids as $fid => $filename) {
-        db_query("INSERT INTO {upload} (fid, nid, vid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $fid, $node->nid, $node->vid, $filename, 1, 0);
-      }
+    if (isset($message['attachments'])) {
+      $node->files = _support_save_attachments($message['attachments'], $account);
     }
+    $node->created_by_email = TRUE;
+    node_save($node);
   }
 }
 
 function _support_save_attachments($attachments, $account) {
-  $fids = array();
+  $files = array();
   if (count($attachments)) {
     foreach ($attachments as $attachment) {
+      $attachment = (object)$attachment;
       if (is_array($attachment->parameters)) {
         foreach ($attachment->parameters as $parm) {
           switch(strtoupper($parm->attribute)) {
@@ -1135,15 +1133,18 @@ function _support_save_attachments($attachments, $account) {
       if ($attachment->filepath) {
         watchdog('support', 'Saved %size byte %type attachment %file to %path.', array('%size' => number_format($attachment->bytes), '%type' => $attachment->filemime, '%file' => utf8_encode($attachment->filename), '%path' => $attachment->filepath), WATCHDOG_INFO);
         db_query("INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp) VALUES(%d, '%s', '%s', '%s', %d, %d, %d)", $account->uid, utf8_encode($attachment->filename), $attachment->filepath, $attachment->filemime, $attachment->bytes, 1, time());
-        $fid = db_last_insert_id('files', 'fid');
-        $fids[$fid] = $attachment->filename;
+        $attachment->fid = db_last_insert_id('files', 'fid');
+        $attachment->new = $attachment->list = TRUE;
+        $attachment->weight = 0;
+        $attachment->description = $attachment->filename;
+        $files[$attachment->fid] = $attachment;
       }
       else {
         watchdog('support', 'Failed to save attachment %file, file_save_data() returned error.', array('%file' => utf8_encode($attachment->filename)));
       }
     }
   }
-  return $fids;
+  return $files;
 }
 
 
@@ -1233,6 +1234,7 @@ function _support_get_message_body($stream, $message, $mime_type, $structure = F
   // it.
   $stripped = FALSE;
   $array = explode("\n", $body);
+  $last_line = $last_length = 0;
   foreach ($array as $line => $text) {
     // Look for last occurrance of magic in previous ticket.
     preg_match_all("/([0-9]*):([0-9a-f]*)\]/", $text, $magic);
@@ -2507,6 +2509,7 @@ function support_client_fetch($client, $manual = TRUE) {
       $message['from'] = $message['headers']->from[0]->mailbox .'@'. $message['headers']->from[0]->host;
     }
     $strings = imap_mime_header_decode($message['headers']->subject);
+    $message['subject'] = '';
     foreach ($strings as $string) {
       if ($string->charset == 'default') {
         $message['subject'] .= $string->text;
@@ -2520,12 +2523,14 @@ function support_client_fetch($client, $manual = TRUE) {
     $key = variable_get('support_key', 'tkt');
     $tickets = array();
     preg_match("/(\[$key:)([0-9]*)(\])/", $message['subject'], $tickets);
-    $message['nid'] = $tickets[2];
+    if (isset($tickets[2])) {
+      $message['nid'] = $tickets[2];
+    }
 
     if (variable_get('support_thread_by_mail_headers', TRUE)) {
       // If not found in subject, search for the ticket number based on the
       // in_reply_to field of the header.
-      if (!is_numeric($message['nid']) && isset($message['headers']->in_reply_to)) {
+      if ((!isset($message['nid']) || !is_numeric($message['nid'])) && isset($message['headers']->in_reply_to)) {
         preg_match_all("/<[^<^>]*/", $message['headers']->in_reply_to, $in_reply_tos);
         foreach ($in_reply_tos[0] as $in_reply_to) {
           $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $in_reply_to .'>'));
@@ -2543,7 +2548,7 @@ function support_client_fetch($client, $manual = TRUE) {
 
       // If still not found, search for the ticket number based on the 
       // references field of the header.
-      if (!is_numeric($message['nid']) && isset($message['headers']->references)) {
+      if ((!isset($message['nid']) || !is_numeric($message['nid'])) && isset($message['headers']->references)) {
         preg_match_all("/<[^<^>]*/", $message['headers']->references, $references);
         foreach ($references[0] as $reference) {
           $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $reference .'>'));
@@ -2563,7 +2568,7 @@ function support_client_fetch($client, $manual = TRUE) {
     }
 
     // If still not found, look for tickets that have an identical subject.
-    if (!is_numeric($message['nid'])) {
+    if (!isset($message['nid']) || !is_numeric($message['nid'])) {
       if (!$client->thread_subject) {
         $client->thread_subject = variable_get('support_thread_by_subject', 3);
       }
@@ -2586,9 +2591,11 @@ function support_client_fetch($client, $manual = TRUE) {
     $mime = _support_get_filemime($structure);
     $message['body'] = _support_get_message_body($stream, $number, $mime, $structure);
 
-    $parts = count($structure->parts);
-    if ($parts > 1) {
-      $message['attachments'] = _support_get_attachments($stream, $number, $structure, $parts);
+    if (isset($structure->parts)) {
+      $parts = count($structure->parts);
+      if ($parts > 1) {
+        $message['attachments'] = _support_get_attachments($stream, $number, $structure, $parts);
+      }
     }
 
     drupal_alter('support_fetch_message', $message, $client);

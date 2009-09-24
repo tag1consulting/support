@@ -1163,7 +1163,7 @@ function _support_get_filemime(&$structure) {
 function _support_get_attachments($stream, $message, $structure, $parts) {
   $attachments = array();
   for ($part = 2; $part <= $parts; $part++) {
-    $attachment = imap_fetchbody($stream, $message, $part, FT_UID);
+    $attachment = imap_fetchbody($stream, $message, $part);
     $details = imap_bodystruct($stream, $message, $part);
     // Decode as necessary
     if ($details->encoding == ENCBASE64) {

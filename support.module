@@ -1809,21 +1809,23 @@ function support_status_form(&$form_state, $edit, $title) {
     );
   }
   $clients = _support_available_clients();
-  if (sizeof($clients) == 1) {
-    $node->client = key($clients);
-  }
-  else {
-    if (is_numeric($_SESSION['support_client'])) {
-      $node->client = $_SESSION['support_client'];
-    }
-    else if (!user_access('can select client')) {
-      // TODO: It should be possible to set a default client.  Perhaps allow
-      // a weight to be assigned to clients -- then we select the heaviest
-      // matching client...?
+  if (!isset($node->client) || empty($node->client)) {
+    if (sizeof($clients) == 1) {
       $node->client = key($clients);
     }
-    $clients = array(0 => '- select client -') + $clients;
+    else {
+      if (is_numeric($_SESSION['support_client'])) {
+        $node->client = $_SESSION['support_client'];
+      }
+      else if (!user_access('can select client')) {
+        // TODO: It should be possible to set a default client.  Perhaps allow
+        // a weight to be assigned to clients -- then we select the heaviest
+        // matching client...?
+        $node->client = key($clients);
+      }
+    }
   }
+  $clients = array(0 => '- select client -') + $clients;
   if ((sizeof($clients) == 1) ||
       (!user_access('can select client') &&
        !user_access('administer support'))) {

@@ -1,3 +1,7 @@
+September 29th, 2009
+ -  support.module
+   o bug #591608: don't auto-assign ticket client if already set
+
 September 24th, 2009
  -  support.module
    o bug #586512: body field not populated with fetched mails

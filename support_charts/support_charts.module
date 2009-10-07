@@ -300,9 +300,9 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
  
   while ($data = db_fetch_object($result)) {
     $day = ltrim(date('d', $data->timestamp), '0');
-    $types[$data->type] = $data->type;
-    $counts[$day][$data->type]++;
-    $max[$data->type]++;
+    $types[$type] = $type;
+    $counts[$day][$type]++;
+    $max[$type]++;
   }
 
   // Generate data and labels

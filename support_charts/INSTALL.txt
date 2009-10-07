@@ -1,0 +1,6 @@
+-------------
+Requirements:
+-------------
+ - Drupal 6.x
+ - support.module (http://drupal.org/project/support)
+ - chart.module   (http://drupal.org/project/chart)

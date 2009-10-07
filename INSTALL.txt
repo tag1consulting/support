@@ -113,6 +113,12 @@ roles that should be allowed to attach files to support tickets.  Finally, visit
 "Administer >> Content management >> Content types" and click "Support ticket".
 In the "Comment settings" section enable "Attachments on comments".
 
+Support Charts:
+---------------
+If you would like to generate charts from ticket statistics, you must first
+install the Google Charts API module:
+  http://drupal.org/project/chart
+
 Support Timer:
 --------------
 If you would like to enhance the support ticket system to also be a time tracker

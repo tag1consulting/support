@@ -1185,7 +1185,7 @@ function _support_get_attachments($stream, $message, $structure, $parts) {
 
 function _support_get_message_body_part($stream, $message, $mime_type, $structure = FALSE, $part = FALSE) {
   if (!$structure) {
-    $structure = imap_fetchstructure($stream, $message, FTUID);
+    $structure = imap_fetchstructure($stream, $message);
   }
   if (!empty($structure)) {
     foreach ($structure->parameters as $parameter) {
@@ -1211,7 +1211,7 @@ function _support_get_message_body_part($stream, $message, $mime_type, $structur
       if (!$part) {
         $part = 1;
       }
-      $body = imap_fetchbody($stream, $message, $part, FT_UID);
+      $body = imap_fetchbody($stream, $message, $part);
       switch ($structure->encoding) {
         case ENCBASE64:
           return drupal_convert_to_utf8(imap_base64($body), $encoding);

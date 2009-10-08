@@ -1,3 +1,8 @@
+October 8th, 2009
+ - support.module
+    o bug #586512: remove FT_UID flags, breaking downloads on EXCHANGE, seem
+      unneccessary (and one had a typo)
+
 September 29th, 2009
  -  support.module
    o bug #591608: don't auto-assign ticket client if already set

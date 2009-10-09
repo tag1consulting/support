@@ -109,6 +109,13 @@ function support_schema() {
         'type' => 'text',
         'size' => 'big',
       ),
+      'thread_subject' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Optionally configure per-client subject threading settings.',
+      ),
     ),
     'primary key' => array('clid'),
     'indexes' => array('status' => array('status'), 'autoassign' => array('autoassign')),

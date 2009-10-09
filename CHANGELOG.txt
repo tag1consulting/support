@@ -1,3 +1,7 @@
+October 9th, 2009
+ - support.module
+    o bug #600362: create thread_subject column on new installs
+
 October 8th, 2009
  - support.module
     o bug #586512: remove FT_UID flags, breaking downloads on EXCHANGE, seem

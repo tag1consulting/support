@@ -31,7 +31,24 @@ can ignore the contents of this file.
    module, it will automatically your tickets from jobtrack-6.x-1.6-rc1 to the
    latest version of the support module.
 
-6) Go to "Administer >> User management >> Permissions" and set permissions.
+6) Unfortunately some steps are missing from the automatic update process, and
+   so the following queries have to be executed directly in your database:
+
+      ALTER TABLE support_client ADD autoassign VARCHAR(255) NOT NULL \
+      COMMENT 'Optionally assign new tickets to this user.' AFTER port;
+
+      ALTER TABLE support_client ADD INDEX (autoassign);
+
+      UPDATE system SET weight = 10 WHERE name = 'support'
+
+   (If you are using table prefixing, you will have to manually add your table
+   prefix to the above queries.  For example, if your prefix is 'drupal_' then
+   the first two table names will be 'drupal_support_client', and the last will
+   be 'drupal_system'.)
+
+   Further information here: http://drupal.org/node/587884
+
+7) Go to "Administer >> User management >> Permissions" and set permissions.
    For more information about how permissions work, review INSTALL.txt.
    The names of permissions have changed, so you can not skip this step.
 

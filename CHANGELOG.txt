@@ -1,6 +1,7 @@
 November 2nd, 2009
  - support.module
     o bug #621060: respect 'view other users tickets' perm in node listings
+    o bug #607468: don't show 'tickets' search tab if user can't view tickets
 
 October 9th, 2009
  - support.module

@@ -1518,13 +1518,20 @@ function support_search_form_submit($form, &$form_state) {
  * Optionally remove support tickets from content search.
  */
 function support_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
+  global $user;
   if (variable_get('support_remove_tickets', TRUE) && $query == '' && $primary_table == 'n' && $primary_field = 'nid' && empty($args)) {
     return array('where' => " n.type != 'support_ticket'");
   }
   if ($primary_table == 'n' AND $primary_field == 'nid' && !strpos($query, '{support_ticket}')) {
     $clients = support_search_available_clients();
     if (!empty($clients)) {
-      return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' st.client IN ('. implode(',', support_search_available_clients()) .')  OR st.client IS NULL');
+      if (!user_access('view other users tickets') && !user_access('administer support')) {
+        $filter = " AND n.uid = $user->uid";
+      }
+      else {
+        $filter = '';
+      }
+      return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' (st.client IN ('. implode(',', $clients) .')  OR st.client IS NULL) '. $filter);
     }
     else {
       return array('where' => " n.type != 'support_ticket'");

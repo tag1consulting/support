@@ -638,10 +638,6 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
         }
         if ($op == 'insert') {
-          // force auto-subscribe configured users
-          if (variable_get('support_autosubscribe_force', FALSE) || isset($node->created_by_email)) {
-            _support_autosubscribe($node->nid, $node->client);
-          }
           if (isset($node->notifications)) {
             $notifications = explode(',', $node->notifications);
             foreach ($notifications as $notify) {
@@ -666,11 +662,13 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
             support_subscribe_user($node->nid, $node->uid, $node->notification);
           }
           // auto-subscribe assigned user
-          if ((variable_get('support_autosubscribe_assigned', FALSE) && $node->assigned) || isset($node->created_by_email)) {
+          if ((variable_get('support_autosubscribe_assigned', FALSE) && $node->assigned) || isset($node->created_by_email) || !user_access('can subscribe other users to notifications')) {
             support_subscribe_user($node->nid, $node->assigned);
           }
           // auto-subscribe configured users
-          if (variable_get('support_autosubscribe_force', FALSE) || isset($node->created_by_email)) {
+          if (variable_get('support_autosubscribe_force', FALSE) ||
+              isset($node->created_by_email) ||
+              !user_access('can subscribe other users to notifications')) {
             _support_autosubscribe($node->nid, $node->client);
           }
           // generate notification emails

@@ -1,3 +1,8 @@
+November 25th, 2009
+ - support.module
+    o bug #643500: respect autosubscribe settings even when user doesn't have
+                   permission to subscrobe other users
+
 November 2nd, 2009
  - support.module
     o bug #621060: respect 'view other users tickets' perm in node listings

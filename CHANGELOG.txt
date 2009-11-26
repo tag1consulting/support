@@ -3,6 +3,7 @@ November 25th, 2009
     o bug #643500: respect autosubscribe settings even when user doesn't have
       permission to subscrobe other users
     o feature #635952: provide hooks for altering tickets and clients
+    o bug #639962: ignore non-support-ticket content
 
 November 2nd, 2009
  - support.module

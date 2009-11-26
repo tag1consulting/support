@@ -686,82 +686,88 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
 function support_comment(&$comment, $op) {
   global $user;
 
-  switch ($op) {
-    case 'view':
-      support_comment_view($comment);
-      break;
-    case 'validate':
-      if (isset($comment['assigned']) && !is_numeric($comment['assigned'])) {
-        $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $comment['assigned']));
-        if ($node->assigned && !$assigned) {
-          form_set_error('assigned', t('You must specify a valid user.'));
-        }
-        else if ($assigned) {
-          $node = node_load($comment['nid']);
-          $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
-          $valid = _support_validate_assigned_user($assigned, $client);
-          if (!$valid) {
-            form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
+  if (is_array($comment)) {
+    $node = node_load($comment['nid']);
+  }
+  else {
+    $node = node_load($comment->nid);
+  }
+  if ($node->type == 'support_ticket') {
+    switch ($op) {
+      case 'view':
+        support_comment_view($comment);
+        break;
+      case 'validate':
+        if (isset($comment['assigned']) && !is_numeric($comment['assigned'])) {
+          $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $comment['assigned']));
+          if ($node->assigned && !$assigned) {
+            form_set_error('assigned', t('You must specify a valid user.'));
+          }
+          else if ($assigned) {
+            $client = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $node->client));
+            $valid = _support_validate_assigned_user($assigned, $client);
+            if (!$valid) {
+              form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
+            }
           }
         }
-      }
-      break;
-    case 'insert':
-    case 'update':
-      if (isset($comment['assigned']) && !is_numeric($comment['assigned'])) {
-        $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $comment['assigned']));
-        if ($assigned) {
-          $comment['assigned'] = $assigned;
-        }
-        else {
-          $comment['assigned'] = 0;
-        }
-      }
-      db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
-      if (!db_affected_rows()) {
-        db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
-      }
-      _support_comment_update_node($comment['nid']);
-      if ($op == 'insert') {
-        // auto-subscribe ticket-comment creator
-        if (variable_get('support_autosubscribe_creator', FALSE)) {
-          support_subscribe_user($comment['nid'], $comment['uid']);
-        }
-        else {
-          support_subscribe_user($comment['nid'], $comment['uid'], $comment['notification']);
-        }
-        // force auto-subscribe configured users
-        if (variable_get('support_autosubscribe_force', FALSE)) {
-          _support_autosubscribe($comment['nid'], $comment['client']);
-        }
-        // auto-subscribe assigned user
-        if (variable_get('support_autosubscribe_assigned', FALSE) && ($comment['assigned'])) {
-          support_subscribe_user($comment['nid'], $comment['assigned']);
-        }
-        // generate notification emails
-        support_notification($comment, $comment['nid'], 'ticket_comment_new', isset($comment['suppress']) ? $comment['suppress'] : FALSE);
-      }
-      // if admin, can update who is assigned to the ticket
-      if (user_access('administer support') && (!isset($comment['support_email']) || !$comment['support_email'])) {
-        $node = node_load($comment['nid']);
-        if (isset($comment['subscribed-users']) &&
-            !empty($comment['subscribed-users'])) {
-          $array = drupal_explode_tags($comment['subscribed-users']);
-          foreach ($array as $name) {
-            $uid = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $name));
-            $comment["notify-$uid"] = 1;
+        break;
+      case 'insert':
+      case 'update':
+        if (isset($comment['assigned']) && !is_numeric($comment['assigned'])) {
+          $assigned = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $comment['assigned']));
+          if ($assigned) {
+            $comment['assigned'] = $assigned;
+          }
+          else {
+            $comment['assigned'] = 0;
           }
         }
-        $available = _support_assigned(0, $node);
-        foreach ($available as $uid => $name) {
-          if (!$uid || $user->uid == $uid) continue;
-          support_subscribe_user($node->nid, $uid, $comment["notify-$uid"]);
+        db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
+        if (!db_affected_rows()) {
+          db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
         }
-      }
-      break;
-    case 'delete':
-      db_query('DELETE FROM {support_ticket_comment} WHERE cid = %d', $comment->cid);
-      _support_comment_update_node($comment->nid);
+        _support_comment_update_node($comment['nid']);
+        if ($op == 'insert') {
+          // auto-subscribe ticket-comment creator
+          if (variable_get('support_autosubscribe_creator', FALSE)) {
+            support_subscribe_user($comment['nid'], $comment['uid']);
+          }
+          else {
+            support_subscribe_user($comment['nid'], $comment['uid'], $comment['notification']);
+          }
+          // force auto-subscribe configured users
+          if (variable_get('support_autosubscribe_force', FALSE)) {
+            _support_autosubscribe($comment['nid'], $comment['client']);
+          }
+          // auto-subscribe assigned user
+          if (variable_get('support_autosubscribe_assigned', FALSE) && ($comment['assigned'])) {
+            support_subscribe_user($comment['nid'], $comment['assigned']);
+          }
+          // generate notification emails
+          support_notification($comment, $comment['nid'], 'ticket_comment_new', isset($comment['suppress']) ? $comment['suppress'] : FALSE);
+        }
+        // if admin, can update who is assigned to the ticket
+        if (user_access('administer support') && (!isset($comment['support_email']) || !$comment['support_email'])) {
+          if (isset($comment['subscribed-users']) &&
+              !empty($comment['subscribed-users'])) {
+            $array = drupal_explode_tags($comment['subscribed-users']);
+            foreach ($array as $name) {
+              $uid = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $name));
+              $comment["notify-$uid"] = 1;
+            }
+          }
+          $available = _support_assigned(0, $node);
+          foreach ($available as $uid => $name) {
+            if (!$uid || $user->uid == $uid) continue;
+            support_subscribe_user($node->nid, $uid, $comment["notify-$uid"]);
+          }
+        }
+        break;
+      case 'delete':
+        db_query('DELETE FROM {support_ticket_comment} WHERE cid = %d', $comment->cid);
+        _support_comment_update_node($comment->nid);
+    }
   }
 }
 

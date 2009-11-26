@@ -79,6 +79,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
   $row = 0;
   $rows = array();
   while ($ticket = db_fetch_object($result)) {
+    drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load(array('uid' => $ticket->uid));
     $comments = l($ticket->comment_count, "node/$ticket->nid", array('fragment' => 'comments'));
     if ($new = comment_num_new($ticket->nid)) {

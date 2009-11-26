@@ -380,7 +380,9 @@ function support_access_clients($client = NULL, $account = NULL) {
 function support_client_load($clid) {
   static $clients = array();
   if (!isset($clients[$clid])) {
-    $clients[$clid] = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains FROM {support_client} WHERE clid = %d', $clid));
+    $client = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains FROM {support_client} WHERE clid = %d', $clid));
+    drupal_alter('support_client_load', $client);
+    $clients[$clid] = $client;
   }
   return $clients[$clid];
 }
@@ -391,7 +393,9 @@ function support_client_load($clid) {
 function support_ticket_load($nid) {
   static $tickets = array();
   if (!isset($tickets[$nid])) {
-    $tickets[$nid] = db_fetch_object(db_query('SELECT * FROM {support_ticket} WHERE nid = %d', $nid));
+    $ticket = db_fetch_object(db_query('SELECT * FROM {support_ticket} WHERE nid = %d', $nid));
+    drupal_alter('support_ticket_load', $ticket);
+    $tickets[$nid] = $ticket;
   }
   return $tickets[$nid];
 }
@@ -463,13 +467,6 @@ function support_account_load($from, $ticket, $subject, $client) {
       return FALSE;
     }
   }
-}
-
-/**
- *
- */
-function support_client_name_load($name) {
-  return db_fetch_object(db_query("SELECT * FROM {support_client} WHERE name = '%s'"));
 }
 
 /**
@@ -2113,6 +2110,7 @@ function _support_clients_load($path = FALSE) {
       $clients[$client->clid] = check_plain($client->name);
     }
   }
+  drupal_alter('support_clients_load', $clients);
   return $clients;
 }
 
@@ -2384,6 +2382,7 @@ function support_page($client = NULL, $state = NULL) {
   $result = pager_query($sql, 50, 0, $sql_count);
   $rows = array();
   while ($ticket = db_fetch_object($result)) {
+    drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load(array('uid' => $ticket->uid));
     $assigned = user_load(array('uid' => $ticket->assigned));
     $comments = l($ticket->comment_count, "node/$ticket->nid", array('fragment' => 'comments'));

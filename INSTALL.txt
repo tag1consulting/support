@@ -98,6 +98,12 @@
    clients and client tickets, and automatically have all support permissions
    available to them.
 
+   NOTE: If you have integrated email for any of your clients and you wish to
+   save email attachments then the user running Drupal's cron (usually the
+   anonymous user) must have "upload files" permissions.  You can set this on a
+   per-content-type basis using the Upload Permissions Per Content Type module:
+   http://drupal.org/project/upload_perm_per_type
+
 --------
 Optional
 --------
@@ -112,6 +118,12 @@ and grant "upload files to commnts" and "view files uploaded to comments" to all
 roles that should be allowed to attach files to support tickets.  Finally, visit
 "Administer >> Content management >> Content types" and click "Support ticket".
 In the "Comment settings" section enable "Attachments on comments".
+
+NOTE: If you have integrated email for any of your clients and you wish to save
+email attachments then the user running Drupal's cron (usually the anonymous
+user) must have "upload files to comments" permissions.  You can set this on a
+per-content-type basis using the Upload Permissions Per Content Type module:
+http://drupal.org/project/upload_perm_per_type
 
 Support Charts:
 ---------------

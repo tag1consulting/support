@@ -437,3 +437,12 @@ function support_update_6002() {
   );
   return $ret;
 }
+
+/**
+ * Flush caches to support new theme functions
+ */
+function support_update_6003() {
+  drupal_flush_all_caches();
+  return array();
+}
+

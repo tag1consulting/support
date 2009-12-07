@@ -101,5 +101,9 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     }
     $row++;
   }
+  return theme('support_page_user', $header, $rows);
+}
+
+function theme_support_page_user($header, $rows) {
   return theme('table', $header, $rows, array('class' => 'support')) . theme('pager');
 }

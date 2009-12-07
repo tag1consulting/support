@@ -1,4 +1,8 @@
-November 25th, 2009
+December 6th, 2009 (6.x-1.3)
+ - support.module
+    o feature #652428: introduce theme_support_page and theme_support_page_user
+
+November 25th, 2009 (6.x-1.3-rc1)
  - support.module
     o bug #643500: respect autosubscribe settings even when user doesn't have
       permission to subscrobe other users

@@ -320,6 +320,12 @@ function support_admin_settings() {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
+  $form['notification']['support_notifications'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable'),
+    '#description' => t('Globally enable support ticket notifications.  Disable this if you don\'t ever want the support module to send email notifications.  Alternatively, you can globally enable notifications and then disable them on a per-client basis.'),
+    '#default_value' => variable_get('support_notifications', TRUE),
+  );
   $form['notification']['support_autosubscribe_creator'] = array(
     '#type' => 'checkbox',
     '#title' => t('Prevent user creating or updating ticket from unsubscribing'),

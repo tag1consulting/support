@@ -1330,12 +1330,14 @@ function _support_autosubscribe($nid, $client, $save = TRUE) {
  * Send notification emails to everyone subscribed to the updated ticket.
  */
 function support_notification($comment = array(), $nid, $op = 'ticket_comment_new', $suppress = FALSE) {
-  $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $nid);
-  while ($account = db_fetch_object($result)) {
-    $account = user_load(array('uid' => $account->uid));
-    // always send emails to admins, even if update was suppressed
-    if (!$suppress || user_access('administer support', $account)) {
-      _support_mail_notify($op, $account, $comment, $nid, $suppress);
+  if (variable_get('support_notifications', TRUE)) {
+    $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $nid);
+    while ($account = db_fetch_object($result)) {
+      $account = user_load(array('uid' => $account->uid));
+      // always send emails to admins, even if update was suppressed
+      if (!$suppress || user_access('administer support', $account)) {
+        _support_mail_notify($op, $account, $comment, $nid, $suppress);
+      }
     }
   }
 }
@@ -2003,115 +2005,117 @@ function support_subscribe_form(&$form_state, $edit, $title) {
   else {
     $node = $edit;
   }
-  $form['subscribe'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Notifications'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-  );
-  if (variable_get('support_autosubscribe_creator', FALSE)) {
-    $notification = TRUE;
-  }
-  else if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
-    $notification = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
-  }
-  else if (is_object($edit) && isset($edit->notification)) {
-    $notification = $edit->notification;
-  }
-  else {
-    $notification = TRUE;
-  }
-  $form['subscribe']['notification'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Subscribe'),
-    '#description' => t('Receive email notifications when this ticket is updated.'),
-    '#default_value' => isset($notification) ? $notification : TRUE,
-    '#disabled' => variable_get('support_autosubscribe_creator', FALSE) || (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $user->uid)),
-  );
-  if (user_access('can suppress notification')) {
-    $form['subscribe']['suppress'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Suppress notification'),
-      '#description' => t('By checking this box you will prevent notification emails from being sent for this ticket update.  It is recommended that you check this box if you are adding sensitive information such as passwords which should not be mailed out in plain text.'),
-      '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
-    );
-  }
-  if (isset($edit) && (user_access('administer support') || user_access('can subscribe other users to notifications'))) {
-    $form['subscribe']['subscribed'] = array(
+  if (variable_get('support_notifications', TRUE)) {
+    $form['subscribe'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Subscribed'),
+      '#title' => t('Notifications'),
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#collapsed' => FALSE,
     );
-    $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
-    if ($available === FALSE) {
-      $account = user_load(array('uid' => $node->assigned));
-      $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $node->nid);
-      $accounts = array();
-      while ($a = db_fetch_object($result)) {
-        $account = user_load(array('uid' => $a->uid));
-        $accounts[] = $account->name;
-      }
-      if (!empty($accounts)) {
-        $default = implode(', ', $accounts);
-      }
-      else {
-        $default = '';
-      }
-      $form['subscribe']['subscribed']['subscribed-users'] = array(
-        '#type' => 'textfield',
-        '#autocomplete_path' => 'support/autocomplete/autosubscribe/'. $node->client,
-        '#default_value' => $default,
-        '#description' => t('Enter a comma separated list of users that should receive notifications when this ticket is updated.'),
-      );
+    if (variable_get('support_autosubscribe_creator', FALSE)) {
+      $notification = TRUE;
+    }
+    else if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
+      $notification = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
+    }
+    else if (is_object($edit) && isset($edit->notification)) {
+      $notification = $edit->notification;
     }
     else {
-      $notifications = array();
-      foreach ($available as $uid => $name) {
-        if (!$uid) continue;
-        if (isset($node->nid) && $node->nid) {
-          $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
-          if (!isset($enabled)) {
-            $enabled = _support_enabled($node->client, $uid);
-          }
+      $notification = TRUE;
+    }
+    $form['subscribe']['notification'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Subscribe'),
+      '#description' => t('Receive email notifications when this ticket is updated.'),
+      '#default_value' => isset($notification) ? $notification : TRUE,
+      '#disabled' => variable_get('support_autosubscribe_creator', FALSE) || (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $user->uid)),
+    );
+    if (user_access('can suppress notification')) {
+      $form['subscribe']['suppress'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Suppress notification'),
+        '#description' => t('By checking this box you will prevent notification emails from being sent for this ticket update.  It is recommended that you check this box if you are adding sensitive information such as passwords which should not be mailed out in plain text.'),
+        '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
+      );
+    }
+    if (isset($edit) && (user_access('administer support') || user_access('can subscribe other users to notifications'))) {
+      $form['subscribe']['subscribed'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Subscribed'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
+      if ($available === FALSE) {
+        $account = user_load(array('uid' => $node->assigned));
+        $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $node->nid);
+        $accounts = array();
+        while ($a = db_fetch_object($result)) {
+          $account = user_load(array('uid' => $a->uid));
+          $accounts[] = $account->name;
         }
-        else if ($uid == $user->uid) {
-          $enabled = TRUE;
+        if (!empty($accounts)) {
+          $default = implode(', ', $accounts);
         }
         else {
-          $autoassign = _support_autoassign($node->client, $node->uid);
-          if ($autoassign && $autoassign != $user->uid) {
+          $default = '';
+        }
+        $form['subscribe']['subscribed']['subscribed-users'] = array(
+          '#type' => 'textfield',
+          '#autocomplete_path' => 'support/autocomplete/autosubscribe/'. $node->client,
+          '#default_value' => $default,
+          '#description' => t('Enter a comma separated list of users that should receive notifications when this ticket is updated.'),
+        );
+      }
+      else {
+        $notifications = array();
+        foreach ($available as $uid => $name) {
+          if (!$uid) continue;
+          if (isset($node->nid) && $node->nid) {
+            $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+            if (!isset($enabled)) {
+              $enabled = _support_enabled($node->client, $uid);
+            }
+          }
+          else if ($uid == $user->uid) {
             $enabled = TRUE;
           }
           else {
-            $enabled = _support_enabled($node->client, $uid);
+            $autoassign = _support_autoassign($node->client, $node->uid);
+            if ($autoassign && $autoassign != $user->uid) {
+              $enabled = TRUE;
+            }
+            else {
+              $enabled = _support_enabled($node->client, $uid);
+            }
           }
+          if (variable_get('support_autosubscribe_force', FALSE)) {
+            $autosubscribed = _support_autosubscribe($node->nid, $node->client, FALSE);
+          }
+          else {
+            $autosubscribed = array();
+          }
+          if (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $uid)) {
+            $enabled = TRUE;
+            $disabled = TRUE;
+          }
+          else {
+            $disabled = FALSE;
+          }
+          $notifications[] = $uid;
+          $form['subscribe']['subscribed']["notify-$uid"] = array(
+            '#type' => 'checkbox',
+            '#title' => $name,
+            '#default_value' => $enabled,
+            '#disabled' => (($uid == $user->uid || isset($autosubscribed[$uid]) || $disabled) && $enabled) ? TRUE : FALSE,
+          );
         }
-        if (variable_get('support_autosubscribe_force', FALSE)) {
-          $autosubscribed = _support_autosubscribe($node->nid, $node->client, FALSE);
-        }
-        else {
-          $autosubscribed = array();
-        }
-        if (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $uid)) {
-          $enabled = TRUE;
-          $disabled = TRUE;
-        }
-        else {
-          $disabled = FALSE;
-        }
-        $notifications[] = $uid;
-        $form['subscribe']['subscribed']["notify-$uid"] = array(
-          '#type' => 'checkbox',
-          '#title' => $name,
-          '#default_value' => $enabled,
-          '#disabled' => (($uid == $user->uid || isset($autosubscribed[$uid]) || $disabled) && $enabled) ? TRUE : FALSE,
+        $form['subscribe']['subscribed']['notifications'] = array(
+          '#type' => 'hidden',
+          '#value' => implode(',', $notifications),
         );
       }
-      $form['subscribe']['subscribed']['notifications'] = array(
-        '#type' => 'hidden',
-        '#value' => implode(',', $notifications),
-      );
     }
   }
   return $form;

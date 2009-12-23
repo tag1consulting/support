@@ -315,7 +315,7 @@ function support_help($path, $arg) {
     case 'admin/support/clients/add':
     case 'admin/support/clients/%/edit':
       $output  = '<p>'. t("Each support ticket must be assigned to one client.  Support can be configured so one client can't view another client's tickets.") .'</p>';
-      $output .= '<p>'. t('If you would like users to be able to create and update tickets via email, you will requires a dedicated email address for each client.  This email address is used to send and receive update notifications.  A cronjob automatically downloads emails sent to this address and converts them into tickets and ticket updates.  The message_id of each email is tracked, allowing support to properly associate replies with existing tickets.') .'</p>';
+      $output .= '<p>'. t('If you would like users to be able to create and update tickets via email, you will require a dedicated email address for each client.  This email address is used to send and receive update notifications.  A cronjob automatically downloads emails sent to this address and converts them into tickets and ticket updates.  The message_id of each email is tracked, allowing support to properly associate replies with existing tickets.') .'</p>';
       break;
     case 'admin/support/settings':
       $output = '<p>'. t('Global settings for the support module.') .'</p>';

@@ -1,3 +1,7 @@
+February 12th, 2010
+ - support.module
+    o feature #713288: provide visual feedback when sending notifications
+
 December 23rd, 2009
  - support.module
     o bug #662776: fix inline documentation typo

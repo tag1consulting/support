@@ -326,6 +326,13 @@ function support_admin_settings() {
     '#description' => t('Globally enable support ticket notifications.  Disable this if you don\'t ever want the support module to send email notifications.  Alternatively, you can globally enable notifications and then disable them on a per-client basis.'),
     '#default_value' => variable_get('support_notifications', TRUE),
   );
+  $form['notification']['support_admin_notify'] = array(
+    '#type' => 'select',
+    '#title' => t('Visual feedback'),
+    '#description' => t('Provide visual feedback about to whom notifications are being sent.  Feedback can be provided just to users with %perm permissions, or to all users. %warn', array('%perm' => t('administer support'), '%warn' => t('Visual feedback will reveal the email address of all users that receive notifications by displaying a message at the top of the page after a ticket is created or updated.'))),
+    '#options' => array(FALSE => t('Disabled'), 1 => t('To users with "!perm" permissions', array('!perm' => t('administer support'))), 2 => t('To all users')),
+    '#default_value' => variable_get('support_admin_notify', FALSE),
+  );
   $form['notification']['support_autosubscribe_creator'] = array(
     '#type' => 'checkbox',
     '#title' => t('Prevent user creating or updating ticket from unsubscribing'),

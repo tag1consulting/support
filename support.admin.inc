@@ -143,10 +143,17 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#default_value' => isset($client->thread_subject) ? $client->thread_subject : 0,
   );
   $form['mail']['domains'] = array(
-    '#title' => t('Valid email domains'),
     '#type' => 'textfield',
+    '#title' => t('Valid email domains'),
     '#default_value' => isset($client->domains) ? check_plain($client->domains) : '*',
     '#description' => t('Enter one or more comma-seperated domains which are allowed to automatically generate new tickets.  If you enter "*" tickets will be allowed from all domains.'),
+  );
+  $form['mail']['user_creation'] = array(
+    '#type' => 'select',
+    '#title' => t('Automatic creation of user'),
+    '#options' => array('Use global setting', 'Enable', 'Disable'),
+    '#description' => t('You can override the global setting for autocreating users by selecting an option in this list.  If enabled, new user accounts will be automatically created if emails are received from unnknown email addresses.  If disabled, notification emails will be sent when emails are discarded notifying the sender that they have to register to be able to create or update support tickets via email.'),
+    '#default_value' => isset($client->user_creation) ? $client->user_creation : 0,
   );
   $id = isset($client->clid) ? $client->clid : 0;
   $path = 'support/autocomplete/autosubscribe/'. $id;
@@ -245,10 +252,10 @@ function support_admin_client_submit($form, &$form_state) {
     db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']);
   }
   else {
-    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['notes'], $form_state['values']['clid']);
+    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', user_creation = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes'], $form_state['values']['clid']);
     if (!db_affected_rows()) {
       drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
-      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, thread_subject, domains, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%d', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['notes']);
+      db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, thread_subject, domains, user_creation, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%d', '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes']);
     }
     else {
       drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));
@@ -354,15 +361,21 @@ function support_admin_settings() {
 
   $form['user'] = array(
     '#type' => 'fieldset',
-    '#title' => t('User profile'),
+    '#title' => t('Users'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
   $form['user']['support_display_user_links'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Display support ticket links'),
+    '#title' => t('Display support ticket links in profile'),
     '#description' => t('Check this box to display links from a user\'s profile page to create new and view their existing support tickets.'),
     '#default_value' => variable_get('support_display_user_links', TRUE),
+  );
+  $form['user']['support_autocreate_users'] = array(
+    '#title' => t('Auto-create new users on incoming mail'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('support_autocreate_users', TRUE),
+    '#description' => t('Check this box if you would like the support module to automatically create new user accounts when emails are received from unknown email addresses.  If you uncheck this box and have "Integrate inbound email" enabled for one or more of your clients, notification emails will be sent when emails are discarded notifying the sender that they have to register to be able to create or update support tickets via mail. This option can also be set on a per-client basis.'),
   );
 
   $form['search'] = array(

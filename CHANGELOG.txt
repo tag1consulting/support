@@ -1,3 +1,8 @@
+February 15th, 2010
+ - support.module
+    o feature #544268: make automatic creation of new users a global and per-
+      client configurable option.  Patch thanks to Daniel Kvist, aka 'span'
+
 February 12th, 2010
  - support.module
     o feature #713288: provide visual feedback when sending notifications

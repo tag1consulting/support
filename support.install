@@ -116,6 +116,13 @@ function support_schema() {
         'default' => 0,
         'description' => 'Optionally configure per-client subject threading settings.',
       ),
+      'user_creation' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Optionally configure per-client user creation settings.',
+      ),
     ),
     'primary key' => array('clid'),
     'indexes' => array('status' => array('status'), 'autoassign' => array('autoassign')),
@@ -444,5 +451,23 @@ function support_update_6002() {
 function support_update_6003() {
   drupal_flush_all_caches();
   return array();
+}
+
+/**
+ * Introduce "user_creation" field for configured per-client user creation
+ * settings.
+ */
+function support_update_6004() {
+  $ret = array();
+  db_add_field($ret, 'support_client', 'user_creation',
+    array(
+      'type' => 'int',
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+      'description' => 'Optionally configure per-client user creation settings.',
+    )
+  );
+  return $ret;
 }
 

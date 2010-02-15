@@ -228,16 +228,20 @@ function support_autocomplete_assigned($clid = 0, $string = '') {
       // retrieve all roles giving permission to access current tickets
       $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'", "access $client tickets", 'administer support');
     }
-    else {
-      $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%'", 'administer support');
-    }
     $roles = array();
     while ($role = db_fetch_object($result)) {
       $roles[$role->rid] = $role->rid;
     }
-    $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')", implode(', ', $roles), $string, 0, 10);
-    while ($user = db_fetch_object($result)) {
-      $matches[$user->name] = check_plain($user->name);
+    // also get people with administer support permissions
+    $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%'", 'administer support');
+    while ($role = db_fetch_object($result)) {
+      $roles[$role->rid] = $role->rid;
+    }
+    if (!empty($roles)) {
+      $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')", implode(', ', $roles), $string, 0, 10);
+      while ($user = db_fetch_object($result)) {
+        $matches[$user->name] = check_plain($user->name);
+      }
     }
   }
 
@@ -334,7 +338,7 @@ function support_active_clients() {
   static $clients = NULL;
 
   if (is_null($clients)) {
-    $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, extra, protocol, port, notes, autosubscribe, domains FROM {support_client} WHERE status = 1');
+    $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, extra, protocol, port, notes, autosubscribe, domains, user_creation FROM {support_client} WHERE status = 1');
     while ($client = db_fetch_object($result)) {
       $clients[$client->clid] = $client;
     }
@@ -394,7 +398,7 @@ function support_access_clients($client = NULL, $account = NULL) {
 function support_client_load($clid) {
   static $clients = array();
   if (!isset($clients[$clid])) {
-    $client = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains FROM {support_client} WHERE clid = %d', $clid));
+    $client = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = %d', $clid));
     drupal_alter('support_client_load', $client);
     $clients[$clid] = $client;
   }
@@ -450,6 +454,14 @@ function support_account_load($from, $ticket, $subject, $client) {
   $uid = db_result(db_query("SELECT uid FROM {users} WHERE mail = '%s'", $from));
   if ($uid) {
     return user_load($uid);
+  }
+  else if ($client->user_creation == 2 ||
+           ($client->user_creation == 0 && variable_get('support_autocreate_users', TRUE) == FALSE)) {
+    // User does not exist and the setting to allow automatic creation is
+    // disabled.  Send notification to user.
+    watchdog('support', 'An autocreation of a user from the e-mail address: !from was denied. The client recieving the request was: !client', array('!from' => utf8_encode($from), '!client' => $client->name));
+    _support_mail_deny($from);
+    return FALSE;
   }
   else {
     // extract the domain out of the from email address
@@ -952,6 +964,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!site' => variable_get('site_name', 'Drupal'),
     '!uri' => $base_url,
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
+    '!uri_login' => url('user/register', array('absolute' => TRUE)),
     '!mailto' => $account->mail,
     '!date' => format_date(time(), 'medium', '', NULL, $language->language),
     '!ticket_subject' => check_plain($node->title),
@@ -1009,6 +1022,10 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
     }
     // No override, return default string.
     switch ($key) {
+      case 'ticket_deny_subject':
+        return t("Support ticket creation denied", $variables, $langcode);
+      case 'ticket_deny_body':
+        return t("System message\n\nYou have tried to create a support ticket on the !site site. The creation of the ticket has been cancelled since the e-mail address you sent the message from is not registered at our site.\n\nYou have to be a registered user to be able to create support tickets via mail.\n\nYour feedback is important to us so please register at !uri_login and try again.\n\n!site Team", $variables, $langcode);
       case 'ticket_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_new_body':
@@ -1345,6 +1362,16 @@ function support_notification($comment = array(), $nid, $op = 'ticket_comment_ne
       }
     }
   }
+}
+
+/**
+ * Using drupal_mail to send notification mail to user that is not registered
+ * and tried to use mail support.
+ */
+function _support_mail_deny($to) {
+  $language = language_default();
+  $key = 'ticket_deny';
+  drupal_mail('support', $key, $to, $language, NULL);
 }
 
 /**

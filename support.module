@@ -466,8 +466,8 @@ function support_account_load($from, $ticket, $subject, $client) {
   else {
     // extract the domain out of the from email address
     $matches = array();
-    preg_match("/(.*)@(.*)/", $from, $matches);
-    $domain = $matches[2];
+    preg_match('~[\w-]+\.\w+(?=/|$)~', $from, $matches);
+    $domain = $matches[0];
     $ticket = support_ticket_load($ticket);
     $domains = _support_domains($client->domains, variable_get('support_global_domains', ''));
     $valid = TRUE;

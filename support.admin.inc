@@ -479,7 +479,7 @@ function support_admin_settings_validate($form, &$form_state) {
 function _support_validate_domains($field, $domains = array()) {
   foreach ($domains as $domain) {
     $domain = trim($domain);
-    if ($domain && ($domain != '*' && !checkdnsrr($domain))) {
+    if ($domain && ($domain != '*' && function_exists('checkdnsrr') && !checkdnsrr($domain))) {
       form_set_error($field, t('Invalid domain: %domain', array('%domain' => $domain)));
     }
   }

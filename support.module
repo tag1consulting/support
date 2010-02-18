@@ -2335,7 +2335,7 @@ function _support_get_state($state) {
 
 function _support_truncate($text, $maxlen = 64) {
   if (strlen($text) > $maxlen) {
-    return substr($text, 0, $maxlen - 1) .'...';
+    return truncate_utf8($text, ($maxlen - 1), TRUE, TRUE);
   }
   return $text;
 }

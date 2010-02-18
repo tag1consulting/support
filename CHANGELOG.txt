@@ -1,6 +1,7 @@
 February 17th, 2010
  - support.module
     o bug #717618: improve domain matching
+    o bug #696806: properly truncate utf8 text
  - support.admin.inc
     o bug #669756: only use checkdnsrr for domain validation if it exists
 

@@ -1,3 +1,7 @@
+April 6th, 2010
+ - support.module
+    o bug #763838: fix typos that break XHTML validity (patch thanks to atodorov)
+
 February 17th, 2010
  - support.module
     o bug #717618: improve domain matching

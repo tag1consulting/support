@@ -685,7 +685,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
             support_subscribe_user($node->nid, $node->uid, $node->notification);
           }
           // auto-subscribe assigned user
-          if ((variable_get('support_autosubscribe_assigned', FALSE) && $node->assigned) || isset($node->created_by_email) || !user_access('can subscribe other users to notifications')) {
+          if ($node->assigned || isset($node->created_by_email) || !user_access('can subscribe other users to notifications')) {
             support_subscribe_user($node->nid, $node->assigned);
           }
           // auto-subscribe configured users
@@ -767,7 +767,7 @@ function support_comment(&$comment, $op) {
             _support_autosubscribe($comment['nid'], $comment['client']);
           }
           // auto-subscribe assigned user
-          if (variable_get('support_autosubscribe_assigned', FALSE) && ($comment['assigned'])) {
+          if ($comment['assigned']) {
             support_subscribe_user($comment['nid'], $comment['assigned']);
           }
           // generate notification emails
@@ -1927,7 +1927,7 @@ function support_status_form(&$form_state, $edit, $title) {
       }
       $form['support']['assigned'] = array(
         '#type' => 'textfield',
-        '#prefix' => '&nbsp;&nbsp',
+        '#prefix' => '&nbsp;&nbsp;',
         '#title' => t('Assigned'),
         '#autocomplete_path' => 'support/autocomplete/assigned/'. $node->client,
         '#default_value' => $assigned,
@@ -1937,7 +1937,7 @@ function support_status_form(&$form_state, $edit, $title) {
     else {
       $form['support']['assigned'] = array(
         '#type' => 'select',
-        '#prefix' => '&nbsp;&nbsp',
+        '#prefix' => '&nbsp;&nbsp;',
         '#title' => t('Assigned'),
         '#options' => $options,
         '#default_value' => isset($node->assigned) ? $node->assigned : 0,

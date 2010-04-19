@@ -77,6 +77,10 @@
    "delete any ticket" permissions can always "view other users tickets" whether
    or not they are explicitly granted this permission.
 
+   Users with "edit multiple tickets" permissions will be able to add updates
+   and change the state and priority of multiple tickets from the client
+   overview pages.
+
    When creating and modifying tickets, users with "can select client"
    permissions can assign the ticket to any client that they have permission
    to access tickets for.

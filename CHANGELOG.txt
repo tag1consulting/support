@@ -1,3 +1,9 @@
+April 18th, 2010
+ - support.module
+    o feature #508170: add ability to edit multiple tickets at once.  Requires
+      'edit multiple tickets' permission.  Can add update, edit state and
+      edit priority.
+
 April 6th, 2010
  - support.module
     o bug #763838: fix typos that break XHTML validity (patch thanks to atodorov)

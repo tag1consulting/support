@@ -3,6 +3,8 @@ April 18th, 2010
     o feature #508170: add ability to edit multiple tickets at once.  Requires
       'edit multiple tickets' permission.  Can add update, edit state and
       edit priority.
+    o feature #508170: add ability to assign users when editing multiple
+      tickets.
 
 April 6th, 2010
  - support.module

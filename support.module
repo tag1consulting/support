@@ -1079,7 +1079,7 @@ function support_save_message($message, $client) {
     $comment['state'] = isset($message['state']) ? $message['state'] : $ticket->state;
     $comment['priority'] = isset($message['priority']) ? $message['priority'] : $ticket->priority;
     $comment['client'] = $ticket->client;
-    $comment['assigned'] = $ticket->assigned;
+    $comment['assigned'] = isset($message['assigned']) ? $message['assigned'] : $ticket->assigned;
     $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
     $comment['support_email'] = TRUE;
     $comment['files'] = _support_save_attachments($message['attachments'], $account);
@@ -1973,7 +1973,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
   }
 
   if (!isset($available["$assigned-$node->nid"])) {
-    if ($assigned && $assigned != $user->uid) {
+    if ($assigned && ($assigned != $user->uid)) {
       $account = user_load($assigned);
       $available["$assigned-$node->nid"][$account->uid] = $account->name;
       $counter++;
@@ -2379,8 +2379,6 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     }
   }
 
-  drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
-
   if (!$state) {
     $state = 'all open';
   }
@@ -2466,14 +2464,53 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     $form['title'][$ticket->nid] = array('#value' => l(_support_truncate($ticket->title), "node/$ticket->nid", array('attributes' => array('class' => 'ticket-title'))));
     $form['updated'][$ticket->nid] = array('#value' => format_date($ticket->last_updated, 'small', array('attributes' => array('class' => 'ticket-updated'))));
     $form['reported'][$ticket->nid] = array('#value' => l(_support_truncate($account->name, 24), "user/$account->uid", array('attributes' => array('class' => 'ticket-reported'))));
-    $form['assigned'][$ticket->nid] = array('#value' => l(_support_truncate($assigned->name, 24), "user/$assigned->uid", array('attributes' => array('class' => 'ticket-assigned'))));
+    // Assigned to
+    if ((user_access('edit multiple tickets') && user_access('can assign tickets to any user')) || user_access('administer support')) {
+      $node = node_load($ticket->nid);
+      $options = _support_assigned((isset($assigned->uid) ? $assigned->uid : 0), $node, variable_get('support_autocomplete_limit', 15));
+      if ($options === FALSE) {
+        if (isset($ticket->assigned)) {
+          if (is_numeric($ticket->assigned)) {
+            $account = user_load(array('uid' => $ticket->assigned));
+            $assigned = $account->name;
+          }
+          else {
+            $assigned = $ticket->assigned;
+          }
+        }
+        else {
+          $assigned = '';
+        }
+        $form['assigned']["assigned-$ticket->nid"] = array(
+          '#type' => 'textfield',
+          '#autocomplete_path' => 'support/autocomplete/assigned/'. $ticket->client,
+          '#default_value' => $assigned,
+          '#size' => '15',
+          '#attributes' => array('class' => 'ticket-assigned'),
+        );
+      }
+      else {
+        $form['assigned']["assigned-$ticket->nid"] = array(
+          '#type' => 'select',
+          '#options' => $options,
+          '#default_value' => isset($ticket->assigned) ? $ticket->assigned : 0,
+          '#attributes' => array('class' => 'ticket-assigned'),
+        );
+      }
+    }
+    else {
+      $form['assigned']["assigned-$ticket->nid"] = array(
+        '#value' => l(_support_truncate($assigned->name, 24), "user/$assigned->uid", array('attributes' => array('class' => 'ticket-assigned'))),
+      );
+    }
+    // State
     $states = _support_states(FALSE);
     if ((user_access('edit multiple tickets') || user_access('administer support')) && sizeof($states) > 1) {
       $form['state']["state-$ticket->nid"] = array(
         '#type' => 'select',
         '#options' => $states,
         '#default_value' => $ticket->state,
-        '#attributes' => array('class' => 'ticket-state')
+        '#attributes' => array('class' => 'ticket-state'),
      );
     }
     else {
@@ -2482,6 +2519,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
         '#attributes' => array('class' => 'ticket-state'),
       );
     }
+    // Priority
     if (user_access('administer support') || (user_access('edit multiple tickets') && user_access('can select priority'))) {
       $form['priority']["priority-$ticket->nid"] = array(
         '#type' => 'select',
@@ -2498,7 +2536,11 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     }
     $form['updates'][$ticket->nid] = array(
       '#value' => $comments,
-      '#attributes' => array('class' => "state-$ticket->state priority-$ticket->priority"));
+      '#attributes' => array('class' => "state-$ticket->state priority-$ticket->priority")
+    );
+    $form['class'][$ticket->nid] = array(
+      '#value' => "state-$ticket->state priority-$ticket->priority",
+    );
   }
   $form['tickets'] = array(
     '#type' => 'checkboxes',
@@ -2554,6 +2596,7 @@ function support_page_form_submit($form, &$form_state) {
     $message['suppress'] = isset($form_state['values']['suppress']) ? $form_state['values']['suppress'] : FALSE;
     $message['state'] = $form_state['values']["state-$nid"];
     $message['priority'] = $form_state['values']["priority-$nid"];
+    $message['assigned'] = $form_state['values']["assigned-$nid"];
     // TODO: Pass the client in rather than make unnecessary queries
     $clid = db_result(db_query('SELECT client FROM {support_ticket} WHERE nid = %d', $nid));
     $client = support_client_load($clid);
@@ -2566,6 +2609,7 @@ function support_page_form_submit($form, &$form_state) {
  * Theme function for ticket list
  */
 function theme_support_page_form($form) {
+  drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
   $output = drupal_render($form['post-ticket']);
   if (isset($form['title']) && is_array($form['title'])) {
     foreach (element_children($form['title']) as $key) {
@@ -2575,11 +2619,15 @@ function theme_support_page_form($form) {
       $row[] = drupal_render($form['title'][$key]);
       $row[] = drupal_render($form['updated'][$key]);
       $row[] = drupal_render($form['reported'][$key]);
-      $row[] = drupal_render($form['assigned'][$key]);
+      $row[] = drupal_render($form['assigned']["assigned-$key"]);
       $row[] = drupal_render($form['state']["state-$key"]);
       $row[] = drupal_render($form['priority']["priority-$key"]);
       $row[] = drupal_render($form['updates'][$key]);
-      $rows[] = $row;
+      $rows[] = array( 
+        'data' => $row,
+        'class' => $form['class'][$key]['#value']
+      );
+      unset($form['class'][$key]);
     }
   }
   else {
@@ -2589,7 +2637,7 @@ function theme_support_page_form($form) {
     $output .= drupal_render($form['pager']);
   }
 
-  $output .= theme('table', $form['header']['#value'], $rows);
+  $output .= theme('table', $form['header']['#value'], $rows, array('class' => 'support'));
   $output .= drupal_render($form['update']);
   $output .= drupal_render($form['suppress']);
   $output .= drupal_render($form['submit']);

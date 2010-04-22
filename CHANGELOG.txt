@@ -6,6 +6,7 @@ April 22nd, 2010
     o bug #764500: add missing calls to t() function (thanks to atodorov)
     o bug #761062: make all email text translatable (thanks to atodorov)
     o bug #731248: don't try to send emails to users with no email address
+    o bug #721368: only try to autosubscribe users when users are defined
  - support.user.inc
     o bug #752188: display last updated timestamp when listing a user's tickets
 

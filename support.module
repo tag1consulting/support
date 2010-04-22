@@ -620,7 +620,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           }
         }
         // check for users subscribed during ticket creation (checkboxes)
-        if (isset($node->notifications)) {
+        if (isset($node->notifications) && !empty($node->notifications)) {
           $notifications = explode(',', $node->notifications);
           foreach ($notifications as $notify) {
             $valid = _support_validate_assigned_user($notify, $client);
@@ -662,7 +662,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
         }
         if ($op == 'insert') {
-          if (isset($node->notifications)) {
+          if (isset($node->notifications) && !empty($node->notifications)) {
             $notifications = explode(',', $node->notifications);
             foreach ($notifications as $notify) {
               $enabled = "notify-$notify";

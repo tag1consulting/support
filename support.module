@@ -1016,10 +1016,10 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
   }
   else {
     if ($integrate_email == TRUE) {
-      $reply = t('You can reply to this email or visit the following URL to update this ticket');
+      $variables['!reply'] = t('You can reply to this email or visit the following URL to update this ticket');
     }
     else {
-      $reply = t('You can visit the following URL to update this ticket');
+      $variables['!reply'] = t('You can visit the following URL to update this ticket');
     }
     // No override, return default string.
     switch ($key) {
@@ -1030,11 +1030,11 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
       case 'ticket_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_new_body':
-        return t("!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
+        return t("!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n!reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
       case 'ticket_comment_new_subject':
         return t("!key !ticket_subject", $variables, $langcode);
       case 'ticket_comment_new_body':
-        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n$reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
+        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n!reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
     }
   }
 }

@@ -1,0 +1,1116 @@
+# Bulgarian translations for the support package.
+# This file is distributed under the same license as the support package.
+# Copyright (C) 2010 Open Technologies Bulgaria, Ltd.
+# Alexander Todorov <atodorov@nospam.otb.bg>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: support 6.x-1.3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-07-31 10:17+0200\n"
+"PO-Revision-Date: 2010-04-03 13:17+0300\n"
+"Last-Translator: Alexander Todorov <atodorov@nospam.otb.bg>\n"
+"Language-Team: Bulgarian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+#: support.module:473
+msgid " tickets"
+msgstr " заявки"
+
+#: support.module:784;788
+msgid "!key !ticket_subject"
+msgstr "!key !ticket_subject"
+
+#: support.module:342
+msgid "%email has been unsubscribed from all tickets."
+msgstr "Адресът %email е отписан от всички заявки."
+
+#: support.module:331
+msgid "%email has been unsubscribed from ticket %ticket."
+msgstr "Адресът %email е отписан от заявка %ticket."
+
+#: support.admin.inc:135
+msgid "/imap"
+msgstr "/imap"
+
+#: support.admin.inc:135
+msgid "/pop3"
+msgstr "/pop3"
+
+#: support.admin.inc:135
+msgid "/ssl"
+msgstr "/ssl"
+
+#: support.module:2272
+msgid "1 message"
+msgid_plural "@count messages"
+msgstr[0] "1 съобщение"
+msgstr[1] "@count съобщения"
+
+#: support.user.inc:86 support.module:2073
+msgid "1 new"
+msgid_plural "@count new"
+msgstr[0] "1 ново"
+msgstr[1] "@count нови"
+
+#: support.user.inc:9
+msgid "@username's assigned tickets"
+msgstr "Заявки назначени на @username"
+
+#: support.user.inc:12
+msgid "@username's latest tickets"
+msgstr "Последни заявки на @username"
+
+#: support.module:18
+msgid "A <em>support ticket</em>."
+msgstr "<em>Заявка за поддръжка</em>."
+
+#: support.info:0
+msgid "A simple helpdesk and support ticketing system."
+msgstr "Система за хелпдеск и техническа поддръжка."
+
+#: support.admin.inc:312
+msgid ""
+"A threshold above which select fields and checkboxes will turn into "
+"autocomplete text fields.  For example, if set to 20 and a ticket can be "
+"assigned to 25 users, the assigned widget will be a textfield requiring you "
+"to type the user name.  If set to 20 and a ticket can only be assigned to 10 "
+"users, the assigned widget will be a drop down select menu listing all "
+"matching users."
+msgstr ""
+"Праг над който падащите полета за избор и полета с отметки ще се превърнат в "
+"текстови полета с автоматично допълване. Ако например стойността е 20 и "
+"дадена заявка може да бъде назначена на 25 потребителя, тогава полето за "
+"избор ще бъде текстово поле, в което трябва да въведете потребителското име. "
+"Ако стойността е 20 и заявката може да бъде назначена само на 10 "
+"потребителя, тогава полето за избор ще бъде падащо поле, което изброява "
+"възможните потребители. "
+
+#: support.admin.inc:164 support.module:179
+msgid "Add client"
+msgstr "Добавяне клиент"
+
+#: support.module:1141;1170
+msgid "Advanced search"
+msgstr "Подробно търсене"
+
+#: support.admin.inc:334
+msgid "Ascending"
+msgstr "Нарастващ"
+
+#: support.module:1612;1622
+msgid "Assigned"
+msgstr "Назначена на"
+
+#: support.module:2016
+msgid "Assigned to"
+msgstr "Назначена на"
+
+#: support.admin.inc:148
+msgid "Auto-subscribe"
+msgstr "Автоматично абониране"
+
+#: support.admin.inc:311
+msgid "Autocomplete limit"
+msgstr "Праг за автоматично допълване"
+
+#: support.module:66
+msgid "Autocomplete support assigned user"
+msgstr "Автоматично допълване назначен потребител"
+
+#: support.module:73
+msgid "Autocomplete support autosubscribed user"
+msgstr "Автоматично допълване абониран потребител"
+
+#: support.module:1736
+msgid ""
+"By checking this box you will prevent notification emails from being sent "
+"for this ticket update.  It is recommended that you check this box if you "
+"are adding sensitive information such as passwords which should not be "
+"mailed out in plain text."
+msgstr ""
+"Ако е маркирано известия за промените в тази завка няма да бъдат изпратени. "
+"Препоръчва се да маркирате тази настройка, ако добавяте информация, която не "
+"бива да бъде изпращана по ел. поща като например пароли."
+
+#: support.admin.inc:173
+msgid "Cancel"
+msgstr "Отказ"
+
+#: support.admin.inc:84
+msgid ""
+"Check this box if you would like to fully integrate this client with an "
+"email server.  This will allow users to create and update tickets by email, "
+"but it requires a more complex configuration as you need to create a unique "
+"mailbox for each integrated client.  If you do not check this box, email "
+"notifications will still be mailed out as tickets are created and updated, "
+"but replies to these tickets will be ignored."
+msgstr ""
+"Отбележете това поле ако желаете пълна интеграция на този клиентски профил "
+"със сървър за ел. поща. Това ще позволи на потребителите да създават и "
+"обновяват заявки чрез ел. поща, но изисква по-сложна конфигурация защото "
+"трябва да създадате уникална пощенска кутия за всеки профил. Ако не "
+"отбележите това поле потребителите ще получават известия по пощата при "
+"създаване или промяна на заявка, но отговорите на тези известия ще бъдат "
+"игнорирани."
+
+#: support.admin.inc:301
+msgid ""
+"Check this box to display links from a user's profile page to create new and "
+"view their existing support tickets."
+msgstr ""
+"Маркирайте тази настройка, за да активирате връзките за преглед и създаване "
+"на заявки в страницата с профила на потребителя."
+
+#: support.user.inc:39 support.module:1581
+msgid "Client"
+msgstr "Клиент"
+
+#: support.admin.inc:216
+msgid "Client %client added."
+msgstr "Клиент %client беше добавен."
+
+#: support.admin.inc:210
+msgid "Client %client deleted."
+msgstr "Клиент %client беше изтрит."
+
+#: support.admin.inc:220
+msgid "Client %client updated."
+msgstr "Клиент %client беше обновен."
+
+#: support.module:1995
+msgid "Client does not exist or is not enabled."
+msgstr "Клиентът не съществува или не е активен."
+
+#: support.admin.inc:14;54
+msgid "Client name"
+msgstr "Клиентско име"
+
+#: support.module:2107
+msgid "Client not integrated with email, unable to fetch mail for !client."
+msgstr ""
+"Клиента няма интеграция с ел. поща, грешка при изтегляне на поща за !client."
+
+#: support.module:152
+msgid "Clients"
+msgstr "Клиенти"
+
+#: support.module:849
+msgid "Comment: added %subject."
+msgstr "Коментар: добавен %subject."
+
+#: support.module:1152
+msgid "Containing any of the words"
+msgstr "Съдържа всяка от думите"
+
+#: support.module:1164
+msgid "Containing none of the words"
+msgstr "Не съдържа нито една от думите"
+
+#: support.module:1158
+msgid "Containing the phrase"
+msgstr "Съдържа фразата"
+
+#: support.module:294
+msgid "Create"
+msgstr "Създайте"
+
+#: support.module:489
+msgid "Create new ticket"
+msgstr "Създаване на нова заявка"
+
+#: support.admin.inc:266
+msgid "Default mail from address"
+msgstr "Подразбран изходящ адрес"
+
+#: support.admin.inc:169;209
+msgid "Delete client"
+msgstr "Изтриване клиент"
+
+#: support.admin.inc:334
+msgid "Descending"
+msgstr "Намаляващ"
+
+#: support.admin.inc:70
+msgid "Disabled"
+msgstr "Деактивиран"
+
+#: support.admin.inc:300
+msgid "Display support ticket links"
+msgstr "Показване на връзките за заявки"
+
+#: support.admin.inc:254
+msgid "Download mail via cron"
+msgstr "Изтегляне на пощата чрез cron"
+
+#: support.module:2272
+msgid "Downloaded !count"
+msgstr "Изтеглени са !count"
+
+#: support.module:294
+msgid ""
+"Each support ticket can only be assigned to one client. !create one or more "
+"clients, then !assign allowing users to access these tickets.  Users can "
+"only create tickets for clients they have permission to access.  If working "
+"with multiple clients you will need to !define for each to prevent one "
+"client from viewing the tickets of another client."
+msgstr ""
+"Всяка заявка може да бъде свързана само с един клиентски профил. !create "
+"един или повече профили, след това !assign като позволите на потребителите "
+"достъп до заявките за тези профили. Потребителите могат да създават заявки "
+"само за клиенти, за чиито профил имат права за достъп. Ако работите с много "
+"клиенти ще трябва да !define за всеки от тях, за да им попречите да виждат "
+"заявките на останалите."
+
+#: support.module:298
+msgid ""
+"Each support ticket must be assigned to one client.  Support can be "
+"configured so one client can't view another client's tickets."
+msgstr ""
+"Всяка заявка трябва да бъде свързана само с един клиентски профил. Модулът "
+"за поддръжка може да бъде конфигуриран така че един клиент да не може да "
+"вижда заявките на останалите."
+
+#: support.module:163
+msgid "Edit"
+msgstr "Редактиране"
+
+#: support.module:453
+msgid ""
+"Email update from !from denied for ticket \"!title\", subject \"!subject.\""
+msgstr ""
+"Промяната по ел. поща от !from е отказана за заявка \"!title\", заглавие \"!subject.\""
+
+#: support.admin.inc:70
+msgid "Enabled"
+msgstr "Активиран"
+
+#: support.module:1767
+msgid ""
+"Enter a comma separated list of users that should receive notifications when "
+"this ticket is updated."
+msgstr ""
+"Въведете списък от потребители, разделени със запетая, които трябва да "
+"получават известия при промени в тази заявка."
+
+#: support.admin.inc:142
+msgid ""
+"Enter one or more comma-seperated domains which are allowed to automatically "
+"generate new tickets.  If no domains are entered, tickets are allowed from "
+"all domains (unless you globally define allowed domains).  If you globally "
+"define allowed domains but want this client to receive emails from all "
+"domains, enter a domain of \"*\"."
+msgstr ""
+"Въведете едно или повече домейн имена, разделени със запетая, от които ще "
+"бъде позволено създаването на нови заявки. Ако няма въведени домейни, завките "
+"са разрешени от всички домейни (освен ако не зададете глобално разрешените домейни). "
+"Ако сте задали глобална настройка за разрешени домейни, но искате този клиент да "
+"получава писма от всички домейни, въведете \"*\"."
+
+#: support.admin.inc:151
+msgid ""
+"Enter one or more comma-seperated usernames to auto-subscribe to !client "
+"issues.  These users will receive email notifications for all new tickets "
+"and ticket updates for this client."
+msgstr ""
+"Въведете едно или повече потребителски имена, разделени със запетая, които "
+"ще бъдат автоматично абонирани за всички заявки на !client. Тези потребители "
+"щеполучават известия по ел. поща за всички нови заявки или промени направени "
+"от този клиент."
+
+#: support.module:980
+msgid ""
+"Failed to convert message to utf8 -- using unconverted message.  To fix "
+"this, try installing iconv, GNU recode, or mbstring for PHP."
+msgstr ""
+"Грешка при конвертиране на съобщение в utf8 -- изпозлва се неконвертиран текст. "
+"За да оправите това инсталирайте iconv, GNU recode, или mbstring за PHP."
+
+#: support.module:2154
+msgid ""
+"Failed to download messages for %client, connection to mail server failed."
+msgstr ""
+"Грешка при изтегляне на писма за %client, грешка във връзка с пощенски "
+"сървър."
+
+#: support.module:919
+msgid "Failed to save attachment %file, file_save_data() returned error."
+msgstr "Грешка при запис на прикачен файл %file, функцията file_save_data() върна грешка."
+
+#: support.module:171
+msgid "Fetch mail"
+msgstr "Изтегляне поща"
+
+#: support.module:2114
+msgid "Fetching mail for !client..."
+msgstr "Изтегляне на поща за !client..."
+
+#: support.admin.inc:17;112
+msgid "From address"
+msgstr "Изходящ адрес"
+
+#: support.admin.inc:307
+msgid "General"
+msgstr "Общи"
+
+#: support.module:302
+msgid "Global settings for the support module."
+msgstr "Общи натройки на модула за заявки."
+
+#: support.admin.inc:260
+msgid "Globally allowed domains"
+msgstr "Глобално позволени домейн имена"
+
+#: support.module:535
+msgid "Home"
+msgstr "Начало"
+
+#: support.admin.inc:89
+msgid "Hostname or IP address."
+msgstr "Име на хост или IP адрес."
+
+#: support.user.inc:22 support.module:2012
+msgid "Id"
+msgstr "Номер"
+
+#: support.admin.inc:333
+msgid ""
+"If specifying a secondary sort column, you can also specify a secondary sort "
+"order."
+msgstr ""
+"Ако задавате колона за вторично сортиране, можете да зададете и подредба за "
+"вторичното сортиране."
+
+#: support.module:299
+msgid ""
+"If you would like users to be able to create and update tickets via email, "
+"you will requires a dedicated email address for each client.  This email "
+"address is used to send and receive update notifications.  A cronjob "
+"automatically downloads emails sent to this address and converts them into "
+"tickets and ticket updates.  The message_id of each email is tracked, "
+"allowing support to properly associate replies with existing tickets."
+msgstr ""
+"Ако желаете потребителите да могат да създават и обновяват заявки чрез ел. "
+"поща, ще ви трябва отделен адрес за всеки клиентски профил. Този пощенски "
+"адрес се изпозлва за изпращане и получаване на известия за направени "
+"промени. Регулярна задача автоматично изтегля електронните писме изпратени "
+"до този адрес и ги конвертира в заявки и коментари към заявките. Полето "
+"message_id на всяко писмо се записва, което позволява правилното свързване "
+"на писмата със заявките."
+
+#: support.module:2162
+msgid "Imap alert: %alert"
+msgstr "IMAP тревога: %alert"
+
+#: support.module:2164
+msgid "Imap alert: %alert>"
+msgstr "IMAP тревога: %alert"
+
+#: support.module:2172;2170
+msgid "Imap error: %error"
+msgstr "IMAP грешка: %error"
+
+#: support.admin.inc:16
+msgid "Inbound email"
+msgstr "Входяща поща"
+
+#: support.admin.inc:75
+msgid "Inbound email integration"
+msgstr "Интеграция с входяща поща"
+
+#: support.admin.inc:84
+msgid ""
+"Inbound email integration requires that your version of PHP was !compiled."
+msgstr "Интеграцията с входяща поща изисква PHP да е !compiled."
+
+#: support.admin.inc:81
+msgid "Integrate inbound email"
+msgstr "Интегриране с входяща поща"
+
+#: support.admin.inc:360
+msgid "Invalid domain: %domain"
+msgstr "Невалидно домейн име: %domain"
+
+#: support.module:334;345
+msgid "Invalid key, failed to unsubscribe %email."
+msgstr "Навалиден ключ, грешка при отписване на %email."
+
+#: support.admin.inc:327
+msgid "Last update"
+msgstr "Последна промяна"
+
+#: support.module:159
+msgid "List"
+msgstr "Списък"
+
+#: support.admin.inc:250
+msgid "Mail"
+msgstr "Електронна поща"
+
+#: support.module:2139
+msgid "Mail file \"%connect\" does not exist."
+msgstr "Файл за пощенска кутия \"%connect\" не съществува."
+
+#: support.module:2142
+msgid "Mail file \"%connect\" is not readable."
+msgstr "Няма достъп за четене до пощенска кутия във файл \"%connect\"."
+
+#: support.module:2145
+msgid "Mail file \"%connect\" is not writable."
+msgstr "Няма достъп за запис до пощенска кутия във файл \"%connect\"."
+
+#: support.module:2157
+msgid ""
+"Mail server connection failure: connect(!connect), username(!username), "
+"password(!password)"
+msgstr ""
+"Грешка при връзка с пощенски сървър: връзка(!connect), потребителско име(!"
+"username), парола(!password)"
+
+#: support.admin.inc:106
+msgid "Mailbox"
+msgstr "Пощенска кутия"
+
+#: support.module:153
+msgid "Manage clients."
+msgstr "Управление на клиентски профили."
+
+#: support.module:144
+msgid "Manage the support ticket system."
+msgstr "Управление на системата за заявки за поддръжка."
+
+#: support.module:110
+msgid "My tickets"
+msgstr "Моите заявки"
+
+#: support.admin.inc:319
+msgid ""
+"New tickets can either be assigned to nobody, or assigned to the user that "
+"created the ticket."
+msgstr ""
+"Новите заявки могат да бъдат назначени на потребителя, които ги е създал "
+"или да не бъдат назначавнаи на никой."
+
+#: support.admin.inc:320
+msgid "Nobody"
+msgstr "никой"
+
+#: support.admin.inc:327
+msgid "Node ID"
+msgstr "Номер"
+
+#: support.admin.inc:327
+msgid "None"
+msgstr "Няма"
+
+#: support.admin.inc:103
+msgid ""
+"Note: this is not a password you request from your client.  This is a "
+"password you configure on your mail server for managing support tickets for "
+"a client."
+msgstr ""
+"Забележка: това не е паролата, с която клиентът влиза в сайта. Това е парола "
+"на пощенския сървър, чрез която управлявате писмата(заявките) за този клиент."
+
+#: support.admin.inc:154
+msgid "Notes"
+msgstr "Бележки"
+
+#: support.admin.inc:157
+msgid ""
+"Notes are only displayed on this page when editing clients.  They are "
+"optional and are provided for administrative purposes."
+msgstr ""
+"Бележките са видими само на тази страница при редактиране на клиента. Те не "
+"са задължителни и са от полза само за администратора на сайта."
+
+#: support.module:1713
+msgid "Notifications"
+msgstr "Известия"
+
+#: support.admin.inc:132
+msgid "Optional extra flags"
+msgstr "Допълнителни флагове"
+
+#: support.admin.inc:261
+msgid ""
+"Optionally enter one or more domains which are allowed to automatically "
+"create tickets by sending an email.  If no domains are entered, or you "
+"specify \"*\", all domains are allowed.  If entering multiple domains, "
+"separate them by commas.  These domains will be allowed for all clients."
+msgstr ""
+"Въведете едно или повече домейн имена, разделени със запетая, от които ще "
+"бъде позволено създаването на нови заявки. Ако не въведете нищо или въведете "
+"\"*\" ще бъде реазрешено създаването на заявки от всички домейни (адреси). "
+"Тези домейни ще бъдат разрешени за всички клиенти."
+
+#: support.admin.inc:267
+msgid ""
+"Optionally specify a default <em>from</em> address where support "
+"notifications will originate from for clients whose inbound email is not "
+"integrated.  If a client's inbound email is integrated, you will need to "
+"specify the <em>from</em> address on the client's configuration page as each "
+"client gets a unique <em>from</em> address to allow support to process "
+"replies to tickets via email."
+msgstr ""
+"Можете да зададете подразбран адрес за полето <em>От</em>, от който ще бъдат "
+"изпращани известия на клиенти, чиито входящ адрес за ел. поща не е "
+"интегриран. Ако за даден клиент входящият адрес за ел. поща е интегриран ще "
+"трябва да зададете полето <em>От</em> на страницата за настройка на този "
+"клиент, т.к. всеки клиент получава уникален адрес, за да може модулът да "
+"обработва заявките по ел. поща."
+
+#: support.admin.inc:18
+msgid "Options"
+msgstr "Операции"
+
+#: support.admin.inc:289
+msgid "Override block search form"
+msgstr "Подмяна на формата за търсене в блок."
+
+#: support.admin.inc:283
+msgid "Override theme search form"
+msgstr "Подмяна на формата за търсене в тема"
+
+#: support.admin.inc:201
+msgid ""
+"PHP must be !compiled in order to enable inbound email integration.  The "
+"IMAP functions are required to support the IMAP, POP3, and local mailbox "
+"access methods."
+msgstr ""
+"PHP трябва да е !compiled, за да активирате интеграция с входяща поща. "
+"Функциите за IMAP са необходими, за да се поддържат методи за достъп IMAP, "
+"POP3 и локален файл."
+
+#: support.admin.inc:61
+msgid "Path"
+msgstr "Път"
+
+#: support.admin.inc:118
+msgid "Port"
+msgstr "Порт"
+
+#: support.admin.inc:327 support.module:1547;2018
+msgid "Priority"
+msgstr "Приоритет"
+
+#: support.admin.inc:125
+msgid "Protocol"
+msgstr "Протокол"
+
+#: support.module:488
+msgid "Read @username's latest tickets."
+msgstr "Прочитане на последните заявки на потребител @username."
+
+#: support.module:1729
+msgid "Receive email notifications when this ticket is updated."
+msgstr "Ще получавате известия по ел. поща за промените."
+
+#: support.admin.inc:277
+msgid "Remove tickets from content search results"
+msgstr "Премахване на заявките от търсене в съдържанието"
+
+#: support.user.inc:25 support.module:2015
+msgid "Reported by"
+msgstr "Създадена от"
+
+#: support.module:471
+msgid "SELECT name FROM {support_client} WHERE status = 1"
+msgstr "SELECT name FROM {support_client} WHERE status = 1"
+
+#: support.module:913
+msgid "Saved %size byte %type attachment %file to %path."
+msgstr "Файлът %file, с големина %size байта, от тип %type беше записан като %path."
+
+#: support.admin.inc:273
+msgid "Search"
+msgstr "Търсене"
+
+#: support.module:1180
+msgid "Search specific client(s)"
+msgstr "Търсене на определен клиент(и)"
+
+#: support.module:1204
+msgid "Search specific priorities"
+msgstr "Търсене на определен приоритет"
+
+#: support.module:1192
+msgid "Search specific state(s)"
+msgstr "Търсене на определен статус(и)"
+
+#: support.admin.inc:128
+msgid "Select the protocol used to obtain messages from your mail server."
+msgstr "Изберете протокол за връзка с пощенския сървър."
+
+#: support.admin.inc:87
+msgid "Server name"
+msgstr "Име на сървър"
+
+#: support.admin.inc:100
+msgid "Server password"
+msgstr "Парола"
+
+#: support.admin.inc:94
+msgid "Server username"
+msgstr "Потребителско име"
+
+#: support.module:188
+msgid "Settings"
+msgstr "Настройки"
+
+#: support.admin.inc:121
+msgid ""
+"Specify the TCP port to connect to when downloading email messages.  If "
+"using pop3, this port is normally 110.  If using secure pop3, this port is "
+"normally 995.  If using imap, this port is normally 220.  If using secure "
+"imap this port is normally 993."
+msgstr ""
+"TCP порт за връзка при изтегляне на нови писма. Ако протокола е pop3 това "
+"обикновено е 110. При сигурен pop3 - 995, при imap - 220, при сигурен imap - "
+"993."
+
+#: support.admin.inc:327 support.user.inc:26 support.module:1531;2017
+msgid "State"
+msgstr "Статус"
+
+#: support.admin.inc:15;68
+msgid "Status"
+msgstr "Статус"
+
+#: support.module:1728
+msgid "Subscribe"
+msgstr "Абониране"
+
+#: support.module:1743
+msgid "Subscribed"
+msgstr "Абонирани потребители"
+
+#: support.info:0;0
+msgid "Support"
+msgstr "Заявки за поддръжка"
+
+#: support.module:16
+msgid "Support ticket"
+msgstr "Заявки за поддръжка"
+
+#: support.module:861
+msgid "Support ticket created from email."
+msgstr "Заявка беше създадена от ел. писмо."
+
+#: support.module:143
+msgid "Support ticketing system"
+msgstr "Заявки за поддръжка"
+
+#: support.module:536;52
+msgid "Support tickets"
+msgstr "Заявки за поддръжка"
+
+#: support.module:1735
+msgid "Suppress notification"
+msgstr "Без известие"
+
+#: support.admin.inc:135
+msgid ""
+"The %pop3, %imap and %ssl flags will be automatically set for you depending "
+"on your configuration above.  Additional flags can be manually specified "
+"here.  If you are having trouble downloading messages, you may need to "
+"change these extra flags as !defined.  These flags are ignored when using "
+"the %local protocol."
+msgstr ""
+"Флаговете %pop3, %imap и %ssl ще бъдат добавени автоматично в зависимост от "
+"избраната конфигурация. Можете да зададете допълнителни флагове в това поле. "
+"Ако имате проблем с изтеглянето на съобщения може да сеналожи да промените "
+"тези допълнителни флагове както е !defined. Тези флагове се игнорират когато "
+"използвате потокола %local."
+
+#: support.admin.inc:103
+msgid ""
+"The client's email password.  The support module uses this password to log "
+"into the mail server to download messages. %notice"
+msgstr ""
+"Паролата за ел. поща на клиента. Модулът за заявки използва тази парола, за "
+"да изтегли писмата от пощенския сървър. %notice"
+
+#: support.admin.inc:97
+msgid ""
+"The client's email username.  If a client receives email at %email, the "
+"server username is often simply %user.  The support module uses this "
+"username to log into the mail server to download messages."
+msgstr ""
+"Потребителското име за ел. поща на клиента. Ако клиент получава писма на  "
+"адрес %email тогава потребителското име най-често е %user. Модулът за заявки "
+"използва това потребителско име, за да изтегли писмата от пощенския сървър."
+
+#: support.admin.inc:115
+msgid ""
+"The email address support should use when sending notification emails.  This "
+"must be the same client-specific email address users will send messages to "
+"when creating and updating tickets via email.  This will often be comprised "
+"of your server username and your server name, such as %email."
+msgstr ""
+"Адресът, който модулът трябва да използва при изпращане на известия по "
+"пощата. Той трябва да е същия като адреса, на който потребителите изпращат "
+"писма за нови заявки. Той обикновено се състой от потребителското ви име и "
+"адреса на сървъра, например %email."
+
+#: support.admin.inc:58
+msgid ""
+"The full name of your client.  This name will be used when building menus, "
+"sending emails, and anywhere else the name of your client is visibly "
+"displayed."
+msgstr ""
+"Цялото име на клиента. Това име ще се използва при изграждане на менюта, "
+"изпращане на ел. поща и навсякъде, където името на клиента е видимо."
+
+#: support.admin.inc:91
+msgid ""
+"The hostname or IP address of the mail server where your client's dedicated "
+"email address is hosted.  For example, client %foo may receive email at %"
+"email, and so the server name may be %hostname.  The server name may also be "
+"an IP address, such as %ip."
+msgstr ""
+"Име на хост или IP адрес на пощенския сървър, на който се намира пощенският "
+"адрес. Например клиенти с профил %foo може да получават поща на адрес %email "
+"т.ч. името на сървъра е %hostname. Името на сървъра може да бъде и IP адрес "
+"като например %ip."
+
+#: support.admin.inc:109
+msgid ""
+"The mailbox path on your mail server.  You generally do not need to modify "
+"this setting."
+msgstr ""
+"Пътя до пощенската кутия на сървъра. Обикновено не се налага да променяте "
+"тази настройка."
+
+#: support.module:752
+msgid ""
+"The text of this ticket update was manually suppressed.  You must view the "
+"ticket online to see the update."
+msgstr ""
+"Текстът на тази промяна е бил скрит ръчно. Можете да видите промяната само "
+"на сайта."
+
+#: support.module:749
+msgid ""
+"The text of this ticket was manually suppressed.  You must view the ticket "
+"online to see it."
+msgstr ""
+"Текстът на тази заявка е бил скрит ръчно. Можете да видите заявката само на "
+"сайта."
+
+#: support.admin.inc:320
+msgid "The user that created the ticket"
+msgstr "Потребителят, създал заявката"
+
+#: support.user.inc:23 support.module:2013
+msgid "Ticket"
+msgstr "Заявка"
+
+#: support.admin.inc:326
+msgid ""
+"Ticket views are sorted by clicking on the title of any given column.  This "
+"option allows you to set a secondary sort column.  For example, you can sort "
+"tickets by priority, and configure the secondary sort field here to sort all "
+"tickets of the same priority by node id. For best performance, do not set a "
+"secondary sort column."
+msgstr ""
+"Изгледите със заявки се сортират чрез щракване върху заглавието на някоя "
+"колона. Тази настройка ви позволява да зададете колона за вторично "
+"сортиране. Например можете да сортирате заявките по приоритет и да зададете "
+"всички заявки с един и същ приоритет да бъдат сортирани по номер. За "
+"максимална производителност не задавайте колона за вторично сортиране."
+
+#: support.module:492;1301
+msgid "Tickets"
+msgstr "Заявки"
+
+#: support.admin.inc:72
+msgid "Tickets will only be displayed for enabled clients."
+msgstr "Само заявките на активни клиенти ще бъдат показани."
+
+#: support.module:1124
+msgid "Update"
+msgstr "Промени"
+
+#: support.admin.inc:164
+msgid "Update client"
+msgstr "Обновяване клиент"
+
+#: support.user.inc:24 support.module:2014
+msgid "Updated"
+msgstr "Обновена на"
+
+#: support.user.inc:28 support.module:2019
+msgid "Updates"
+msgstr "Промени"
+
+#: support.admin.inc:65
+msgid ""
+"Used to build the path to this clients tickets.  The path should only be "
+"comprised of alphanumeric characters, dashes, and underscores."
+msgstr ""
+"Използва се при изграждане на пътя до заявките на клиента. Пътят трябва да "
+"съдържа само латински букви, цифри, тирета и подчертавки."
+
+#: support.module:447
+msgid "User !username automatically created."
+msgstr "Потребител !username беше създаден автоматично."
+
+#: support.admin.inc:190
+msgid "User %username does not exist."
+msgstr "Потребител %username не съществува."
+
+#: support.admin.inc:193
+msgid "User %username does not have permission to access %client tickets."
+msgstr "Потребител %username няма права за достъп до заявките на %client."
+
+#: support.admin.inc:296
+msgid "User profile"
+msgstr "Потребителски профил"
+
+#: support.admin.inc:139
+msgid "Valid email domains"
+msgstr "Валидни демейн имена за ел. поща"
+
+#: support.module:488
+msgid "View recent tickets"
+msgstr "Последни заявки"
+
+#: support.admin.inc:290
+msgid ""
+"When checked, support will override the default search block so that it "
+"searches tickets.  When not checked, the block search form will work "
+"normally."
+msgstr ""
+"Когато е маркирано модулът за заявки ще подмени формата за търсене в блока,т."
+"ч. да можете да търсите в заявките. В противен случай формата за търсене в "
+"блока ще работи нормално."
+
+#: support.admin.inc:284
+msgid ""
+"When checked, support will override the theme search box so that it searches "
+"tickets.  When not checked, the theme search box will work normally."
+msgstr ""
+"Когато е маркирано модулът за заявки ще подмени формата за търсене в темата, "
+"т.ч. да можете да търсите в заявките. В противен случай формата за търсене в "
+"темата ще работи нормално."
+
+#: support.admin.inc:278
+msgid ""
+"When checked, support will remove tickets from content search results, and "
+"tickets can only be searched in their own search tab.  This is necessary to "
+"enforce proper access control, only letting a user's search return tickets "
+"that they have access to."
+msgstr ""
+"Когато е маркирано модулът за поддръжка ще премахне заявките от резултатите "
+"за търсене в съдържанието и търсенето ще бъде възможно в специален таб. Това "
+"е необходимо, за да се осигури адекватен контрол на достъп като позволява на "
+"потребителите да търсят само в заявки, до които имат достъп."
+
+#: support.admin.inc:255
+msgid ""
+"When checked, support will try to download client emails each time cron is "
+"run.  You may want to disable this if you are not integrating support with "
+"email, or if you only wish to download mail manually or via the !path.  If "
+"automating the download of mail through the support fetch mail path, be sure "
+"to !assign permissions to the necessary role(s)."
+msgstr ""
+"Когато е маркирано модулът ще се опита да изтегли пощата за всеки клиент "
+"всеки път когато cron се задейства. Може да деактивирате тази настройка, ако "
+"няма да интегрирате модула с ел. поща или ако искате да изтегляте писмата "
+"ръчно или чрез !path. Ако автоматизирате изтеглянето чрез пътя за изтегляне "
+"не забравяйте да !assign на съответните потребителски роли."
+
+#: support.module:776
+msgid ""
+"You can reply to this email or visit the following URL to update this ticket"
+msgstr ""
+"Можете да отговорите на това писмо или да посетите следния адрес, за да "
+"направите промени по заявката"
+
+#: support.module:779
+msgid "You can visit the following URL to update this ticket"
+msgstr "Можете да посетите следния адрес, за да направите промени по заявката"
+
+#: support.admin.inc:239
+msgid "You do not have any administrative items."
+msgstr "Нямате никакви администраторски права."
+
+#: support.admin.inc:182
+msgid ""
+"You have entered an unsupported character.  The following characters can not "
+"be used in the client name: &*(),<>?[]"
+msgstr ""
+"Въвели сте невалиден символ. Следните символи не са позволени в името на "
+"клиента: &*(),<>?[]"
+
+#: support.admin.inc:349
+msgid ""
+"You must enter a valid email address or leave the default mail from address "
+"field blank."
+msgstr ""
+"Трябва да въведете валиден адрес аз ел. поща или да оставите полето за "
+"подразбран изходящ адрес празно."
+
+#: support.module:548
+msgid "You must select a client"
+msgstr "Трябва да изберете клиент"
+
+#: support.module:559;618
+msgid "You must specify a user that has permission to view this ticket."
+msgstr "Трябва да изберете потребител, с права за достъп до тази заявка."
+
+#: support.module:553;611
+msgid "You must specify a valid user."
+msgstr "Трябва да изберете валиден потребител."
+
+#: support.module:473
+msgid "access "
+msgstr "достъп до "
+
+#: support.module:470
+msgid "administer support"
+msgstr "администрация на заявките за поддръжка"
+
+#: support.admin.inc:313
+msgid "always"
+msgstr "винаги"
+
+#: support.admin.inc:255
+msgid "assign \"download mail via support/fetch\""
+msgstr "назначите права за \"изтегляне на поща чрез support/fetch\""
+
+#: support.module:294
+msgid "assign permissions"
+msgstr "редактирайте правата"
+
+#: support.module:470
+msgid "can administer state"
+msgstr "администрация на статуса"
+
+#: support.module:470
+msgid "can assign tickets to any user"
+msgstr "може да назначава заявки на всеки потребител."
+
+#: support.module:470
+msgid "can assign tickets to self"
+msgstr "може да назначава заявки на себе си"
+
+#: support.module:470
+msgid "can select client"
+msgstr "може да избира клиент"
+
+#: support.module:470
+msgid "can select priority"
+msgstr "може да избира приоритет"
+
+#: support.module:470
+msgid "can select state"
+msgstr "може да избира статус"
+
+#: support.module:470
+msgid "can subscribe other users to notifications"
+msgstr "може да абонира други потребители за известия"
+
+#: support.module:470
+msgid "can suppress notification"
+msgstr "може да спира известията"
+
+#: support.admin.inc:84;201
+msgid "compiled with the IMAP extension"
+msgstr "компилиран с разширението IMAP"
+
+#: support.module:849
+msgid "content"
+msgstr "съдържание"
+
+#: support.module:470
+msgid "create tickets"
+msgstr "може да създава заявки"
+
+#: support.module:294
+msgid "define roles"
+msgstr "дефинирате потребителски роли"
+
+#: support.admin.inc:135
+msgid "defined here"
+msgstr "описано тук"
+
+#: support.module:470
+msgid "delete any ticket"
+msgstr "може да изтрива всяка заявка"
+
+#: support.module:470
+msgid "delete own tickets"
+msgstr "може да изтрива собствена заявка"
+
+#: support.admin.inc:29
+msgid "disabled"
+msgstr "неактивен"
+
+#: support.module:470
+msgid "download mail via support/fetch"
+msgstr "изтегляне на поща чрез support/fetch"
+
+#: support.admin.inc:23
+msgid "edit"
+msgstr "редактиране"
+
+#: support.module:470
+msgid "edit any ticket"
+msgstr "може да редактира всяка заявка"
+
+#: support.module:470
+msgid "edit own tickets"
+msgstr "може да редактира собствените заявки"
+
+#: support.admin.inc:29
+msgid "enabled"
+msgstr "активен"
+
+#: support.admin.inc:25
+msgid "fetch"
+msgstr "изтегляне поща"
+
+#: support.admin.inc:30
+msgid "integrated"
+msgstr "интегрирана"
+
+#: support.admin.inc:135
+msgid "local file"
+msgstr "локален файл"
+
+#: support.module:1698
+msgid "not assigned"
+msgstr "не назначен"
+
+#: support.admin.inc:30
+msgid "not integrated"
+msgstr "не е интегрирана"
+
+#: support.module:447;453;913;919;2162;2170
+msgid "support"
+msgstr "поддръжка"
+
+#: support.admin.inc:255
+msgid "support fetch mail path"
+msgstr "пътя за изтегляне"
+
+#: support.module:687;687
+msgid "unassigned"
+msgstr "не е назначена"
+
+#: support.admin.inc:31
+msgid "using default"
+msgstr "по подразбиране"
+
+#: support.module:849
+msgid "view"
+msgstr "преглед"
+
+#: support.module:470
+msgid "view other users tickets"
+msgstr "може да вижда заявки на други потребители"

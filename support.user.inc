@@ -90,7 +90,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     $rows[] = array('data' => array(
       array('data' => l($ticket->nid, "node/$ticket->nid"), 'class' => 'ticket-id'),
       array('data' => l(_support_truncate($ticket->title), "node/$ticket->nid"), 'class' => 'ticket-title'),
-      array('data' => format_date($ticket->changed, 'small'), 'class' => 'ticket-updated'),
+      array('data' => format_date($ticket->last_updated, 'small'), 'class' => 'ticket-updated'),
       array('data' => l(_support_truncate($account->name, 24), "user/$account->uid"), 'class' => 'ticket-reported'),
       array('data' => _support_state($ticket->state), 'class' => 'ticket-state'),
       array('data' => _support_priorities($ticket->priority), 'class' => 'ticket-priority'),

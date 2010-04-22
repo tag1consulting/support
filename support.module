@@ -76,6 +76,8 @@ function support_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
+
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = 1');
   while ($client = db_fetch_object($result)) {
     $items['support/'. $client->path] = array(
@@ -85,7 +87,6 @@ function support_menu() {
       'access callback' => 'support_access_clients',
       'access arguments' => array($client),
     );
-    $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
     foreach ($states as $sid => $state) {
       $items["support/$client->path/$state"] = array(
         'title' => "$state",
@@ -114,7 +115,7 @@ function support_menu() {
     'access arguments' => array(1),
     'file' => 'support.user.inc',
   );
-  $states = array('all' => 'all', 'all open' => 'all open') + _support_states();
+  unset($states['my open']);
   foreach ($states as $sid => $state) {
     $items["support/%user_uid_optional/assigned/$state"] = array(
       'title' => "$state",

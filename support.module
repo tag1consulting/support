@@ -2308,7 +2308,7 @@ function _support_available_clients() {
       }
     }
     else {
-      drupal_set_message('There are no support clients configured/enabled.', 'error');
+      drupal_set_message(t('There are no support clients configured/enabled.'), 'error');
     }
   }
   return $valid;

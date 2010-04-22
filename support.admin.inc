@@ -32,7 +32,7 @@ function support_admin_client_overview() {
       $options);
   }
   if (empty($rows)) {
-    drupal_set_message('There are currently no clients defined.');
+    drupal_set_message(t('There are currently no clients defined.'));
   }
   return theme('table', $header, $rows);
 }
@@ -302,20 +302,20 @@ function support_admin_settings() {
   $form['general']['support_autoassign_ticket'] = array(
     '#type' => 'textfield',
     '#autocomplete_path' => 'support/autocomplete/assigned',
-    '#title' => 'Auto-assign new tickets to',
+    '#title' => t('Auto-assign new tickets to'),
     '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') .'>', '%nobody' => '<' . t('nobody') .'>')),
     '#default_value' => variable_get('support_autoassign_ticket', '<nobody>'),
   );
   $form['general']['support_secondary_sort_tickets'] = array(
     '#type' => 'radios',
-    '#title' => 'Secondary sort column',
+    '#title' => t('Secondary sort column'),
     '#description' => t('Ticket views are sorted by clicking on the title of any given column.  This option allows you to set a secondary sort column.  For example, you can sort tickets by priority, and configure the secondary sort field here to sort all tickets of the same priority by node id. For best performance, do not set a secondary sort column.'),
     '#options' => array(t('None'), t('Last update'), t('Node ID'), t('State'), t('Priority')),
     '#default_value' => variable_get('support_secondary_sort_tickets', 0),
   );
   $form['general']['support_secondary_sort_order'] = array(
     '#type' => 'radios',
-    '#title' => 'Secondary sort order',
+    '#title' => t('Secondary sort order'),
     '#description' => t('If specifying a secondary sort column, you can also specify a secondary sort order.'),
     '#options' => array(t('Ascending'), t('Descending')),
     '#default_value' => variable_get('support_secondary_sort_order', 0),

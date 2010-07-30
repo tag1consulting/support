@@ -1,3 +1,8 @@
+July 30, 2010
+ - support.module
+    o bug #862150: Fix reply detection to handle replies to outgoing mail /
+      cleanup, refactor, and document detection code.
+
 April 22nd, 2010
  - support.module
     o bug #766010: only set up states array once when building menu (thanks to

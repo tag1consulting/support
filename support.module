@@ -845,6 +845,38 @@ function support_mail($key, &$message, $params) {
     $md5 = md5($length);
     $message['body'] .= "\n\n[$length:$md5]\n";
   }
+
+  // We generate message ids based on comment cids and support nids.
+  // This allows readers to properly thread the messages coming from us,
+  // as well as allow us to detect what comment an incoming email is a reply to,
+  // so we can (optionally) handle threaded comments.
+  $cid = $params['cid'];
+  $references = array();
+  while ($cid) {
+    $cid = db_result(db_query('SELECT pid FROM {comments} WHERE cid = %d', $cid));
+    // The last one will be cid 0.
+    $references[] = _support_generate_message_id($params['nid'], $cid);
+  }
+  // Set up message id and threading.
+  $message['headers']['Message-Id'] = _support_generate_message_id($params['nid'], $params['cid']);
+  if (!empty($references)) {
+    $message['headers']['In-Reply-To'] = $references[0];
+    $message['headers']['References'] = implode(' ', array_reverse($references));
+  }
+}
+
+/**
+ * Generate an RFC2822 message ID.
+ * @param $nid
+ *   The support ticket nid.
+ * @param $cid
+ *   The cid of this followup, or 0 for a new ticket.
+ */
+function _support_generate_message_id($nid, $cid = 0) {
+  global $base_url;
+  $id_left = $cid . '.' . $nid;
+  $id_right = preg_replace('|.+://([a-zA-Z0-9\._-]+).*|', '\1', $base_url);
+  return "<$id_left@$id_right>";
 }
 
 function _support_node_move($node, $destination) {
@@ -2774,73 +2806,7 @@ function support_client_fetch($client, $manual = TRUE) {
       }
     }
 
-    // Search for the the ticket number in the subject.
-    $key = variable_get('support_key', 'tkt');
-    $tickets = array();
-    preg_match("/(\[$key:)([0-9]*)(\])/", $message['subject'], $tickets);
-    if (isset($tickets[2])) {
-      $message['nid'] = $tickets[2];
-    }
-
-    if (variable_get('support_thread_by_mail_headers', TRUE)) {
-      // If not found in subject, search for the ticket number based on the
-      // in_reply_to field of the header.
-      if ((!isset($message['nid']) || !is_numeric($message['nid'])) && isset($message['headers']->in_reply_to)) {
-        preg_match_all("/<[^<^>]*/", $message['headers']->in_reply_to, $in_reply_tos);
-        foreach ($in_reply_tos[0] as $in_reply_to) {
-          $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $in_reply_to .'>'));
-          if (isset($nid) && is_numeric($nid)) {
-            $message['nid'] = $nid;
-          }
-          else {
-            $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $in_reply_to .'>'));
-            if (isset($nid) && is_numeric($nid)) {
-              $message['nid'] = $nid;
-            }
-          }
-        }
-      }
-
-      // If still not found, search for the ticket number based on the 
-      // references field of the header.
-      if ((!isset($message['nid']) || !is_numeric($message['nid'])) && isset($message['headers']->references)) {
-        preg_match_all("/<[^<^>]*/", $message['headers']->references, $references);
-        foreach ($references[0] as $reference) {
-          $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $reference .'>'));
-          if (isset($nid) && is_numeric($nid)) {
-            $message['nid'] = $nid;
-          }
-          else {
-            $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $reference .'>'));
-            if (isset($nid) && is_numeric($nid)) {
-              $message['nid'] = $nid;
-            }
-          }
-          // If found, no need to search further.
-          if (is_numeric($message['nid'])) break;
-        }
-      }
-    }
-
-    // If still not found, look for tickets that have an identical subject.
-    if (!isset($message['nid']) || !is_numeric($message['nid'])) {
-      if (!$client->thread_subject) {
-        $client->thread_subject = variable_get('support_thread_by_subject', 3);
-      }
-      switch ($client->thread_subject) {
-        case 1: // disabled
-          break;
-        case 2:
-          $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND isdefault = 1 ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
-          break;
-        case 3:
-          $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND isclosed = 0 ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
-          break;
-        case 4:
-          $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = %d AND n.title = '%s' ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
-          break;
-      }
-    }
+    _support_identify_ticket($client, $message);
 
     $structure = imap_fetchstructure($stream, $number);
     $mime = _support_get_filemime($structure);
@@ -2867,6 +2833,102 @@ function support_client_fetch($client, $manual = TRUE) {
     drupal_set_message(t('Downloaded !count', array('!count' => format_plural($messages_downloaded, '1 message', '@count messages'))));
     drupal_goto('admin/support/clients');
   }
+}
+
+/**
+ * Search for an existing ticket to associate an incoming message with.
+ *
+ * @param &$client
+ *   Client object.
+ * @param &$message
+ *   Message being processed.
+ */
+function _support_identify_ticket(&$client, &$message) {
+  global $base_url;
+
+  // A) Check for ticket number defined in the Subject.
+  $key = variable_get('support_key', 'tkt');
+  $tickets = array();
+  preg_match("/(\[$key:)([0-9]*)(\])/", $message['subject'], $tickets);
+  if (isset($tickets[2])) {
+    $message['nid'] = $tickets[2];
+    return TRUE;
+  }
+
+  if (variable_get('support_thread_by_mail_headers', TRUE)) {
+    $id_right = preg_replace('|.+://([a-zA-Z0-9\._-]+).*|', '\1', $base_url);
+
+    // Search In-Reply-To and References...
+    $check = '';
+    if (isset($message['headers']->in_reply_to)) {
+      $check .= $message['headers']->in_reply_to;
+    }
+    if (isset($message['headers']->references)) {
+      // Turn references header around.
+      $check .= implode(' ', array_reverse(explode(' ', $message['headers']->references)));
+    }
+    $message_ids = array();
+    preg_match_all("/<[^<^>]*/", $check, $message_ids);
+    foreach ($message_ids[0] as $message_id) {
+      $message_id .= '>';
+
+      // B) Check for a reply to one of the messages generated by us.
+      $matches = array();
+      if (preg_match('/^<(\d+)\.(\d+)@' . $id_right . '>$/', $message_id, $matches)) {
+        $cid = $matches[1];
+        $nid = $matches[2];
+        // Reply was directly to node.
+        if (!$cid) {
+          // Check message id against our records.
+          if (db_result(db_query('SELECT 1 FROM {support_ticket} t WHERE t.nid = %d AND t.client = %d', $nid, $client->clid))) {
+            $message['nid'] = $nid;
+            return TRUE;
+          }
+        }
+        // Reply was to followup.
+        else {
+          // Check message id against our records.
+          if (db_result(db_query('SELECT 1 FROM {comments} c INNER JOIN {support_ticket_comment} t ON c.cid = t.cid WHERE c.cid = %d AND c.nid = %d AND t.client = %d', $cid, $nid, $client->clid))) {
+            $message['nid'] = $nid;
+            return TRUE;
+          }
+        }
+      }
+
+      // C) Check for reply to the incoming message that created the ticket.
+      $nid = db_result(db_query("SELECT nid FROM {support_ticket} WHERE message_id = '%s'", $message_id));
+      if (isset($nid) && is_numeric($nid)) {
+        $message['nid'] = $nid;
+        return TRUE;
+      }
+
+      // D) Check for reply to an incoming message that created a followup.
+      $nid = db_result(db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comments} c ON j.cid = c.cid WHERE j.message_id = '%s'", $message_id));
+      if (isset($nid) && is_numeric($nid)) {
+        $message['nid'] = $nid;
+        return TRUE;
+      }
+    }
+  }
+
+  // E) Look for tickets with an identical subject.
+  if (!$client->thread_subject) {
+    $client->thread_subject = variable_get('support_thread_by_subject', 3);
+  }
+  switch ($client->thread_subject) {
+    case 1: // disabled
+      break;
+    case 2:
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND isdefault = 1 ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
+      break;
+    case 3:
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND isclosed = 0 ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
+      break;
+    case 4:
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = %d AND n.title = '%s' ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
+      break;
+  }
+  return (boolean) $message['nid'];
 }
 
 /**

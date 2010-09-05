@@ -1,4 +1,4 @@
-name = Support Charting
+name = Support charting
 description = Charting for the helpdesk and support ticketing system.
 package = Support
 dependencies[] = support

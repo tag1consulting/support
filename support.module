@@ -659,7 +659,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
         }
         db_query("UPDATE {support_ticket} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d", isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned, $node->nid);
         if (!db_affected_rows()) {
-          db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
+          @db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
         }
         if ($op == 'insert') {
           if (isset($node->notifications) && !empty($node->notifications)) {
@@ -752,7 +752,7 @@ function support_comment(&$comment, $op) {
         }
         db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
         if (!db_affected_rows()) {
-          db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
+          @db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
         }
         _support_comment_update_node($comment['nid']);
         if ($op == 'insert') {
@@ -1355,7 +1355,7 @@ function support_subscribe_user($nid, $uid, $active = 1) {
   if (support_access_clients($client, $account)) {
     db_query('UPDATE {support_assigned} SET active = %d WHERE uid = %d AND nid = %d', $active, $uid, $nid);
     if (!db_affected_rows()) {
-      db_query('INSERT INTO {support_assigned} (nid, uid, active) VALUES(%d, %d, %d)', $nid, $uid, $active);
+      @db_query('INSERT INTO {support_assigned} (nid, uid, active) VALUES(%d, %d, %d)', $nid, $uid, $active);
     }
   }
   else {

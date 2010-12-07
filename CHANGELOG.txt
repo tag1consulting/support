@@ -4,6 +4,12 @@ December 6th, 2010
  - support.admin.inc
     o bug #677504: Fix duplicate entry errors in SQL statements.
 
+September 5th, 2010
+ - support.module
+    o Allow loading of clients for specific user.
+ - support_charts.info
+    o Fix capitalization of module name.
+
 July 30th, 2010
  - support.module
     o bug #862150: Fix reply detection to handle replies to outgoing mail /

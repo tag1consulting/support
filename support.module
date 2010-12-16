@@ -396,14 +396,20 @@ function support_access_clients($client = NULL, $account = NULL) {
 /**
  * Menu callback, load a client.
  */
-function support_client_load($clid) {
+function support_client_load($id, $integer = TRUE) {
   static $clients = array();
-  if (!isset($clients[$clid])) {
-    $client = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = %d', $clid));
+
+  if (!isset($clients[$id])) {
+    if ($integer) {
+      $client = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = %d', $id));
+    }
+    else {
+      $client = db_fetch_object(db_query("SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE path = '%s'", $id));
+    }
     drupal_alter('support_client_load', $client);
-    $clients[$clid] = $client;
+    $clients[$id] = $client;
   }
-  return $clients[$clid];
+  return $clients[$id];
 }
 
 /**
@@ -753,6 +759,14 @@ function support_comment(&$comment, $op) {
         db_query("UPDATE {support_ticket_comment} SET message_id = '%s', state = %d, priority = %d, client = %d, assigned = %d WHERE cid = %d", isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned'], $comment['cid']);
         if (!db_affected_rows()) {
           @db_query("INSERT INTO {support_ticket_comment} (cid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $comment['cid'], isset($comment['message_id']) ? $comment['message_id'] : '', $comment['state'], $comment['priority'], $comment['client'], $comment['assigned']);
+          // The first update to a ticket is not preserved in the database.
+          // Store it in an array allowing other modules to dectect/respond to
+          // ticket changes.
+          $comment['previous'] = new stdClass();
+          $comment['previous']->state = $node->state;
+          $comment['previous']->priority = $node->priority;
+          $comment['previous']->client = $node->client;
+          $comment['previous']->assigned = $node->assigned;
         }
         _support_comment_update_node($comment['nid']);
         if ($op == 'insert') {

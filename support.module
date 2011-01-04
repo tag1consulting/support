@@ -1125,7 +1125,7 @@ function support_save_message($message, $client) {
     $comment['message_id'] = $message_id;
     $comment['state'] = isset($message['state']) ? $message['state'] : $ticket->state;
     $comment['priority'] = isset($message['priority']) ? $message['priority'] : $ticket->priority;
-    $comment['client'] = $ticket->client;
+    $comment['client'] = isset($message['client']) ? $message['client'] : $ticket->client;
     $comment['assigned'] = isset($message['assigned']) ? $message['assigned'] : $ticket->assigned;
     $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
     $comment['support_email'] = TRUE;
@@ -1136,6 +1136,11 @@ function support_save_message($message, $client) {
     // convert indivudal files to arrays to work with the comment_upload module
     foreach ($comment['files'] as $fid => $file) {
       $comment['files'][$fid] = (array)$file;
+    }
+    if (isset($message['_support_extra_fields'])) {
+      foreach ($message['_support_extra_fields'] as $k => $v) {
+        $comment[$k] = $v;
+      }
     }
     comment_invoke_comment($comment, 'insert');
 
@@ -1157,8 +1162,8 @@ function support_save_message($message, $client) {
     $node->comment = COMMENT_NODE_READ_WRITE;
     $node->uid = $account->uid;
     $node->message_id = $message_id;
-    $node->state = _support_state_default();
-    $node->priority = _support_priority_default();
+    $node->state = isset($message['state']) ? $message['state'] : _support_state_default();
+    $node->priority = isset($message['priority']) ? $message['priority'] : _support_priority_default();
     $node->client = $client->clid;
     $node->assigned = _support_autoassign($client->clid, $account->uid);
     $node->notification = TRUE;
@@ -1169,6 +1174,11 @@ function support_save_message($message, $client) {
       $node->files = _support_save_attachments($message['attachments'], $account);
     }
     $node->created_by_email = TRUE;
+    if (isset($message['_support_extra_fields'])) {
+      foreach ($message['_support_extra_fields'] as $k => $v) {
+        $node->{$k} = $v;
+      }
+    }
     node_save($node);
   }
 }
@@ -2238,9 +2248,9 @@ function support_page_user_access($account) {
 /**
  * Helper function to list available states.
  */
-function _support_states($all = TRUE, $sid = NULL) {
+function _support_states($all = TRUE, $sid = NULL, $account = NULL) {
   static $states = array();
-  $admin = user_access('can administer state');
+  $admin = user_access('can administer state', $account);
 
   if (!isset($states["$admin-$all-$sid"])) {
     if ($admin || $all) {
@@ -2365,7 +2375,7 @@ function _support_available_clients($account = NULL) {
       drupal_set_message(t('There are no support clients configured/enabled.'), 'error');
     }
   }
-  return $valid[$account->uid];
+  return isset($valid[$account->uid]) ? $valid[$account->uid] : NULL;
 }
 
 /**

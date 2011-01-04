@@ -17,6 +17,43 @@ contained within.  Inbound email integration requires that the client have a
 dedicated email address for sending and receiving ticket notifications and
 updates.  Each field is fully defined on the client administration page.
 
+If you enable support_mailcmd.module and are using integrated clients, you may
+change many of the ticket fields via email using bugzilla "email_in.pl" syntax.
+
+The general format of a message when utilizing this functionality is as follows:
+
+--
+From: reporter@example.com
+Subject: Example Ticket
+
+@state = pending
+@priority = critical
+@assigned = developer@example.com
+@suppress = yes
+
+Example ticket body.
+--
+
+The possible fields are:
+
+@state -- Name of ticket state to set.
+@priority -- Name of ticket priority to set.
+@client -- Name of client to move ticket to. (Not implemented currently)
+@assigned -- Username to assign ticket to, or "unassign" to unassign the ticket.
+@suppress -- yes / no, whether or not to suppress notification.
+
+If you are using support_timer.module, you can also submit elapsed time via email:
+
+@timer_date -- Timer date. Accepts the same format as the form. (dd mmm yyyy)
+@elapsed -- Time spent. Accepts the same format as the form. (hh:mm:ss)
+@summary -- Summary for reporting.
+
+Both @timer_date and @elapsed must be specified if you wish to submit time.
+
+Any unrecognized fields or attempts to modify fields in a way that is not
+permitted will be silently ignored. The section containing fields must appear at
+the top of the message and will not appear in the final ticket.
+
 The Support module send out two different notification emails.  It sounds out
 emails when new tickets are created, and emails when existing tickets are
 updated.  The subject and body of these emails is defined in the

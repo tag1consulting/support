@@ -1125,7 +1125,7 @@ function support_save_message($message, $client) {
     $comment['message_id'] = $message_id;
     $comment['state'] = isset($message['state']) ? $message['state'] : $ticket->state;
     $comment['priority'] = isset($message['priority']) ? $message['priority'] : $ticket->priority;
-    $comment['client'] = isset($message['client']) ? $message['client'] : $ticket->client;
+    $comment['client'] = $ticket->client;
     $comment['assigned'] = isset($message['assigned']) ? $message['assigned'] : $ticket->assigned;
     $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
     $comment['support_email'] = TRUE;

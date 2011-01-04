@@ -1,3 +1,7 @@
+January 4th, 2011
+ - support_mailcmd.module
+   o bug #747328: Implement field updates via email. See MAIL.txt for details.
+
 December 6th, 2010
  - support.module
     o bug #677504: Fix duplicate entry errors in SQL statements.

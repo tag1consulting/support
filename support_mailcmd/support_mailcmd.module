@@ -58,50 +58,58 @@ function support_mailcmd_support_fetch_message_alter(&$message, $client) {
     $tvalue = trim(strtolower($value));
     switch ($cmd) {
       case 'state':
-        $states = _support_states(FALSE, $ticket->state, $account);
-        foreach ($states as $k => $v) {
-          if (strtolower($v) == $tvalue) {
-            $message['state'] = $k;
+      case 'status':
+        if (user_access('can select state', $account) ||
+            user_access('administer support', $account) ||
+            user_access('can administer state', $account)) {
+          $states = _support_states(FALSE, $ticket->state, $account);
+          foreach ($states as $k => $v) {
+            if (strtolower($v) == $tvalue) {
+              $message['state'] = $k;
+            }
           }
         }
         break;
 
       case 'priority':
-        // Priorities aren't subject to access control.
-        $priorities = _support_priorities();
-        foreach ($priorities as $k => $v) {
-          if (strtolower($v) == $tvalue) {
-            $message['priority'] = $k;
+        if (user_access('can select priority', $account) ||
+            user_access('administer support', $account)) {
+          // Priorities aren't subject to access control.
+          $priorities = _support_priorities();
+          foreach ($priorities as $k => $v) {
+           if (strtolower($v) == $tvalue) {
+              $message['priority'] = $k;
+            }
           }
         }
         break;
 
       case 'client':
-        if (user_access('can select client', $account) || user_access('administer support', $account)) {
-          $clients = _support_available_clients($account);
-          foreach ($clients as $k => $v) {
-            if (strtolower($v) == $tvalue) {
-              if ($k != $client->clid) {
-                $message['client'] = $k;
-              }
-            }
-          }
-        }
+        // Currently, switching clients isn't supported well by support.module.
+        // It's too easy at the moment to get into a state where the assignee is invalid.
         break;
 
       case 'assigned':
       case 'assign':
-        $node = node_load($message['nid']);
-        $users = _support_assigned(isset($ticket->assigned) ? $ticket->assigned : NULL, $node);
-        foreach ($users as $k => $v) {
-          if (strtolower($v) == $tvalue) {
-            if (!($node && $node->nid)) {
-              // For new nodes, override autoassign.
-              $message['_support_extra_fields']['assigned'] = $k;
-            }
-            $message['assigned'] = $k;
+      if (user_access('can assign tickets to self', $account) ||
+          user_access('can assign tickets to any user', $account) ||
+          user_access('administer support', $account)) {
+          $node = node_load($message['nid']);
+          $users = _support_assigned(isset($ticket->assigned) ? $ticket->assigned : NULL, $node);
+          if (($tvalue == 'unassign' || $tvalue == 'unassigned') && isset($users[0])) {
+            // Change the value to match the "not assigned" choice.
+            $tvalue = $users[0];
           }
-        }
+          foreach ($users as $k => $v) {
+            if (strtolower($v) == $tvalue) {
+              if (!($node && $node->nid)) {
+                // For new nodes, override autoassign.
+                $message['_support_extra_fields']['assigned'] = $k;
+              }
+              $message['assigned'] = $k;
+            }
+          }
+      }
         break;
 
       case 'suppress':

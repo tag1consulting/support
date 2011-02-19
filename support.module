@@ -2165,7 +2165,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       $form['subscribe']['suppress'] = array(
         '#type' => 'checkbox',
         '#title' => t('Suppress notification'),
-        '#description' => t('By checking this box you will prevent notification emails from being sent for this ticket update.  It is recommended that you check this box if you are adding sensitive information such as passwords which should not be mailed out in plain text.'),
+        '#description' => t('By checking this box you will prevent notification emails from being sent for this ticket update.  It is recommended that you check this box if you are adding sensitive information such as passwords which should not be mailed out in plain text.%admin', array('%admin' => user_access('administer support') ? t(' Users with "administer support" permission will still receive email notifications telling them the ticket was updated but with the body text suppressed; no notifications will be sent to users without "administer support" permissions.') : '')),
         '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
       );
     }

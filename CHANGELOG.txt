@@ -5,6 +5,8 @@ February 19th, 2011
                     thanks to "rsevero".
     o feature #982712: Allow URL aliases to be disabled in generated
                     notifiction emails.  Based on patch by 'rsevero'.
+    o bug #981268: better inline documentation about how email notification
+                   suppression works.  Patch thanks to "roderik".
  - support.admin.inc
     o bug #1023676: Document correct port for IMAP, patch thanks to "roderik".
 

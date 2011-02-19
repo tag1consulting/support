@@ -35,6 +35,11 @@ function support_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'parent' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'integrate_email' => array(
         'type' => 'int',
         'size' => 'tiny',
@@ -479,3 +484,19 @@ function support_update_6005() {
   return array();
 }
 
+/**
+ * Add support for nested clients.
+ */
+function support_update_6006() {
+  $ret = array();
+  db_add_field($ret, 'support_client', 'parent',
+    array(
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+      'description' => 'Optionally nest clients within clients.',
+    )
+  );
+  drupal_flush_all_caches();
+  return $ret;
+}

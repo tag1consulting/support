@@ -78,7 +78,7 @@ function support_menu() {
 
   $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
 
-  $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = 1');
+  $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = 1 AND parent = 0');
   while ($client = db_fetch_object($result)) {
     $items['support/'. $client->path] = array(
       'title' => check_plain($client->name),
@@ -97,6 +97,27 @@ function support_menu() {
         'weight' => $sid,
         'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
+    }
+    $result2 = db_query('SELECT clid, path, name FROM {support_client} WHERE status = 1 AND parent = %d', $client->clid);
+    while ($subclient = db_fetch_object($result2)) {
+      $items["support/$client->path/$subclient->path"] = array(
+        'title' => check_plain($subclient->name),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('support_page_form', $subclient->clid),
+        'access callback' => 'support_access_clients',
+        'access arguments' => array($subclient),
+      );
+      foreach ($states as $sid => $state) {
+        $items["support/$client->path/$subclient->path/$state"] = array(
+          'title' => "$state",
+          'page callback' => 'drupal_get_form',
+          'page arguments' => array('support_page_form', $subclient->clid, $state),
+          'access callback' => 'support_access_clients',
+          'access arguments' => array($subclient),
+          'weight' => $sid,
+          'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        );
+      }
     }
   }
   $items['support/user/%user'] = array(
@@ -401,7 +422,7 @@ function support_client_load($id, $integer = TRUE) {
 
   if (!isset($clients[$id])) {
     if ($integer) {
-      $client = db_fetch_object(db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = %d', $id));
+      $client = db_fetch_object(db_query('SELECT clid, name, path, status, parent, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = %d', $id));
     }
     else {
       $client = db_fetch_object(db_query("SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE path = '%s'", $id));
@@ -428,7 +449,7 @@ function support_ticket_load($nid) {
 /**
  * Menu callback.
  */
-function support_access_user_tickets($account) {
+function support_access_user_tickets($account = array()) {
   global $user;
   if (user_access('administer support') || user_access('edit any ticket') ||
       (user_access('create tickets') && $account->uid == $user->uid)) {
@@ -596,7 +617,14 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
         if (is_numeric($node->client)) {
           $_SESSION['support_client'] = $node->client;
           $client = support_client_load($node->client);
-          $breadcrumb[] = l(check_plain($client->name), "support/$client->path");
+          if (!empty($client->parent)) {
+            $parent = support_client_load($client->parent);
+            $breadcrumb[] = l(check_plain($parent->name), "support/$parent->path");
+            $breadcrumb[] = l(check_plain($client->name), "support/$parent->path/$client->path");
+          }
+          else {
+            $breadcrumb[] = l(check_plain($client->name), "support/$client->path");
+          }
         }
         drupal_set_breadcrumb($breadcrumb);
         break;
@@ -2421,13 +2449,25 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   // Be sure a client is selected.  If not, select the last visited client.
   if (!$client) {
     if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
-      drupal_goto("support/$client->path");
+      if ($client->parent) {
+        $parent = support_client_load($client->parent);
+        drupal_goto("support/$parent->path/$client->path");
+      }
+      else {
+        drupal_goto("support/$client->path");
+      }
     }
     $clients = _support_available_clients();
     if (sizeof($clients)) {
       foreach ($clients as $key => $name) {
         $client = support_client_load($key);
-        drupal_goto("support/$client->path");
+        if ($client->parent) {
+          $parent = support_client_load($client->parent);
+          drupal_goto("support/$parent->path/$client->path");
+        }
+        else {
+          drupal_goto("support/$client->path");
+        }
       }
     }
   }
@@ -2696,7 +2736,7 @@ function theme_support_page_form($form) {
     }
   }
   else {
-    $rows[] = array(array('data' => t('No tickets available.'), 'colspan' => '8'));
+    $rows[] = array(array('data' => t('No tickets available.'), 'colspan' => '9'));
   }
   if ($form['pager']['#value']) {
     $output .= drupal_render($form['pager']);

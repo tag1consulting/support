@@ -71,6 +71,18 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#default_value' => isset($client->status) ? $client->status : 1,
     '#description' => t('Tickets will only be displayed for enabled clients.'),
   );
+  $result = db_query('SELECT clid, name FROM {support_client} WHERE status = 1 AND parent = 0');
+  $clients = array('0' => t('<no parent>'));
+  while ($cl = db_fetch_object($result)) {
+    $clients[$cl->clid] = $cl->name;
+  }
+  $form['parent'] = array(
+    '#title' => t('Parent'),
+    '#type' => 'select',
+    '#options' => $clients,
+    '#default_value' => isset($client->parent) ? $client->parent : 0,
+    '#description' => t('Optionally nest a client under another client.'),
+  );
   $form['mail'] = array(
     '#title' => t('Inbound email integration'),
     '#type' => 'fieldset',
@@ -252,11 +264,11 @@ function support_admin_client_submit($form, &$form_state) {
     db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']);
   }
   else {
-    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', user_creation = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes'], $form_state['values']['clid']);
+    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, parent = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', user_creation = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['parent'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes'], $form_state['values']['clid']);
     if (!db_affected_rows()) {
       // This message can be displayed erroneously if nothing was changed as well.
       drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
-      @db_query("INSERT INTO {support_client} (name, path, status, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, thread_subject, domains, user_creation, notes) VALUES('%s', '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%d', '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes']);
+      @db_query("INSERT INTO {support_client} (name, path, status, parent, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, thread_subject, domains, user_creation, notes) VALUES('%s', '%s', %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%d', '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['parent'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes']);
     }
     else {
       drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));

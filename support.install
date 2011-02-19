@@ -500,3 +500,12 @@ function support_update_6006() {
   drupal_flush_all_caches();
   return $ret;
 }
+
+/**
+ * Rebuild menu to register new autosubscribe autocomplete permissions.
+ */
+function support_update_6007() {
+  drupal_flush_all_caches();
+  menu_rebuild();
+  return array();
+}

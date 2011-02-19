@@ -72,7 +72,7 @@ function support_menu() {
   $items['support/autocomplete/autosubscribe'] = array(
     'title' => 'Autocomplete support autosubscribed user',
     'page callback' => 'support_autocomplete_autosubscribe',
-    'access arguments' => array('administer support'),
+    'access callback' => '_support_autosubscribe_access',
     'type' => MENU_CALLBACK,
   );
 
@@ -3097,4 +3097,14 @@ function _support_enabled($clid, $uid) {
     }
   }
   return isset($enabled[$clid][$uid]);
+}
+
+/**
+ * Callback access function for 'support/autocomplete/autosubscribe' menu item.
+ *
+ * @return <bool>
+ */
+function _support_autosubscribe_access() {
+  return (user_access('administer support') ||
+    user_access('can subscribe other users to notifications'));
 }

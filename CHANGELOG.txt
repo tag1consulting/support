@@ -1,6 +1,10 @@
+February 19th, 2011
+ - support.module
+    o feature #1066858: Add support for nested clients
+
 January 4th, 2011
  - support_mailcmd.module
-   o bug #747328: Implement field updates via email. See MAIL.txt for details.
+    o bug #747328: Implement field updates via email. See MAIL.txt for details.
 
 December 6th, 2010
  - support.module

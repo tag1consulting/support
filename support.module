@@ -1041,20 +1041,20 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!site' => variable_get('site_name', 'Drupal'),
     '!uri' => $base_url,
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
-    '!uri_login' => url('user/register', array('absolute' => TRUE)),
+    '!uri_login' => url('user/register', array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE))),
     '!mailto' => $account->mail,
     '!date' => format_date(time(), 'medium', '', NULL, $language->language),
     '!ticket_subject' => check_plain($node->title),
     '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') ."\n" : drupal_html_to_text(check_markup($node->body) . _support_mail_list_attachments($node, $comment)),
-    '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid")),
-    '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form")),
+    '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
+    '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
     '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') ."\n" : drupal_html_to_text(check_markup(isset($comment['comment']) ? $comment['comment'] : '') . _support_mail_list_attachments($node, $comment)),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) .' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) .' -> ' : '') . _support_priorities($node->priority),
     '!assigned_username' => !empty($assigned) ? $assigned->name : '',
     '!assigned_realname' => !empty($assigned) ? theme('username', $assigned, array('plain' => TRUE)) : '',
-    '!unsubscribe_ticket' => url("support/$nid/unsubscribe/$account->uid/$ticket_unsubscribe_key", array('absolute' => TRUE, 'language' => $language)),
-    '!unsubscribe_all' => url("support/all/unsubscribe/$account->uid/$all_unsubscribe_key", array('absolute' => TRUE, 'language' => $language)),
+    '!unsubscribe_ticket' => url("support/$nid/unsubscribe/$account->uid/$ticket_unsubscribe_key", array('absolute' => TRUE, 'language' => $language, 'alias' => variable_get('support_use_aliased_urls', TRUE))),
+    '!unsubscribe_all' => url("support/all/unsubscribe/$account->uid/$all_unsubscribe_key", array('absolute' => TRUE, 'language' => $language, 'alias' => variable_get('support_use_aliased_urls', TRUE))),
   );
   if (!empty($account->password)) {
     $tokens['!password'] = $account->password;
@@ -1069,12 +1069,12 @@ function _support_mail_list_attachments($node, $comment) {
   $attachments = array();
   if (empty($comment) && is_object($node) && is_array($node->files)) {
     foreach ($node->files as $fid => $file) {
-      $attachments[] = url($file->filepath, array('absolute' => TRUE));
+      $attachments[] = url($file->filepath, array('absolute' => TRUE, 'alias' => variable_get('support_user_aliased_urls', TRUE)));
     }
   }
   else if (isset($comment['files']) && is_array($comment['files'])) {
     foreach ($comment['files'] as $fid => $file) {
-      $attachments[] = url($file['filepath'], array('absolute' => TRUE));
+      $attachments[] = url($file['filepath'], array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
     }
   }
   return (!empty($attachments) ?  "<br />" . t('Attachments:') ."<br />" . implode("<br />", $attachments) : '');

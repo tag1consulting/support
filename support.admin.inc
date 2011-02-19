@@ -453,6 +453,12 @@ function support_admin_settings() {
     '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the subject will only be matched against other open tickets.'),
     '#default_value' => variable_get('support_thread_by_subject', 3),
   );
+  $form['mail']['support_use_aliased_urls'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use aliased URLs in support notification emails'),
+    '#description' => t('By default when the support module generates notification emails it uses aliased URLs in any included links.  By unchecking this box, you configure the support module to use unaliased URLs.  You may want to uncheck this box if the aliased paths to tickets changes frequently, as unaliased paths never change.'),
+    '#default_value' => variable_get('support_use_aliased_urls', TRUE),
+  );
 
   return system_settings_form($form);
 }

@@ -1,6 +1,8 @@
 February 19th, 2011
  - support.module
     o feature #1066858: Add support for nested clients
+ - support.admin.inc
+    o bug #1023676: Document correct port for IMAP, patch thanks to "roderik".
 
 January 4th, 2011
  - support_mailcmd.module

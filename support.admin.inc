@@ -62,7 +62,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => isset($client->path) ? check_plain($client->path) : '',
-    '#description' => t("Used to build the path to this client\s tickets.  The path should only be comprised of alphanumeric characters, dashes, and underscores."),
+    '#description' => t("Used to build the path to this client's tickets.  The path should only be comprised of alphanumeric characters, dashes, and underscores."),
   );
   $form['status'] = array(
     '#title' => t('Status'),
@@ -130,7 +130,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#title' => t('Port'),
     '#type' => 'textfield',
     '#default_value' => isset($client->port) ? check_plain($client->port) : '',
-    '#description' => t('Specify the TCP port to connect to when downloading email messages.  If using pop3, this port is normally 110.  If using secure pop3, this port is normally 995.  If using imap, this port is normally 220.  If using secure imap this port is normally 993.'),
+    '#description' => t('Specify the TCP port to connect to when downloading email messages.  If using pop3, this port is normally 110.  If using secure pop3, this port is normally 995.  If using imap, this port is normally 143.  If using secure imap this port is normally 993.'),
   );
   $form['mail']['protocol'] = array(
     '#type' => 'radios',

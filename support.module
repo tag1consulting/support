@@ -695,23 +695,25 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
         if (!db_affected_rows()) {
           @db_query("INSERT INTO {support_ticket} (nid, message_id, state, priority, client, assigned) VALUES(%d, '%s', %d, %d, %d, %d)", $node->nid, isset($node->message_id) ? $node->message_id : '', $node->state, $node->priority, $node->client, $node->assigned);
         }
+
+        if (isset($node->notifications) && !empty($node->notifications)) {
+          $notifications = explode(',', $node->notifications);
+          foreach ($notifications as $notify) {
+            $enabled = "notify-$notify";
+            support_subscribe_user($node->nid, $notify, $node->$enabled);
+          }
+        }
+        else if (isset($node->$autocomplete)) {
+          $notifications = explode(',', $node->$autocomplete);
+          foreach ($notifications as $notify) {
+            $account = user_load(array('name' => trim($notify)));
+            if (!empty($account)) {
+              support_subscribe_user($node->nid, $account->uid, TRUE);
+            }
+          }
+        }
+
         if ($op == 'insert') {
-          if (isset($node->notifications) && !empty($node->notifications)) {
-            $notifications = explode(',', $node->notifications);
-            foreach ($notifications as $notify) {
-              $enabled = "notify-$notify";
-              support_subscribe_user($node->nid, $notify, $node->$enabled);
-            }
-          }
-          else if (isset($node->$autocomplete)) {
-            $notifications = explode(',', $node->$autocomplete);
-            foreach ($notifications as $notify) {
-              $account = user_load(array('name' => trim($notify)));
-              if (!empty($account)) {
-                support_subscribe_user($node->nid, $account->uid, TRUE);
-              }
-            }
-          }
           // auto-subscribe ticket creator
           if (variable_get('support_autosubscribe_creator', FALSE) || isset($node->created_by_email)) {
             support_subscribe_user($node->nid, $node->uid);

@@ -98,6 +98,12 @@
    ticket from any state to any other state, ignoring the workflow defined in
    the support_states database table.
 
+   Users with "move ticket" permissions and permission to edit a ticket see a
+   new "Support ticket" fieldset with a "Move ticket" field allowing them to
+   specify a parent node id which will cause the ticket and any updates to be
+   moved and become updates on the specified node id.  Note that this only
+   allows for moving an entire ticket and all its updates, not specific updates.
+
    Users with "administer support" permissions can access and update all
    clients and client tickets, and automatically have all support permissions
    available to them.

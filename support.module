@@ -554,7 +554,7 @@ function support_account_load($from, $ticket, $subject, $client) {
  * Implementation of hook_perm().
  */
 function support_perm() {
-  $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'edit multiple tickets', 'can administer state', 'can suppress notification', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'can select state', 'can select priority', 'can select client', 'can assign tickets to self', 'can assign tickets to any user');
+  $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'edit multiple tickets', 'can administer state', 'can suppress notification', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'can select state', 'can select priority', 'can select client', 'can assign tickets to self', 'can assign tickets to any user', 'move ticket');
   $result = db_query('SELECT name FROM {support_client} WHERE status = 1');
   while ($client = db_fetch_object($result)) {
     $perm[] = 'access '. check_plain($client->name) .' tickets';
@@ -617,7 +617,7 @@ function support_form(&$node) {
       '#maxlength' => 12,
       '#size' => 8,
       '#description' => t('Optionally specify another ticket id to move this ticket and all of its updates.  When moved, this ticket and all of its updates will become updates to the specified ticket and this ticket will be removed.  This action can not be undone.'),
-      '#access' => user_access('administer support'),
+      '#access' => (user_access('administer support') || user_access('move ticket')),
     );
   }
 
@@ -951,6 +951,10 @@ function _support_generate_message_id($nid, $cid = 0) {
 }
 
 function _support_node_move($node, $destination) {
+  if (!user_access('move ticket') && user_access('administer support')) {
+    drupal_set_message('Permission denied, unable to move ticket.');
+  }
+
   // Move the ticket, making it an update on another ticket.
   $max = db_result(db_query('SELECT MAX(thread) FROM {comments} WHERE nid = %d', $destination->nid));
   // Strip the "/" from the end of the thread.

@@ -16,6 +16,7 @@ February 19th, 2011
                        "rsevero"
     o feature #819484: provide individual permission for "move ticket", allowing
                        users to move tickets without "administer support" perms
+    o bug #731766: give ticket properties fieldset a title
  - support.admin.inc
     o bug #1023676: Document correct port for IMAP, patch thanks to "roderik".
 

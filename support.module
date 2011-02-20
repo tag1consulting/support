@@ -1981,6 +1981,7 @@ function support_status_form(&$form_state, $edit, $title) {
       '#type' => 'fieldset',
       '#prefix' => '<div class="container-inline">',
       '#suffix' => '</div>',
+      '#title' => t('Ticket properties'),
     );
   }
   $default = isset($node->state) ? $node->state : _support_state_default();

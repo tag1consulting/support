@@ -11,30 +11,44 @@
 function support_admin_client_overview() {
   $rows = array();
   $header = array(
-    array('data' => t('Client name'), 'field' => 'jc.name'),
-    array('data' => t('Status'), 'field' => 'jc.status'),
-    array('data' => t('Inbound email'), 'field' => 'jc.integrate_email'),
-    array('data' => t('From address'), 'field' => 'jc.mailfrom'),
-    array('data' => t('Options')));
+    array(
+      'data' => t('Client name'),
+      'field' => 'jc.name',
+    ),
+    array(
+      'data' => t('Status'),
+      'field' => 'jc.status',
+    ),
+    array(
+      'data' => t('Inbound email'),
+      'field' => 'jc.integrate_email',
+    ),
+    array(
+      'data' => t('From address'),
+      'field' => 'jc.mailfrom',
+    ),
+    array('data' => t('Options')),
+  );
   $sql = 'SELECT clid, name, status, integrate_email, mailfrom FROM {support_client} jc';
   $sql .= tablesort_sql($header);
   $result = pager_query($sql, 50, 0);
   while ($client = db_fetch_object($result)) {
     $options = l(t('edit'), "admin/support/clients/$client->clid/edit");
     if ($client->integrate_email) {
-      $options .= ' | '. l(t('fetch'), "admin/support/clients/$client->clid/fetch");
+      $options .= ' | ' . l(t('fetch'), "admin/support/clients/$client->clid/fetch");
     }
     $rows[] = array(
       check_plain($client->name),
       $client->status == 1 ? t('enabled') : t('disabled'),
       $client->integrate_email ? t('integrated') : t('not integrated'),
-      $client->integrate_email ? check_plain($client->mailfrom) : '<em>'. t('using default') .'</em>: '. l(_support_admin_default_mail(), 'admin/support/settings'),
-      $options);
+      $client->integrate_email ? check_plain($client->mailfrom) : '<em>' . t('using default') . '</em>: ' . l(_support_admin_default_mail(), 'admin/support/settings'),
+      $options,
+    );
   }
   if (empty($rows)) {
     drupal_set_message(t('There are currently no clients defined.'));
   }
-  return theme('table', $header, $rows);
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 function _support_admin_default_mail() {
@@ -67,11 +81,14 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['status'] = array(
     '#title' => t('Status'),
     '#type' => 'radios',
-    '#options' => array(1 => t('Enabled'), 2 => t('Disabled')),
+    '#options' => array(
+      1 => t('Enabled'),
+      2 => t('Disabled'),
+    ),
     '#default_value' => isset($client->status) ? $client->status : 1,
     '#description' => t('Tickets will only be displayed for enabled clients.'),
   );
-  $result = db_query('SELECT clid, name FROM {support_client} WHERE status = 1 AND parent = 0');
+  $result = db_query('SELECT clid, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
   $clients = array('0' => t('<no parent>'));
   while ($cl = db_fetch_object($result)) {
     $clients[$cl->clid] = $cl->name;
@@ -93,7 +110,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#title' => t('Integrate inbound email'),
     '#type' => 'checkbox',
     '#default_value' => isset($client->integrate_email) && $client->integrate_email == TRUE ? 1 : 0,
-    '#description' => t('Check this box if you would like to fully integrate this client with an email server.  This will allow users to create and update tickets by email, but it requires a more complex configuration as you need to create a unique mailbox for each integrated client.  If you do not check this box, email notifications will still be mailed out as tickets are created and updated, but replies to these tickets will be ignored.') .' <em>'. t('Inbound email integration requires that your version of PHP was !compiled.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))) .'</em>',
+    '#description' => t('Check this box if you would like to fully integrate this client with an email server.  This will allow users to create and update tickets by email, but it requires a more complex configuration as you need to create a unique mailbox for each integrated client.  If you do not check this box, email notifications will still be mailed out as tickets are created and updated, but replies to these tickets will be ignored.') . ' <em>' . t('Inbound email integration requires that your version of PHP was !compiled.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))) . '</em>',
   );
   $form['mail']['server_name'] = array(
     '#title' => t('Server name'),
@@ -168,7 +185,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#default_value' => isset($client->user_creation) ? $client->user_creation : 0,
   );
   $id = isset($client->clid) ? $client->clid : 0;
-  $path = 'support/autocomplete/autosubscribe/'. $id;
+  $path = 'support/autocomplete/autosubscribe/' . $id;
   $form['autosubscribe'] = array(
     '#type' => 'textfield',
     '#title' => t('Auto-subscribe'),
@@ -180,7 +197,7 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['autoassign'] = array(
     '#type' => 'textfield',
     '#title' => t('Auto-assign'),
-    '#autocomplete_path' => 'support/autocomplete/assigned/'. $id,
+    '#autocomplete_path' => 'support/autocomplete/assigned/' . $id,
     '#default_value' => !empty($client->autoassign) ? $client->autoassign : '',
     '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!settings' => l(t('general support settings'), 'admin/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
   );
@@ -219,11 +236,11 @@ function support_admin_client_validate($form, &$form_state) {
     $subscribe = array();
     $autosubscribe = explode(',', $form_state['values']['autosubscribe']);
     foreach ($autosubscribe as $name) {
-      $account = user_load(array('name' => trim($name)));
+      $account = array_shift(user_load_multiple(array(), array('name' => trim($name))));
       if (!is_object($account) || !$account->uid) {
         form_set_error('autosubscribe', t('User %username does not exist.', array('%username' => $name)));
       }
-      else if (!user_access('access '. $form_state['values']['name'] .' tickets', $account) && !user_access('administer support')) {
+      else if (!user_access('access ' . $form_state['values']['name'] . ' tickets', $account) && !user_access('administer support')) {
         form_set_error('autosubscribe', t('User %username does not have permission to access %client tickets.', array('%username' => $name, '%client' => $form_state['values']['name'])));
       }
     }
@@ -235,7 +252,7 @@ function support_admin_client_validate($form, &$form_state) {
       case '<creator>':
         break;
       default:
-        $account = user_load(array('name' => trim($form_state['values']['autoassign'])));
+        $account = array_shift(user_load_multiple(array(), array('name' => trim($form_state['values']['autoassign']))));
         $client = $form_state['values']['name'];
         if (empty($account)) {
           form_set_error('autoassign', t('Invalid %field user, %username does not exist.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']))));
@@ -261,10 +278,39 @@ function support_admin_client_validate($form, &$form_state) {
 function support_admin_client_submit($form, &$form_state) {
   if ($form_state['clicked_button']['#value'] == t('Delete client')) {
     drupal_set_message(t('Client %client deleted.', array('%client' => $form_state['values']['name'])));
-    db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']);
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']) */
+    db_delete('support_client')
+  ->condition('clid', $form_state['values']['clid'])
+  ->execute();
   }
   else {
-    db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, parent = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', user_creation = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['parent'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes'], $form_state['values']['clid']);
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, parent = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', user_creation = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['parent'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes'], $form_state['values']['clid']) */
+    db_update('support_client')
+  ->fields(array(
+      'name' => check_plain($form_state['values']['name']),
+      'path' => $form_state['values']['path'],
+      'status' => $form_state['values']['status'],
+      'parent' => $form_state['values']['parent'],
+      'integrate_email' => $form_state['values']['integrate_email'],
+      'server_name' => $form_state['values']['server_name'],
+      'server_username' => $form_state['values']['server_username'],
+      'server_password' => $form_state['values']['server_password'],
+      'mailbox' => $form_state['values']['mailbox'],
+      'mailfrom' => $form_state['values']['mailfrom'],
+      'protocol' => $form_state['values']['protocol'],
+      'extra' => $form_state['values']['extra'],
+      'port' => $form_state['values']['port'],
+      'autoassign' => $form_state['values']['autoassign'],
+      'autosubscribe' => $form_state['values']['autosubscribe'],
+      'thread_subject' => $form_state['values']['thread_subject'],
+      'domains' => $form_state['values']['domains'],
+      'user_creation' => $form_state['values']['user_creation'],
+      'notes' => $form_state['values']['notes'],
+    ))
+  ->condition('clid', $form_state['values']['clid'])
+  ->execute();
     if (!db_affected_rows()) {
       // This message can be displayed erroneously if nothing was changed as well.
       drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
@@ -287,7 +333,7 @@ function support_admin_client_submit($form, &$form_state) {
 function support_admin_menu_block_page() {
   $item = menu_get_item();
   if ($content = system_admin_menu_block($item)) {
-    $output = theme('admin_block_content', $content);
+    $output = theme('admin_block_content', array('content' => $content));
   }
   else {
     $output = t('You do not have any administrative items.');
@@ -316,7 +362,7 @@ function support_admin_settings() {
     '#type' => 'textfield',
     '#autocomplete_path' => 'support/autocomplete/assigned',
     '#title' => t('Auto-assign new tickets to'),
-    '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') .'>', '%nobody' => '<' . t('nobody') .'>')),
+    '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') . '>', '%nobody' => '<' . t('nobody') . '>')),
     '#default_value' => variable_get('support_autoassign_ticket', '<nobody>'),
   );
   $form['general']['support_secondary_sort_tickets'] = array(
@@ -350,7 +396,11 @@ function support_admin_settings() {
     '#type' => 'select',
     '#title' => t('Visual feedback'),
     '#description' => t('Provide visual feedback about to whom notifications are being sent.  Feedback can be provided just to users with %perm permissions, or to all users. %warn', array('%perm' => t('administer support'), '%warn' => t('Visual feedback will reveal the email address of all users that receive notifications by displaying a message at the top of the page after a ticket is created or updated.'))),
-    '#options' => array(FALSE => t('Disabled'), 1 => t('To users with "!perm" permissions', array('!perm' => t('administer support'))), 2 => t('To all users')),
+    '#options' => array(
+      FALSE => t('Disabled'),
+      1 => t('To users with "!perm" permissions', array('!perm' => t('administer support'))),
+      2 => t('To all users'),
+    ),
     '#default_value' => variable_get('support_admin_notify', FALSE),
   );
   $form['notification']['support_autosubscribe_creator'] = array(
@@ -449,7 +499,12 @@ function support_admin_settings() {
   $form['mail']['support_thread_by_subject'] = array(
     '#type' => 'select',
     '#title' => t('Thread emails using subject'),
-    '#options' => array(1 => 'Disabled', 2 => 'Match against new tickets', 3 => 'Match against open tickets', 4 => 'Match against all tickets'),
+    '#options' => array(
+      1 => 'Disabled',
+      2 => 'Match against new tickets',
+      3 => 'Match against open tickets',
+      4 => 'Match against all tickets',
+    ),
     '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the subject will only be matched against other open tickets.'),
     '#default_value' => variable_get('support_thread_by_subject', 3),
   );
@@ -481,7 +536,7 @@ function support_admin_settings_validate($form, &$form_state) {
       case '<creator>':
         break;
       default:
-        $account = user_load(array('name' => trim($form_state['values']['support_autoassign_ticket'])));
+        $account = array_shift(user_load_multiple(array(), array('name' => trim($form_state['values']['support_autoassign_ticket']))));
         if (empty($account) || !$account->uid) {
           form_set_error('support_autoassign_ticket', t('Invalid %field user, %username is not a valid user.', array('%field' => t('auto-assign'), '%username' => $form_state['values']['support_autoassign_ticket'])));
         }
@@ -511,7 +566,7 @@ function support_admin_mail_settings() {
   $default_texts = _support_mail_text_default(NULL);
   $textgroups = array(
     'new' => t('ticket created'),
-    'comment_new'  => t('ticket commented'),
+    'comment_new' => t('ticket commented'),
     'deny' => t('ticket creation denied'),
   );
 

@@ -1,37 +1,37 @@
 <?php
 
 /**
-* @file 
-* Support charting.
-* @author Jeremy Andrews <jeremy@tag1consulting.com>
-* @package Support
-*/
- 
+ * @file
+ * Support charting.
+ * @author Jeremy Andrews <jeremy@tag1consulting.com>
+ * @package Support
+ */
+
 /**
-* Implementation of hook_perm();
-*/
+ * Implementation of hook_perm();
+ */
 function support_charts_perm() {
   return array('access support charts');
 }
-  
+
 /**
-* Implementation of hook_menu().
-*/  
+ * Implementation of hook_menu().
+ */
 function support_charts_menu() {
   $items = array();
-  
+
   $items['admin/support/charts'] = array(
     'title' => 'Charts',
     'page callback' => 'support_charts',
     'page arguments' => array('global'),
     'access arguments' => array('access support charts'),
-  ); 
+  );
   $items['admin/support/charts/global'] = array(
     'title' => 'Global',
     'page callback' => 'support_charts',
     'page arguments' => array('global'),
     'access arguments' => array('access support charts'),
-    'type' => MENU_DEFAULT_LOCAL_TASK, 
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['user/%user/support_charts'] = array(
     'title' => 'Support charts',
@@ -57,29 +57,29 @@ function support_charts_menu() {
   return $items;
 }
 
-/**     
-* Page callback.
-*/
+/**
+ * Page callback.
+ */
 function support_charts($page = 'global', $object = NULL) {
   return '<div id="support-charts">' . support_charts_display($page, $object) . '</div>';
 }
 
 /**
-* Display charts and content in context to the current page.
-* 
-* @return string
-*   markup, chart images.
-*/
+ * Display charts and content in context to the current page.
+ *
+ * @return string
+ *   markup, chart images.
+ */
 function support_charts_display($page = 'global', $object) {
   $output = '';
 
   switch ($page) {
     case 'global':
-      $output .= support_charts_build_pie('tickets_open'); 
-      $output .= support_charts_build_pie('tickets_per_state'); 
-      $output .= support_charts_build_pie('tickets_per_priority'); 
-      $output .= support_charts_build_pie('tickets_per_client'); 
-      $output .= support_charts_build_pie('tickets_per_assigned'); 
+      $output .= support_charts_build_pie('tickets_open');
+      $output .= support_charts_build_pie('tickets_per_state');
+      $output .= support_charts_build_pie('tickets_per_priority');
+      $output .= support_charts_build_pie('tickets_per_client');
+      $output .= support_charts_build_pie('tickets_per_assigned');
       $output .= support_charts_build_graph('tickets_created');
       $output .= support_charts_build_graph('tickets_updated');
       $output .= support_charts_build_graph('tickets_closed');
@@ -99,20 +99,20 @@ function support_charts_display($page = 'global', $object) {
       $output .= support_charts_build_pie('tickets_per_priority', 'user_assigned', $object);
       $output .= support_charts_build_pie('tickets_per_client', 'user_assigned', $object);
   }
-                                
+
   return $output;
 }
 
 /**
  * Gather data and build a chart API structure.
- * 
+ *
  * @return array
  *   chart API structure.
  */
 function support_charts_build_pie($id, $type = 'global', $object = NULL) {
-  $chart = array();                                      
+  $chart = array();
   $chart['#type'] = CHART_TYPE_PIE;
-  $chart['#size'] = chart_size(600, 350); 
+  $chart['#size'] = chart_size(600, 350);
 
   switch ($id) {
     case 'tickets_open':
@@ -226,18 +226,18 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
     $chart['#labels'][] = "$label: $data->count";
     $chart['#data_colors'][] = chart_unique_color($label);
   }
-  
-  return chart_render($chart);  
+
+  return chart_render($chart);
 }
 
 /**
  * Gather data and build a chart API structure.
- * 
+ *
  * @return array
  *   chart API structure.
  */
 function support_charts_build_graph($id, $type = 'global', $object = NULL) {
-  $chart = array();                                      
+  $chart = array();
   $chart['#type'] = CHART_TYPE_LINE;
   $chart['#size'] = chart_size(620, 250);
   $chart['#grid_lines'] = chart_grid_lines(25, 9.5, 1, 3);
@@ -297,7 +297,7 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
   $max = array();
   $counts = array();
   $types = array();
- 
+
   while ($data = db_fetch_object($result)) {
     $day = ltrim(date('d', $data->timestamp), '0');
     $types[$type] = $type;
@@ -307,28 +307,28 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
 
   // Generate data and labels
   if (count($counts) && count($types)) {
-    for($i = 0; $i <= date('d', $now); $i++) {
+    for ($i = 0; $i <= date('d', $now); $i++) {
       $chart['#labels'][] = $i;
 
       foreach ($types as $type) {
         if ($counts[$i][$type]) {
-          $chart['#data'][$type][] = $counts[$i][$type];   
+          $chart['#data'][$type][] = $counts[$i][$type];
         }
         else {
           $chart['#data'][$type][] = '0';
         }
       }
     }
-  }          
+  }
 
   // Data colors, legends, line styles, and labels
   if (count($types)) {
-    foreach($types as $type) {
+    foreach ($types as $type) {
       $chart['#data_colors'][] = chart_unique_color($type);
-      $chart['#legends'][] = $type; 
+      $chart['#legends'][] = $type;
       $chart['#line_styles'][] = chart_line_style(2);
     }
-  }  
+  }
 
   $max = count($max) ? max($max) : 0;
   $chart['#mixed_axis_labels'][CHART_AXIS_Y_LEFT][0][] = chart_mixed_axis_range_label(0, $max);

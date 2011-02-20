@@ -2887,17 +2887,17 @@ function support_client_fetch($client, $manual = TRUE) {
     }
     if ($alerts = imap_alerts()) {
       foreach ($alerts as $alert) {
-        watchdog('support', 'Imap alert: %alert', array('%alert' => $alert));
+        watchdog('support', 'Imap alert: %alert for user %username', array('%alert' => $alert, '%username' => $username));
         if ($manual) {
-          drupal_set_message(t('Imap alert: %alert>', array('%alert' => $alert)), 'error');
+          drupal_set_message(t('Imap alert: %alert for user %username', array('%alert' => $alert, '%username' => $username)), 'error');
         }
       }
     }
     if ($errors = imap_errors()) {
       foreach ($errors as $error) {
-        watchdog('support', 'Imap error: %error', array('%error' => $error), WATCHDOG_NOTICE);
+        watchdog('support', 'Imap error: %error for user %username', array('%error' => $error, '%username' => $username), WATCHDOG_NOTICE);
         if ($manual) {
-          drupal_set_message(t('Imap error: %error', array('%error' => $error)), 'error');
+          drupal_set_message(t('Imap error: %error for user %username', array('%error' => $error, '%username' => $username)), 'error');
         }
       }
     }

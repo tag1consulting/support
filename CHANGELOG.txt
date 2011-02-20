@@ -12,6 +12,8 @@ February 19th, 2011
                        thanks to "roderik".
     o feature #694264: expose notification mail text through admin interface.
                        Patch thanks to "roderik".
+    o feature #974496: improve reporting of mail errors.  Patch thanks to
+                       "rsevero"
  - support.admin.inc
     o bug #1023676: Document correct port for IMAP, patch thanks to "roderik".
 

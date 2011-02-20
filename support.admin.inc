@@ -503,3 +503,41 @@ function _support_validate_domains($field, $domains = array()) {
     }
   }
 }
+
+/**
+ * Settings form for email texts
+ */
+function support_admin_mail_settings() {
+  $default_texts = _support_mail_text_default(NULL);
+  $textgroups = array(
+    'new' => t('ticket created'),
+    'comment_new'  => t('ticket commented'),
+    'deny' => t('ticket creation denied'),
+  );
+
+  $form = array();
+  foreach ($textgroups as $key => $description) {
+    $text_key = 'ticket_' . $key;
+    $var_key = 'support_mail_' . $text_key;
+    $form[$text_key] = array(
+      '#type' => 'fieldset',
+      '#title' => t("Settings for '!setting' mail", array('!setting' => $description)),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $form[$text_key][$var_key . '_subject'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Subject'),
+      '#default_value' => variable_get($var_key . '_subject', $default_texts[$text_key . '_subject']),
+      '#required' => TRUE,
+    );
+    $form[$text_key][$var_key . '_body'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Body'),
+      '#default_value' => variable_get($var_key . '_body', $default_texts[$text_key . '_body']),
+      '#rows' => 15,
+      '#required' => TRUE,
+    );
+  }
+  return system_settings_form($form);
+}

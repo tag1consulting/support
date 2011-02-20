@@ -213,6 +213,19 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
+  $items['admin/support/settings/general'] = array(
+    'title' => 'General settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/support/settings/mail'] = array(
+    'title' => 'Mail text settings',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_admin_mail_settings'),
+    'access arguments' => array('administer support'),
+    'file' => 'support.admin.inc',
+  );
   return $items;
 }
 

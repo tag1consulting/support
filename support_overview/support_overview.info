@@ -1,0 +1,6 @@
+; $Id$
+name = Support Overview
+package = Support
+description = Overview summary of clients
+dependencies[] = support
+core = 6.x

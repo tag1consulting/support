@@ -1,0 +1,20 @@
+/* Default coloring for support overview alerts */
+.support-overview .alert1 {
+  color: #ff3333;
+}
+.support-overview .alert2,
+.support-overview .high {
+  color: #ff3333;
+  font-weight:bold;
+}
+.support-overview .alert3,
+.support-overview .critical {
+  background-color: #ffcccc;
+  color: #ff3333;
+  font-weight:bold;
+}
+.support-overview-latest,
+.support-overview-oldest {
+  font-size: .8em;
+  margin-left: 8px;
+}

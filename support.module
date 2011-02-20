@@ -240,6 +240,20 @@ function support_theme() {
 }
 
 /**
+ * Implementation of hook_init().
+ */
+function support_init() {
+  global $conf;
+
+  if (module_exists('i18n')) {
+    // Make all mail text variables translatable.
+    foreach(_support_mail_text_default(NULL) as $key => $text) {
+      $conf['i18n_variables'][] = 'support_mail_' . $key;
+    }
+  }
+}
+
+/**
  * Autocomplete usernames to assign to ticket.
  */
 function support_autocomplete_assigned($clid = 0, $string = '') {
@@ -1086,32 +1100,64 @@ function _support_mail_list_attachments($node, $comment) {
 function _support_mail_text($key, $language = NULL, $variables = array(), $integrate_email) {
   $langcode = isset($language) ? $language->language : NULL;
 
-  if ($admin_setting = variable_get('support_mail_'. $key, FALSE)) {
-    // An admin setting overrides the default string.
-    return strtr($admin_setting, $variables);
+  // Add one 'special unadvertised token' to $variables.
+  // This part of the text is not stored as a multilingual variable
+  // but as a 'common' translatable string.
+  if ($integrate_email == TRUE) {
+    $variables['!reply'] = t('You can reply to this email or visit the following URL to update this ticket');
   }
   else {
-    if ($integrate_email == TRUE) {
-      $variables['!reply'] = t('You can reply to this email or visit the following URL to update this ticket');
-    }
-    else {
-      $variables['!reply'] = t('You can visit the following URL to update this ticket');
-    }
-    // No override, return default string.
-    switch ($key) {
-      case 'ticket_deny_subject':
-        return t("Support ticket creation denied", $variables, $langcode);
-      case 'ticket_deny_body':
-        return t("System message\n\nYou have tried to create a support ticket on the !site site. The creation of the ticket has been cancelled since the e-mail address you sent the message from is not registered at our site.\n\nYou have to be a registered user to be able to create support tickets via mail.\n\nYour feedback is important to us so please register at !uri_login and try again.\n\n!site Team", $variables, $langcode);
-      case 'ticket_new_subject':
-        return t("!key !ticket_subject", $variables, $langcode);
-      case 'ticket_new_body':
-        return t("!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n!reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
-      case 'ticket_comment_new_subject':
-        return t("!key !ticket_subject", $variables, $langcode);
-      case 'ticket_comment_new_body':
-        return t("!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n!reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all", $variables, $langcode);
-    }
+    $variables['!reply'] = t('You can visit the following URL to update this ticket');
+  }
+
+  /* Get text from (possibly multilingual) variable, if it's user-configured.
+   * The following behavior provides backward compatibility with v1.3,
+   * and only makes i18n.module a requirement when the web site needs
+   * custom mail texts translated in multiple languages:
+   *
+   * - if a normal variable is set, return it untranslated.
+   *   (because it might contain an already-translated text)
+   * - if a multilingual variable is not set, do check the normal variable
+   *   (for the same reason)
+   * - if no variable is set, translate the default text using t()
+   */
+  if (module_exists('i18n')) {
+    $admin_setting = i18n_variable_get('support_mail_' . $key, $langcode);
+  }
+  if (empty($admin_setting)) {
+    $admin_setting = variable_get('support_mail_' . $key);
+  }
+
+  if (empty($admin_setting)) {
+    return t(_support_mail_text_default($key), $variables, $langcode);
+  }
+  return strtr($admin_setting, $variables);
+}
+
+/**
+ * Returns the appropriate untranslated default mail string for a given key.
+ * It contains tokens which are not translated yet (see support_mail_tokens(),
+ * plus "!reply")
+ *
+ * @param $key
+ *   Key for the string to return (not prepended with 'support_mail_'),
+ *   or NULL to return an array of all strings.
+ */
+function _support_mail_text_default($key) {
+  $info = array(
+    'ticket_deny_subject' => 'Support ticket creation denied',
+    'ticket_deny_body' => "System message\n\nYou have tried to create a support ticket on the !site site. The creation of the ticket has been cancelled since the e-mail address you sent the message from is not registered at our site.\n\nYou have to be a registered user to be able to create support tickets via mail.\n\nYour feedback is important to us so please register at !uri_login and try again.\n\n!site Team",
+    'ticket_new_subject' => '!key !ticket_subject',
+    'ticket_new_body' => "!update_username has created the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n!reply:\n!update_url\n\nTicket text:\n------------------------------\n!ticket_body------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all",
+    'ticket_comment_new_subject' => '!key !ticket_subject',
+    'ticket_comment_new_body' => "!update_username has updated the ticket '!ticket_subject':\n!ticket_url\n\nState: !state\nPriority: !priority\n\n!reply:\n!update_url\n\nUpdate text:\n------------------------------\n!update------------------------------\n\nUnsubscribe from this ticket:\n!unsubscribe_ticket\n\nUnsubscribe from all tickets:\n!unsubscribe_all",
+  );
+  drupal_alter('support_mail_text_default', $info);
+  if (isset($key)) {
+    return isset($info[$key]) ? $info[$key] : '';
+  }
+  else {
+    return $info;
   }
 }
 

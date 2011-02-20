@@ -1125,7 +1125,7 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
     $admin_setting = i18n_variable_get('support_mail_' . $key, $langcode);
   }
   if (empty($admin_setting)) {
-    $admin_setting = variable_get('support_mail_' . $key);
+    $admin_setting = variable_get('support_mail_' . $key, '');
   }
 
   if (empty($admin_setting)) {

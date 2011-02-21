@@ -31,7 +31,7 @@ function support_admin_client_overview() {
   );
   $select = db_select('support_client', 'sc')->extend('TableSort');
   $results = $select->fields('sc', array('clid', 'name', 'status', 'integrate_email', 'mailfrom'))->orderByHeader($header)->execute();
-  foreach ($results as $node) {
+  foreach ($results as $client) {
     $options = l(t('edit'), "admin/support/clients/$client->clid/edit");
     if ($client->integrate_email) {
       $options .= ' | ' . l(t('fetch'), "admin/support/clients/$client->clid/fetch");
@@ -61,8 +61,7 @@ function _support_admin_default_mail() {
 /**
  * Administratively add/update a client.
  */
-function support_admin_client(&$form_state, $client = NULL) {
-  $form = array();
+function support_admin_client($form, &$form_state, $client = NULL) {
   $form['name'] = array(
     '#title' => t('Client name'),
     '#type' => 'textfield',
@@ -89,7 +88,7 @@ function support_admin_client(&$form_state, $client = NULL) {
   );
   $result = db_query('SELECT clid, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
   $clients = array('0' => t('<no parent>'));
-  while ($cl = db_fetch_object($result)) {
+  foreach ($result as $cl) {
     $clients[$cl->clid] = $cl->name;
   }
   $form['parent'] = array(
@@ -277,46 +276,40 @@ function support_admin_client_validate($form, &$form_state) {
 function support_admin_client_submit($form, &$form_state) {
   if ($form_state['clicked_button']['#value'] == t('Delete client')) {
     drupal_set_message(t('Client %client deleted.', array('%client' => $form_state['values']['name'])));
-    // TODO Please review the conversion of this statement to the D7 database API syntax.
-    /* db_query('DELETE FROM {support_client} WHERE clid = %d', $form_state['values']['clid']) */
     db_delete('support_client')
-  ->condition('clid', $form_state['values']['clid'])
-  ->execute();
+      ->condition('clid', $form_state['values']['clid'])
+      ->execute();
   }
   else {
-    // TODO Please review the conversion of this statement to the D7 database API syntax.
-    /* db_query("UPDATE {support_client} SET name = '%s', path = '%s', status = %d, parent = %d, integrate_email = %d, server_name = '%s', server_username = '%s', server_password = '%s', mailbox = '%s', mailfrom = '%s', protocol = %d, extra = '%s', port = %d, autoassign = '%s', autosubscribe = '%s', thread_subject = %s, domains = '%s', user_creation = '%s', notes = '%s' WHERE clid = %d", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['parent'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes'], $form_state['values']['clid']) */
-    db_update('support_client')
-  ->fields(array(
-      'name' => check_plain($form_state['values']['name']),
-      'path' => $form_state['values']['path'],
-      'status' => $form_state['values']['status'],
-      'parent' => $form_state['values']['parent'],
-      'integrate_email' => $form_state['values']['integrate_email'],
-      'server_name' => $form_state['values']['server_name'],
-      'server_username' => $form_state['values']['server_username'],
-      'server_password' => $form_state['values']['server_password'],
-      'mailbox' => $form_state['values']['mailbox'],
-      'mailfrom' => $form_state['values']['mailfrom'],
-      'protocol' => $form_state['values']['protocol'],
-      'extra' => $form_state['values']['extra'],
-      'port' => $form_state['values']['port'],
-      'autoassign' => $form_state['values']['autoassign'],
-      'autosubscribe' => $form_state['values']['autosubscribe'],
-      'thread_subject' => $form_state['values']['thread_subject'],
-      'domains' => $form_state['values']['domains'],
-      'user_creation' => $form_state['values']['user_creation'],
-      'notes' => $form_state['values']['notes'],
-    ))
-  ->condition('clid', $form_state['values']['clid'])
-  ->execute();
-    if (!db_affected_rows()) {
-      // This message can be displayed erroneously if nothing was changed as well.
-      drupal_set_message(t('Client %client added.', array('%client' => $form_state['values']['name'])));
-      @db_query("INSERT INTO {support_client} (name, path, status, parent, integrate_email, server_name, server_username, server_password, mailbox, mailfrom, protocol, extra, port, autoassign, autosubscribe, thread_subject, domains, user_creation, notes) VALUES('%s', '%s', %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%d', '%s', '%s', '%s')", check_plain($form_state['values']['name']), $form_state['values']['path'], $form_state['values']['status'], $form_state['values']['parent'], $form_state['values']['integrate_email'], $form_state['values']['server_name'], $form_state['values']['server_username'], $form_state['values']['server_password'], $form_state['values']['mailbox'], $form_state['values']['mailfrom'], $form_state['values']['protocol'], $form_state['values']['extra'], $form_state['values']['port'], $form_state['values']['autoassign'], $form_state['values']['autosubscribe'], $form_state['values']['thread_subject'], $form_state['values']['domains'], $form_state['values']['user_creation'], $form_state['values']['notes']);
+    db_merge('support_client')
+      ->key(array('clid' => $form_state['values']['clid']))
+      ->fields(array(
+        'name' => check_plain($form_state['values']['name']) ? check_plain($form_state['values']['name']) : '',
+        'path' => check_plain($form_state['values']['path']) ? check_plain($form_state['values']['path']) : '',
+        'status' => !empty($form_state['values']['status']) ? $form_state['values']['status'] : 0,
+        'parent' => !empty($form_state['values']['parent']) ? $form_state['values']['parent'] : 0,
+        'integrate_email' => !empty($form_state['values']['integrate_email']) ? $form_state['values']['integrate_email'] : 0,
+        'server_name' => check_plain($form_state['values']['server_name']) ? check_plain($form_state['values']['server_name']) : '',
+        'server_username' => check_plain($form_state['values']['server_username']) ? check_plain($form_state['values']['server_username']) : '',
+        'server_password' => check_plain($form_state['values']['server_password']) ? check_plain($form_state['values']['server_password']) : '',
+        'mailbox' => check_plain($form_state['values']['mailbox']) ? check_plain($form_state['values']['mailbox']) : '',
+        'mailfrom' => check_plain($form_state['values']['mailfrom']) ? check_plain($form_state['values']['mailfrom']) : '',
+        'protocol' => !empty($form_state['values']['protocol']) ? $form_state['values']['protocol'] : 0,
+        'extra' => check_plain($form_state['values']['extra']) ? check_plain($form_state['values']['extra']) : '',
+        'port' => !empty($form_state['values']['port']) ? $form_state['values']['port'] : 0,
+        'autoassign' => check_plain($form_state['values']['autoassign']) ? check_plain($form_state['values']['autoassign']) : '',
+        'autosubscribe' => check_plain($form_state['values']['autosubscribe']) ? check_plain($form_state['values']['autosubscribe']) : '',
+        'thread_subject' => !empty($form_state['values']['thread_subject']) ? $form_state['values']['thread_subject'] : 0,
+        'domains' => check_plain($form_state['values']['domains']) ? check_plain($form_state['values']['domains']) : '',
+        'user_creation' => !empty($form_state['values']['user_creation']) ? $form_state['values']['user_creation'] : 0,
+        'notes' => check_plain($form_state['values']['notes']) ? check_plain($form_state['values']['notes']) : '',
+      ))
+      ->execute();
+    if ($form_state['clicked_button']['#value'] == t('Update client')) {
+      drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));
     }
     else {
-      drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));
+      drupal_set_message(t('Client %client created.', array('%client' => $form_state['values']['name'])));
     }
   }
   // clean page cache and block cache

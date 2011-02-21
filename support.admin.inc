@@ -13,26 +13,25 @@ function support_admin_client_overview() {
   $header = array(
     array(
       'data' => t('Client name'),
-      'field' => 'jc.name',
+      'field' => 'sc.name',
     ),
     array(
       'data' => t('Status'),
-      'field' => 'jc.status',
+      'field' => 'sc.status',
     ),
     array(
       'data' => t('Inbound email'),
-      'field' => 'jc.integrate_email',
+      'field' => 'sc.integrate_email',
     ),
     array(
       'data' => t('From address'),
-      'field' => 'jc.mailfrom',
+      'field' => 'sc.mailfrom',
     ),
     array('data' => t('Options')),
   );
-  $sql = 'SELECT clid, name, status, integrate_email, mailfrom FROM {support_client} jc';
-  $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0);
-  while ($client = db_fetch_object($result)) {
+  $select = db_select('support_client', 'sc')->extend('TableSort');
+  $results = $select->fields('sc', array('clid', 'name', 'status', 'integrate_email', 'mailfrom'))->orderByHeader($header)->execute();
+  foreach ($results as $node) {
     $options = l(t('edit'), "admin/support/clients/$client->clid/edit");
     if ($client->integrate_email) {
       $options .= ' | ' . l(t('fetch'), "admin/support/clients/$client->clid/fetch");
@@ -333,12 +332,11 @@ function support_admin_client_submit($form, &$form_state) {
 function support_admin_menu_block_page() {
   $item = menu_get_item();
   if ($content = system_admin_menu_block($item)) {
-    $output = theme('admin_block_content', array('content' => $content));
+    return theme('admin_block_content', array('content' => $content));
   }
   else {
-    $output = t('You do not have any administrative items.');
+    return t('You can not access any administrative items.');
   }
-  return $output;
 }
 
 

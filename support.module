@@ -147,7 +147,7 @@ function support_menu() {
       'page callback' => 'support_page_user',
       'page arguments' => array(1, TRUE, $state),
       'access callback' => 'support_access_clients',
-      'access arguments' => array($client),
+      'access arguments' => array(),
       'file' => 'support.user.inc',
       'weight' => $sid,
       'type' => $sid == 'all open' ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
@@ -578,11 +578,87 @@ function support_account_load($from, $ticket, $subject, $client) {
 /**
  * Implementation of hook_perm().
  */
-function support_perm() {
-  $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'edit multiple tickets', 'can administer state', 'can suppress notification', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'can select state', 'can select priority', 'can select client', 'can assign tickets to self', 'can assign tickets to any user', 'move ticket');
+function support_permission() {
+  return array(
+    'administer support' => array(
+      'title' => t('Administer support'),
+      'restrict access' => TRUE,
+      'description' => t('Grant access to all support module features.'),
+    ),
+    'create tickets' => array(
+      'title' => t('Create tickets'),
+      'description' => t('Create support tickets.'),
+    ),
+    'delete any ticket' => array(
+      'title' => t('Delete any ticket'),
+      'description' => t('Delete any support ticket.'),
+    ),
+    'delete own tickets' => array(
+      'title' => t('Delete own tickets'),
+      'description' => t('Delete own support tickets.'),
+    ),
+    'edit any ticket' => array(
+      'title' => t('Edit any ticket'),
+      'description' => t('Edit any support tickets.'),
+    ),
+    'edit own tickets' => array(
+      'title' => t('Edit own tickets'),
+      'description' => t('Edit own support ticket.'),
+    ),
+    'edit multiple tickets' => array(
+      'title' => t('Edit multiple tickets'),
+      'description' => t('Edit ticket properties of multiple tickets on ticket overview pages.'),
+    ),
+    'can administer state' => array(
+      'title' => t('Can administer state'),
+      'description' => t('Can set ticket to any state, ignoring normal ticket workflows.'),
+    ),
+    'can suppress notification' => array(
+      'title' => t('Can suppress notification'),
+      'description' => t('Can prevent notification email from being sent.'),
+    ),
+    'can subscribe other users to notifications' => array(
+      'title'=> t('Can subscribe other users to notifications'),
+      'description' => t('Can subscribe and unsubscribe other users to email notifications.'),
+    ),
+    'download mail via support/fetch' => array(
+      'title' => t('Download mail via support/fetch'),
+      'description' => t('Can cause support module to download email by visiting the support/fetch path.'),
+    ),
+    'view other users tickets' => array(
+      'title' => t('View other users tickets'),
+      'description' => t('Can view tickets other than those assigned to or created by self.'),
+    ),
+    'can select state' => array(
+      'title' => t('Can select state'),
+      'description' => t('Can change ticket state property.'),
+    ),
+    'can select priority' => array(
+      'title' => t('Can select priority'),
+      'description' => t('Can change ticket priority property.'),
+    ),
+    'can select client' => array(
+      'title' => t('Can select client'),
+      'description' => t('Can change ticket client property.'),
+    ),
+    'can assign tickets to self' => array(
+      'title' => t('Can assign tickets to self'),
+      'description' => t('Can change ticket assignment to self.'),
+    ),
+    'can assign tickets to any user' => array(
+      'title' => t('Can assign tickets to any user'),
+      'description' => t('Can change ticket assignment to any valid user.'),
+    ),
+    'move ticket' => array(
+      'title' => t('Move ticket'),
+    ),
+  );
   $result = db_query('SELECT name FROM {support_client} WHERE status = :status', array(':status' => 1));
   foreach ($result as $client) {
-    $perm[] = 'access ' . check_plain($client->name) . ' tickets';
+    $key = 'access ' . check_plain($client->name) . ' ticket';
+    $perm[$key] = array(
+      'title' => t('Access !client tickets', array('!client' => check_plain($client->name))),
+    );
   }
   return $perm;
 }

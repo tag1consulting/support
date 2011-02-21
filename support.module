@@ -83,7 +83,7 @@ function support_menu() {
   ) + _support_states();
 
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
-  while ($client = db_fetch_object($result)) {
+  foreach ($result as $client) {
     $items['support/' . $client->path] = array(
       'title' => check_plain($client->name),
       'page callback' => 'drupal_get_form',
@@ -103,7 +103,7 @@ function support_menu() {
       );
     }
     $result2 = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => $client->clid));
-    while ($subclient = db_fetch_object($result2)) {
+    foreach ($result2 as $subclient) {
       $items["support/$client->path/$subclient->path"] = array(
         'title' => check_plain($subclient->name),
         'page callback' => 'drupal_get_form',
@@ -283,18 +283,18 @@ function support_autocomplete_assigned($clid = 0, $string = '') {
       $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'",  $client, 'administer support');
     }
     $roles = array();
-    while ($role = db_fetch_object($result)) {
+    foreach ($result as $role) {
       $roles[$role->rid] = $role->rid;
     }
     // also get people with administer support permissions
     // TODO Please convert this statement to the D7 database API syntax.
     $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%'", 'administer support');
-    while ($role = db_fetch_object($result)) {
+    foreach ($result as $role) {
       $roles[$role->rid] = $role->rid;
     }
     if (!empty($roles)) {
       $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = :u.status AND LOWER(name) LIKE LOWER('%s%%')", array(':u.status' => 1, '' => implode(', ', $roles), '' => $string));
-      while ($user = db_fetch_object($result)) {
+      foreach ($result as $user) {
         $matches[$user->name] = check_plain($user->name);
       }
     }
@@ -321,7 +321,7 @@ function support_autocomplete_autosubscribe($clid, $string = '') {
     // retrieve all roles giving permission to access current tickets
     // TODO Please convert this statement to the D7 database API syntax.
     $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'",  $client, 'administer support');
-    while ($role = db_fetch_object($result)) {
+    foreach ($result as $role) {
       $roles[$role->rid] = $role->rid;
     }
     if (!$clid) {
@@ -333,7 +333,7 @@ function support_autocomplete_autosubscribe($clid, $string = '') {
 
     $prefix = count($array) ? implode(', ', $array) . ', ' : '';
 
-    while ($account = db_fetch_object($result)) {
+    foreach ($result as $account) {
       $a = $account->name;
       $matches[$prefix . $a] = check_plain($account->name);
     }
@@ -395,7 +395,7 @@ function support_active_clients() {
 
   if (is_null($clients)) {
     $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, extra, protocol, port, notes, autosubscribe, domains, user_creation FROM {support_client} WHERE status = :status', array(':status' => 1));
-    while ($client = db_fetch_object($result)) {
+    foreach ($result as $client) {
       $clients[$client->clid] = $client;
     }
   }
@@ -471,10 +471,10 @@ function support_client_load($id, $integer = TRUE) {
 
   if (!isset($clients[$id])) {
     if ($integer) {
-      $client = db_fetch_object(db_query('SELECT clid, name, path, status, parent, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = :clid', array(':clid' => $id)));
+      $client = db_query('SELECT clid, name, path, status, parent, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = :clid', array(':clid' => $id));
     }
     else {
-      $client = db_fetch_object(db_query("SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE path = :path", array(':path' => $id)));
+      $client = db_query("SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE path = :path", array(':path' => $id));
     }
     drupal_alter('support_client_load', $client);
     $clients[$id] = $client;
@@ -488,7 +488,7 @@ function support_client_load($id, $integer = TRUE) {
 function support_ticket_load($nid) {
   static $tickets = array();
   if (!isset($tickets[$nid])) {
-    $ticket = db_fetch_object(db_query('SELECT * FROM {support_ticket} WHERE nid = :nid', array(':nid' => $nid)));
+    $ticket = db_query('SELECT * FROM {support_ticket} WHERE nid = :nid', array(':nid' => $nid));
     drupal_alter('support_ticket_load', $ticket);
     $tickets[$nid] = $ticket;
   }
@@ -581,7 +581,7 @@ function support_account_load($from, $ticket, $subject, $client) {
 function support_perm() {
   $perm = array('administer support', 'create tickets', 'delete any ticket', 'delete own tickets', 'edit any ticket', 'edit own tickets', 'edit multiple tickets', 'can administer state', 'can suppress notification', 'can subscribe other users to notifications', 'download mail via support/fetch', 'view other users tickets', 'can select state', 'can select priority', 'can select client', 'can assign tickets to self', 'can assign tickets to any user', 'move ticket');
   $result = db_query('SELECT name FROM {support_client} WHERE status = :status', array(':status' => 1));
-  while ($client = db_fetch_object($result)) {
+  foreach ($result as $client) {
     $perm[] = 'access ' . check_plain($client->name) . ' tickets';
   }
   return $perm;
@@ -681,7 +681,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
         drupal_set_breadcrumb($breadcrumb);
         break;
       case 'load':
-        return db_fetch_array(db_query('SELECT message_id, state, priority, client, assigned FROM {support_ticket} WHERE nid = :nid', array(':nid' => $node->nid)));
+        return db_query('SELECT message_id, state, priority, client, assigned FROM {support_ticket} WHERE nid = :nid', array(':nid' => $node->nid));
       case 'validate':
         $client = db_query('SELECT name FROM {support_client} WHERE clid = :clid', array(':clid' => $node->client))->fetchField();
         if (!isset($node->client) || $node->client == 0) {
@@ -934,7 +934,7 @@ function support_comment_view(&$comment) {
   static $priority = 0;
   static $client = 0;
   static $assigned = 0;
-  $current = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $comment->cid)));
+  $current = db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $comment->cid));
   if (!empty($current) && $assigned != $current->assigned) {
     $previous_account = user_load($assigned);
     $current_account = user_load($current->assigned);
@@ -1061,7 +1061,7 @@ function _support_node_move($node, $destination) {
     if (module_exists('comment_upload')) {
       // transfer attachments to new comment
       $result = db_query('SELECT fid, description, list, weight FROM {upload} WHERE nid = :nid', array(':nid' => $node->nid));
-      while ($upload = db_fetch_object($result)) {
+      foreach ($result as $upload) {
         // TODO Please convert this statement to the D7 database API syntax.
         /* db_query("INSERT INTO {comment_upload} (fid, nid, cid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $upload->fid, $destination->nid, $comment['cid'], $upload->description, $upload->list, $upload->weight) */
         NULL;
@@ -1089,7 +1089,7 @@ function _support_node_move($node, $destination) {
   watchdog('content', 'Comment: added %subject.', array('%subject' => $comment['subject']), WATCHDOG_NOTICE, l(t('view'), 'node/' . $comment['nid'], array('fragment' => 'comment-' . $comment['cid'])));
 
   $result = db_query('SELECT cid, uid, subject, comment, format, hostname, timestamp, timestamp, status, thread, name, mail, homepage FROM {comments} WHERE nid = :nid', array(':nid' => $node->nid));
-  while ($update = db_fetch_array($result)) {
+  foreach ($result as $update) {
     $oldcid = $update['cid'];
     $max = rtrim($thread, '/');
     $thread = int2vancode(vancode2int($max) + 1) . '/';
@@ -1181,7 +1181,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
   $all_unsubscribe_key = md5($account->uid);
   $previous_comment = db_query_range('SELECT cid FROM {comments} WHERE nid = :nid ORDER BY cid DESC', array(':nid' => $nid))->fetchField();
   if ($previous_comment) {
-    $previous = db_fetch_object(db_query('SELECT * FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $previous_comment)));
+    $previous = db_query('SELECT * FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $previous_comment));
   }
   // TODO Please change this theme call to use an associative array for the $variables parameter.
   // TODO Please change this theme call to use an associative array for the $variables parameter.
@@ -1669,7 +1669,7 @@ function _support_autosubscribe($nid, $client, $save = TRUE) {
 function support_notification($comment = array(), $nid, $op = 'ticket_comment_new', $suppress = FALSE) {
   if (variable_get('support_notifications', TRUE)) {
     $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = :nid AND active = :active', array(':nid' => $nid, ':active' => 1));
-    while ($account = db_fetch_object($result)) {
+    foreach ($result as $account) {
       $account = user_load($account->uid);
       // always send emails to admins, even if update was suppressed
       if ($account->mail && (!$suppress || user_access('administer support', $account))) {
@@ -1734,7 +1734,7 @@ function _support_mail_notify($op, $account, $comment = array(), $nid = NULL, $s
 function _support_comment_update_node($nid) {
   $cid = db_query('SELECT MAX(cid) FROM {comments} WHERE nid = :nid', array(':nid' => $nid))->fetchField();
   if ($cid) {
-    $comment = db_fetch_object(db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $cid)));
+    $comment = db_query('SELECT state, priority, client, assigned FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $cid));
     // TODO Please review the conversion of this statement to the D7 database API syntax.
     /* db_query('UPDATE {support_ticket} SET state = %d, priority = %d, client = %d, assigned = %d WHERE nid = %d', $comment->state, $comment->priority, $comment->client, $comment->assigned, $nid) */
     db_update('support_ticket')
@@ -2137,7 +2137,7 @@ function support_status_form(&$form_state, $edit, $title) {
     $node->assigned = $autoassign;
   }
   if ($cid) {
-    $comment = db_fetch_object(db_query('SELECT state, priority FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $cid)));
+    $comment = db_query('SELECT state, priority FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $cid));
     if ($comment->state && $comment->priority) {
       $node->state = $comment->state;
       $node->priority = $comment->priority;
@@ -2318,7 +2318,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
       // retrieve all roles giving permission to access current tickets
       // TODO Please convert this statement to the D7 database API syntax.
       $result = db_query("SELECT rid FROM {permission} WHERE perm LIKE '%%%s%%' OR perm LIKE '%%%s%%'",  $client, 'administer support');
-      while ($role = db_fetch_object($result)) {
+      foreach ($result as $role) {
         $roles[$role->rid] = $role->rid;
       }
       // retrieve all users in appropriate roles
@@ -2332,7 +2332,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
         else {
           $result = db_query('SELECT r.uid FROM {users_roles} r LEFT JOIN {users} u ON r.uid = u.uid WHERE r.rid = :r.rid AND u.status = :u.status', array(':r.rid' => $rid, ':u.status' => 1));
         }
-        while ($account = db_fetch_object($result)) {
+        foreach ($result as $account) {
           $accounts[$account->uid] = $account->uid;
           $counter++;
           if (!$limit || ($counter > $limit)) {
@@ -2423,7 +2423,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
         $account = user_load($node->assigned);
         $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = :nid AND active = :active', array(':nid' => $node->nid, ':active' => 1));
         $accounts = array();
-        while ($a = db_fetch_object($result)) {
+        foreach ($result as $a) {
           $account = user_load($a->uid);
           $accounts[] = $account->name;
         }
@@ -2500,7 +2500,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
  */
 function _support_clients_load($path = FALSE) {
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status ORDER BY name', array(':status' => 1));
-  while ($client = db_fetch_object($result)) {
+  foreach ($result as $client) {
     if ($path) {
       $clients[$client->clid] = check_plain($client->path);
     }
@@ -2536,7 +2536,7 @@ function _support_states($all = TRUE, $sid = NULL, $account = NULL) {
     else if (!$all) {
       $result = db_query("SELECT sid, state FROM {support_states} WHERE phase2 = :phase2 ORDER BY weight", array(':phase2' => 1));
     }
-    while ($state = db_fetch_object($result)) {
+    foreach ($result as $state) {
       $states["$admin-$all-$sid"][$state->sid] = $state->state;
     }
     // include the current state, even if user doesn't actually have access
@@ -2578,7 +2578,7 @@ function _support_priorities($pid = NULL) {
 
   if (empty($priorities)) {
     $result = db_query('SELECT pid, priority FROM {support_priority} ORDER BY weight');
-    while ($priority = db_fetch_object($result)) {
+    foreach ($result as $priority) {
       $priorities[$priority->pid] = $priority->priority;
     }
   }
@@ -2669,7 +2669,7 @@ function _support_get_state($state) {
   else if ($state == SUPPORT_STATE_CLOSED) {
     $result = db_query("SELECT sid FROM {support_states} WHERE isclosed = :isclosed", array(':isclosed' => 1));
     $states = array();
-    while ($state = db_fetch_object($result)) {
+    foreach ($result as $state) {
       $states[$state->sid] = $state->sid;
     }
     return $states;
@@ -2828,7 +2828,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   $sql_count = db_rewrite_sql($sql_count);
   $result = pager_query($sql, 50, 0, $sql_count);
   $rows = array();
-  while ($ticket = db_fetch_object($result)) {
+  foreach ($result as $ticket) {
     drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load($ticket->uid);
     $assigned = user_load($ticket->assigned);
@@ -3285,7 +3285,7 @@ function _support_access_tickets() {
   if (is_null($count)) {
     $count = 0;
     $result = db_query('SELECT name FROM {support_client} WHERE status = :status', array(':status' => 1));
-    while ($client = db_fetch_object($result)) {
+    foreach ($result as $client) {
       if (user_access('administer support') || user_access("access $client->name tickets")) {
         $count++;
       }

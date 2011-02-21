@@ -8,7 +8,6 @@
 
 /**
  * Helpdesk / support ticket tracking system database schema.
- * Copyright (c) 2008-2009 Tag1 Consulting, Inc <jeremy@tag1consulting.com>.
  */
 
 /**
@@ -365,186 +364,97 @@ function support_schema() {
  * Install support database schema.
  */
 function support_install() {
-  // Check if we're upgrading a previous jobtrack installation.
-  if (db_table_exists('jobtrack_client')) {
-    $ret = array();
-    db_rename_table('jobtrack_client', 'support_client');
-    db_rename_table('jobtrack_ticket', 'support_ticket');
-    db_rename_table('jobtrack_ticket_comment', 'support_ticket_comment');
-    db_rename_table('jobtrack_assigned', 'support_assigned');
-    db_rename_table('jobtrack_states', 'support_states');
-    db_rename_table('jobtrack_priority', 'support_priority');
-    // TODO Please review the conversion of this statement to the D7 database API syntax.
-    /* db_query("UPDATE {node} SET type = 'support_ticket' WHERE type = 'jobtrack_ticket'") */
-    db_update('node')
-  ->fields(array(
-      'type' => 'support_ticket',
-    ))
-  ->condition('type', 'jobtrack_ticket')
-  ->execute();
-    cache_clear_all();
-    menu_rebuild();
-  }
-  else {
-    drupal_install_schema('support');
+  // State: new
+  db_insert('support_states')
+    ->fields(array(
+    'state' => 'new',
+    'weight' => 0,
+    'phase1' => 1,
+    'phase2' => 0,
+    'isdefault' => 1,
+  ))
+    ->execute();
+  // State: active
+  db_insert('support_states')
+    ->fields(array(
+    'state' => 'active',
+    'weight' => 1,
+    'phase1' => 0,
+    'phase2' => 1,
+  ))
+    ->execute();
+  // State: pending
+  db_insert('support_states')
+    ->fields(array(
+    'state' => 'pending',
+    'weight' => 2,
+    'phase1' => 0,
+    'phase2' => 1,
+  ))
+    ->execute();
+  // State: closed
+  db_insert('support_states')
+    ->fields(array(
+    'state' => 'closed',
+    'weight' => 3,
+    'phase1' => 0,
+    'phase2' => 1,
+    'isclosed' => 1,
+  ))
+    ->execute();
+  // Priority: low
+  db_insert('support_priority')
+    ->fields(array(
+    'priority' => 'low',
+    'weight' => 0,
+  ))
+    ->execute();
+  // Priority: normal
+  db_insert('support_priority')
+    ->fields(array(
+    'priority' => 'normal',
+    'weight' => 1,
+    'isdefault' => 1,
+  ))
+    ->execute();
+  // Priority: high
+  db_insert('support_priority')
+    ->fields(array(
+    'priority' => 'high',
+    'weight' => 2,
+  ))
+    ->execute();
+  // Priority: critical
+  db_insert('support_priority')
+    ->fields(array(
+    'priority' => 'critical',
+    'weight' => 3,
+  ))
+    ->execute();
 
-    // default
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isdefault) VALUES('new', 0, 1, 0, 1)") */
-    NULL;
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('active', 1, 0, 1)") */
-    NULL;
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_states} (state, weight, phase1, phase2) VALUES('pending', 2, 0, 1)") */
-    NULL;
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_states} (state, weight, phase1, phase2, isclosed) VALUES('closed', 3, 0, 1, 1)") */
-    NULL;
-    // default priorities
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_priority} (priority, weight) VALUES('low', 0)") */
-    NULL;
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_priority} (priority, weight, isdefault) VALUES('normal', 1, 1)") */
-    NULL;
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_priority} (priority, weight) VALUES('high', 2)") */
-    NULL;
-    // TODO Please convert this statement to the D7 database API syntax.
-    /* db_query("INSERT INTO {support_priority} (priority, weight) VALUES('critical', 3)") */
-    NULL;
-    // default comment settings
-    variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED_EXPANDED);
-    variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
+  // default comment settings
+  variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED_EXPANDED);
+  variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
 
-    // Set default weight
-    // TODO Please review the conversion of this statement to the D7 database API syntax.
-    /* db_query("UPDATE {system} SET weight = 10 WHERE name = 'support'") */
-    db_update('system')
-  ->fields(array(
-      'weight' => 10,
-    ))
-  ->condition('name', 'support')
-  ->execute();
-  }
+  // Set default weight
+  db_update('system')
+    ->fields(array(
+    'weight' => 10,
+  ))
+    ->condition('name', 'support')
+    ->execute();
 }
 
 /**
  * Cleanup.
  */
 function support_uninstall() {
+  // TODO:
+/*
   $result = db_query("SELECT nid FROM {node} WHERE type = :type", array(':type' => 'support_ticket'));
   while ($node = db_fetch_object($result)) {
     node_delete($node->nid);
   }
-
-  drupal_uninstall_schema('support');
-}
-
-/**
- * Introduce "autoassign" field for storing a per-client autoassign value.
- */
-function support_update_6001() {
-  $ret = array();
-  db_add_field('support_client', 'autoassign',
-    array(
-    'type' => 'varchar',
-    'length' => 255,
-    'not null' => TRUE,
-    'default' => '',
-    'description' => 'Optionally assign new tickets to this user.',
-  ),
-    array('indexes' => array(
-      'autoassign' => array('autoassign'),
-    ))
-  );
-  if (variable_get('support_autoassign_ticket', 0) == 0) {
-    variable_set('support_autoassign_ticket', '<nobody>');
-  }
-  else if (variable_get('support_autoassign_ticket', 0) == 1) {
-    variable_set('support_autoassign_ticket', '<creator>');
-  }
-  else {
-    variable_del('support_autoassign_ticket');
-  }
-  drupal_flush_all_caches();
-  return $ret;
-}
-
-/**
- * Introduce "thread_subject" field for configured per-client thread settings.
- */
-function support_update_6002() {
-  $ret = array();
-  db_add_field('support_client', 'thread_subject',
-    array(
-    'type' => 'int',
-    'size' => 'tiny',
-    'not null' => TRUE,
-    'default' => 0,
-    'description' => 'Optionally configure per-client subject threading settings.',
-  )
-  );
-  return $ret;
-}
-
-/**
- * Flush caches to support new theme functions
- */
-function support_update_6003() {
-  drupal_flush_all_caches();
-  return array();
-}
-
-/**
- * Introduce "user_creation" field for configured per-client user creation
- * settings.
- */
-function support_update_6004() {
-  $ret = array();
-  db_add_field('support_client', 'user_creation',
-    array(
-    'type' => 'int',
-    'size' => 'tiny',
-    'not null' => TRUE,
-    'default' => 0,
-    'description' => 'Optionally configure per-client user creation settings.',
-  )
-  );
-  return $ret;
-}
-
-/**
- * Flush caches to support updated theme functions
- */
-function support_update_6005() {
-  drupal_flush_all_caches();
-  return array();
-}
-
-/**
- * Add support for nested clients.
- */
-function support_update_6006() {
-  $ret = array();
-  db_add_field('support_client', 'parent',
-    array(
-    'type' => 'int',
-    'not null' => TRUE,
-    'default' => 0,
-    'description' => 'Optionally nest clients within clients.',
-  )
-  );
-  drupal_flush_all_caches();
-  return $ret;
-}
-
-/**
- * Rebuild menu to register new autosubscribe autocomplete permissions.
- */
-function support_update_6007() {
-  drupal_flush_all_caches();
-  menu_rebuild();
-  return array();
+*/
+  //drupal_uninstall_schema('support');
 }

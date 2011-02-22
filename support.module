@@ -114,10 +114,7 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  return $items;
 
-  // TODO: Working through menu items one by one...
-/*
   $items['support/fetch'] = array(
     'type' => MENU_CALLBACK,
     'page callback' => 'support_fetch_client_mail',
@@ -147,7 +144,7 @@ function support_menu() {
 
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
   foreach ($result as $client) {
-    $items['support/' . $client->path] = array(
+    $items["support/$client->path"] = array(
       'title' => check_plain($client->name),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('support_page_form', $client->clid),
@@ -237,7 +234,6 @@ function support_menu() {
     'file' => 'support.admin.inc',
   );
   return $items;
-*/
 }
 
 /**
@@ -2773,13 +2769,13 @@ function _support_truncate($text, $maxlen = 64) {
 /**
  * Display tickets
  */
-function support_page_form(&$form_state, $client = NULL, $state = NULL) {
+function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   global $user;
 
   $form = array();
 
   // Be sure a client is selected.  If not, select the last visited client.
-  if (!$client) {
+  if (empty($client)) {
     if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
       if ($client->parent) {
         $parent = support_client_load($client->parent);
@@ -2793,7 +2789,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     if (sizeof($clients)) {
       foreach ($clients as $key => $name) {
         $client = support_client_load($key);
-        if ($client->parent) {
+        if (!empty($client->parent)) {
           $parent = support_client_load($client->parent);
           drupal_goto("support/$parent->path/$client->path");
         }
@@ -2804,6 +2800,13 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     }
   }
   else {
+    if (!empty($client) && !is_numeric($client)) {
+      // TODO: Don't load client then throw it away.
+      $client = support_client_load($client, FALSE);
+      if (is_object($client)) {
+        $client = $client->clid;
+      }
+    }
     if (is_numeric($client)) {
       $_SESSION['support_client'] = $client;
     }

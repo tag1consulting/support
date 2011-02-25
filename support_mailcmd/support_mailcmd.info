@@ -1,4 +1,3 @@
-; $Id$
 name = Support Mail Commands
 package = Support
 description = Advanced support ticket editing via emil.

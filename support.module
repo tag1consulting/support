@@ -386,7 +386,7 @@ function support_active_clients() {
   static $clients = NULL;
 
   if (is_null($clients)) {
-    $result = db_query('SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, extra, protocol, port, notes, autosubscribe, domains, user_creation FROM {support_client} WHERE status = 1');
+    $result = db_query('SELECT * FROM {support_client} WHERE status = 1');
     while ($client = db_fetch_object($result)) {
       $clients[$client->clid] = $client;
     }
@@ -3050,16 +3050,16 @@ function _support_identify_ticket(&$client, &$message) {
     $client->thread_subject = variable_get('support_thread_by_subject', 3);
   }
   switch ($client->thread_subject) {
-    case 1: // disabled
+    case 1: // No subject matching.
       break;
-    case 2:
-      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND isdefault = 1 ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
+    case 2: // Match against new tickets.
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND s.isdefault = 1 ORDER BY t.nid DESC", $client->clid, $message['subject'], 0, 1));
       break;
-    case 3:
-      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND isclosed = 0 ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
+    case 3: // Match against open tickets.
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = %d AND n.title = '%s' AND s.isclosed = 0 ORDER BY t.nid DESC", $client->clid, $message['subject'], 0, 1));
       break;
-    case 4:
-      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = %d AND n.title = '%s' ORDER BY nid DESC", $client->clid, $message['subject'], 0, 1));
+    case 4: // Match against any tickets.
+      $message['nid'] = db_result(db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = %d AND n.title = '%s' ORDER BY t.nid DESC", $client->clid, $message['subject'], 0, 1));
       break;
   }
   return (boolean) $message['nid'];

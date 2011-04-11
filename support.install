@@ -433,8 +433,9 @@ function support_install() {
     ->execute();
 
   // default comment settings
-  variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED_EXPANDED);
-  variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
+  variable_set('comment_default_mode_support_ticket', COMMENT_MODE_THREADED);
+  // TODO: Is there a replacement for this
+  //variable_set('comment_default_order_support_ticket', COMMENT_ORDER_OLDEST_FIRST);
 
   // Set default weight
   db_update('system')

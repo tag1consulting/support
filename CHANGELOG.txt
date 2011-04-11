@@ -1,2 +1,6 @@
 February 20th, 2011
  - Initial conversion to Drupal 7, using Coder module.
+
+April 11th, 2011
+ - support.install
+    o Cleanup install variables

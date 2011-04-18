@@ -31,15 +31,15 @@ function support_admin_client_overview() {
   $select = db_select('support_client', 'sc')->extend('TableSort');
   $results = $select->fields('sc', array('clid', 'name', 'status', 'integrate_email', 'mailfrom'))->orderByHeader($header)->execute();
   foreach ($results as $client) {
-    $options = l(t('edit'), "admin/support/clients/$client->clid/edit");
+    $options = l(t('edit'), "admin/config/support/clients/$client->clid/edit");
     if ($client->integrate_email) {
-      $options .= ' | ' . l(t('fetch'), "admin/support/clients/$client->clid/fetch");
+      $options .= ' | ' . l(t('fetch'), "admin/config/support/clients/$client->clid/fetch");
     }
     $rows[] = array(
       check_plain($client->name),
       $client->status == 1 ? t('enabled') : t('disabled'),
       $client->integrate_email ? t('integrated') : t('not integrated'),
-      $client->integrate_email ? check_plain($client->mailfrom) : '<em>' . t('using default') . '</em>: ' . l(_support_admin_default_mail(), 'admin/support/settings'),
+      $client->integrate_email ? check_plain($client->mailfrom) : '<em>' . t('using default') . '</em>: ' . l(_support_admin_default_mail(), 'admin/config/support/settings'),
       $options,
     );
   }
@@ -165,7 +165,7 @@ function support_admin_client($form, &$form_state, $client = NULL) {
     '#type' => 'select',
     '#title' => t('Thread emails using subject'),
     '#options' => array('Use global setting', 'Disabled', 'Match against new tickets', 'Match against open tickets', 'Match against all tickets'),
-    '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the !settings configuration will be used, however, you can override this global configuration here.', array('!settings' => l(t('general support settings'), 'admin/support/settings'))),
+    '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the !settings configuration will be used, however, you can override this global configuration here.', array('!settings' => l(t('general support settings'), 'admin/config/support/settings'))),
     '#default_value' => isset($client->thread_subject) ? $client->thread_subject : 0,
   );
   $form['mail']['domains'] = array(
@@ -196,7 +196,7 @@ function support_admin_client($form, &$form_state, $client = NULL) {
     '#title' => t('Auto-assign'),
     '#autocomplete_path' => 'support/autocomplete/assigned/' . $id,
     '#default_value' => !empty($client->autoassign) ? $client->autoassign : '',
-    '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!settings' => l(t('general support settings'), 'admin/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
+    '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!settings' => l(t('general support settings'), 'admin/config/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
   );
   $form['notes'] = array(
     '#title' => t('Notes'),
@@ -218,7 +218,7 @@ function support_admin_client($form, &$form_state, $client = NULL) {
       '#type' => 'submit',
     );
     $form['cancel'] = array(
-      '#value' => l(t('Cancel'), 'admin/support/clients'),
+      '#value' => l(t('Cancel'), 'admin/config/support/clients'),
     );
   }
 
@@ -315,7 +315,7 @@ function support_admin_client_submit($form, &$form_state) {
   cache_clear_all();
   // rebuild the menu
   menu_rebuild();
-  drupal_goto('admin/support/clients');
+  drupal_goto('admin/config/support/clients');
 }
 
 /**
@@ -471,7 +471,7 @@ function support_admin_settings() {
   $form['mail']['support_cron_download_mail'] = array(
     '#type' => 'checkbox',
     '#title' => t('Download mail via cron'),
-    '#description' => t('When checked, support will try to download client emails each time cron is run.  You may want to disable this if you are not integrating support with email, or if you only wish to download mail manually or via the !path.  If automating the download of mail through the support fetch mail path, be sure to !assign permissions to the necessary role(s).', array('!path' => l(t('support fetch mail path'), 'support/fetch'), '!assign' => l(t('assign "download mail via support/fetch"'), 'admin/user/permissions', array('fragment' => 'module-support')))),
+    '#description' => t('When checked, support will try to download client emails each time cron is run.  You may want to disable this if you are not integrating support with email, or if you only wish to download mail manually or via the !path.  If automating the download of mail through the support fetch mail path, be sure to !assign permissions to the necessary role(s).', array('!path' => l(t('support fetch mail path'), 'support/fetch'), '!assign' => l(t('assign "download mail via support/fetch"'), 'admin/people/permissions', array('fragment' => 'module-support')))),
     '#default_value' => variable_get('support_cron_download_mail', TRUE),
   );
   $form['mail']['support_global_domains'] = array(

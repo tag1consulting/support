@@ -444,6 +444,20 @@ function support_install() {
   ))
     ->condition('name', 'support')
     ->execute();
+
+  $support_node_type = array(
+    'type' => 'support_ticket',
+    'name' => t('Support ticket'),
+    'base' => 'support',
+    'description' => t('<em>Support tickets</em> provide special options for tracking client tasks.'),
+    'custom' => 1,
+    'modified' => 1,
+    'locked' => 0,
+  );
+
+  $support_node_type = node_type_set_defaults($support_node_type);
+  node_type_save($support_node_type);
+  node_add_body_field($support_node_type);
 }
 
 /**
@@ -457,5 +471,6 @@ function support_uninstall() {
     node_delete($node->nid);
   }
 */
-  //drupal_uninstall_schema('support');
+  drupal_uninstall_schema('support');
+  node_type_delete('support_ticket');
 }

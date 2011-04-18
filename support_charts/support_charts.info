@@ -3,4 +3,4 @@ description = Charting for the helpdesk and support ticketing system.
 package = Support
 dependencies[] = support
 dependencies[] = chart
-core = 6.x
+core = 7.x

@@ -4,3 +4,7 @@ February 20th, 2011
 April 11th, 2011
  - support.install
     o Cleanup install variables
+
+April 18th, 2011
+ - Mega cleanup by javier.alejandro.castro, moving toward a functional D7 
+   release.

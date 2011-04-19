@@ -96,3 +96,19 @@
   font-size: .75em;
 }
 
+table.support {
+  width: 100%;
+}
+
+.support thead th {
+  padding-right: 1em;
+  border-bottom: 3px solid #CCC;
+}
+
+.support tbody td {
+  padding: 3px;
+}
+
+.support tbody {
+  border-top: 1px solid #CCC;
+}

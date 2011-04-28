@@ -2895,8 +2895,15 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   $form['post-ticket'] = array(
     '#markup' => l(t('Post new support ticket'), 'node/add/support-ticket'),
   );
-  // TODO Please change this theme call to use an associative array for the $variables parameter.
-  $checkboxes = user_access('edit multiple tickets') || user_access('administer support') ? theme('table_select_header_cell') : array();
+  // TODO: Use a tableselect element instead. (Requires rethinking "edit multiple tickets".)
+  $checkboxes = array();
+  if (user_access('edit multiple tickets') || user_access('administer support')) {
+    $checkboxes = array(
+      'data' => '',
+      'class' => array('select-all'),
+    );
+    $form['#attached']['js']['misc/tableselect.js'] = array();
+  }
   $form['header'] = array(
     '#type' => 'value',
     '#value' => array(

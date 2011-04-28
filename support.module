@@ -277,24 +277,31 @@ function support_init() {
 function support_autocomplete_assigned($clid = 0, $string = '') {
   $matches = array();
   if ($string) {
+    $result = array();
     if ($clid) {
       $client = db_query('SELECT name FROM {support_client} WHERE clid = :clid', array(':clid' => $clid))->fetchField();
       // retrieve all roles giving permission to access current tickets
-      // TODO Please convert this statement to the D7 database API syntax.
-      $result = db_query("SELECT rid FROM {role_permission} WHERE permission LIKE :clike OR permission LIKE :plike", array(':clike' => '%' . $client . '%', ':plike' => '%administer support%'));
+      $result = db_query('SELECT rid FROM {role_permission} WHERE permission = :perm', array(':perm' => "access $client tickets"));
     }
     $roles = array();
     foreach ($result as $role) {
       $roles[$role->rid] = $role->rid;
     }
     // also get people with administer support permissions
-    // TODO Please convert this statement to the D7 database API syntax.
-    $result = db_query("SELECT rid FROM {role_permission} WHERE permission LIKE :plike", array(':plike' => '%administer support%'));
+    $result = db_query('SELECT rid FROM {role_permission} WHERE permission = :perm', array(':perm' => 'administer support'));
     foreach ($result as $role) {
       $roles[$role->rid] = $role->rid;
     }
     if (!empty($roles)) {
-      $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = :u.status AND LOWER(name) LIKE LOWER('%s%%')", array(':u.status' => 1, '' => implode(', ', $roles), '' => $string));
+      $query = db_select('users', 'u');
+      $query->join('users_roles', 'r', 'u.uid = r.uid');
+      $query
+        ->fields('u', array('name'))
+        ->condition('r.rid', $roles, 'IN')
+        ->condition('u.status', 1)
+        ->condition('u.name', db_like($string) . '%', 'LIKE')
+        ->range(0, 10);
+      $result = $query->execute();
       foreach ($result as $user) {
         $matches[$user->name] = check_plain($user->name);
       }
@@ -320,16 +327,29 @@ function support_autocomplete_autosubscribe($clid, $string = '') {
     $roles = array();
     $client = db_query('SELECT name FROM {support_client} WHERE clid = :clid', array(':clid' => $clid))->fetchField();
     // retrieve all roles giving permission to access current tickets
-    // TODO Please convert this statement to the D7 database API syntax.
-    $result = db_query("SELECT rid FROM {role_permission} WHERE permission LIKE :clike OR perm LIKE :plike", array(':clike' => '%' . $client . '%', ':plike' => '%administer support%'));
+    $result = db_query('SELECT rid FROM {role_permission} WHERE permission = :perm OR permission = :admin', array(':perm' => "access $client tickets", ':admin' => 'administer support'));
     foreach ($result as $role) {
       $roles[$role->rid] = $role->rid;
     }
+    $result = array();
     if (!$clid) {
-      $result = db_query_range("SELECT name FROM {users} WHERE status = :status AND LOWER(name) LIKE LOWER('%s%%')", array(':status' => 1, '' => $last_string));
+      $result = db_select('users', 'u')
+        ->fields('u', array('name'))
+        ->condition('u.status', 1)
+        ->condition('u.name', db_like($last_string) . '%', 'LIKE')
+        ->range(0, 10)
+        ->execute();
     }
     else if (!empty($roles)) {
-      $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = :u.status AND LOWER(u.name) LIKE LOWER('%s%%')", array(':u.status' => 1, '' => implode(', ', $roles), '' => $last_string));
+      $query = db_select('users', 'u');
+      $query->join('users_roles', 'r', 'u.uid = r.uid');
+      $query
+        ->fields('u', array('name'))
+        ->condition('r.rid', $roles, 'IN')
+        ->condition('u.status', 1)
+        ->condition('u.name', db_like($last_string) . '%', 'LIKE')
+        ->range(0, 10);
+      $result = $query->execute();
     }
 
     $prefix = count($array) ? implode(', ', $array) . ', ' : '';

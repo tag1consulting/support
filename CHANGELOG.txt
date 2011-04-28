@@ -12,3 +12,5 @@ April 18th, 2011
 April 28, 2011
  - Issue #1139946: Client access missing hook_permission by miro_dietiker.
  - Fix header sorting.
+ - Fix select all checkbox.
+ - Fix autocomplete queries.

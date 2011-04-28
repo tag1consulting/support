@@ -8,3 +8,6 @@ April 11th, 2011
 April 18th, 2011
  - Issue #589552: mega-cleanup porting support module to Drupal 7 by
    javier.alejandro.castro
+
+April 28, 2011
+ - Issue #1139946: Client access missing hook_permission by miro_dietiker.

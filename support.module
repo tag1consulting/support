@@ -580,7 +580,7 @@ function support_account_load($from, $ticket, $subject, $client) {
  * Implementation of hook_perm().
  */
 function support_permission() {
-  return array(
+  $perm = array(
     'administer support' => array(
       'title' => t('Administer support'),
       'restrict access' => TRUE,

@@ -656,7 +656,7 @@ function support_permission() {
   );
   $result = db_query('SELECT name FROM {support_client} WHERE status = :status', array(':status' => 1));
   foreach ($result as $client) {
-    $key = 'access ' . check_plain($client->name) . ' ticket';
+    $key = 'access ' . check_plain($client->name) . ' tickets';
     $perm[$key] = array(
       'title' => t('Access !client tickets', array('!client' => check_plain($client->name))),
     );

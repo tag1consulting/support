@@ -3463,13 +3463,13 @@ function _support_identify_ticket(&$client, &$message) {
     case 1: // disabled
       break;
     case 2:
-      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :t.client AND n.title = :n.title AND isdefault = :isdefault ORDER BY nid DESC", array(':t.client' => $client->clid, ':n.title' => $message['subject'], ':isdefault' => 1))->fetchField();
+      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :t.client AND n.title = :n.title AND isdefault = :isdefault ORDER BY nid DESC", 0, 1, array(':t.client' => $client->clid, ':n.title' => $message['subject'], ':isdefault' => 1))->fetchField();
       break;
     case 3:
-      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :t.client AND n.title = :n.title AND isclosed = :isclosed ORDER BY nid DESC", array(':t.client' => $client->clid, ':n.title' => $message['subject'], ':isclosed' => 0))->fetchField();
+      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :t.client AND n.title = :n.title AND isclosed = :isclosed ORDER BY nid DESC", 0, 1, array(':t.client' => $client->clid, ':n.title' => $message['subject'], ':isclosed' => 0))->fetchField();
       break;
     case 4:
-      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = :t.client AND n.title = :n.title ORDER BY nid DESC", array(':t.client' => $client->clid, ':n.title' => $message['subject']))->fetchField();
+      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = :t.client AND n.title = :n.title ORDER BY nid DESC", 0, 1, array(':t.client' => $client->clid, ':n.title' => $message['subject']))->fetchField();
       break;
   }
   return (boolean) $message['nid'];

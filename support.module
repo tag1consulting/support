@@ -19,24 +19,44 @@ function support_node_info() {
 }
 
 /**
- * Implementation of hook_access().
+ * Implementation of hook_node_access().
  */
 function support_node_access($node, $op, $account) {
+  $type = is_string($node) ? $node : $node->type;
+  if ($type != 'support_ticket') {
+    // We are only interested in support_ticket nodes.
+    return NODE_ACCESS_IGNORE;
+  }
   switch ($op) {
     case 'create':
-      return user_access('create tickets', $account);
+      if (user_access('create tickets', $account)) {
+        return NODE_ACCESS_ALLOW;
+      }
+      return NODE_ACCESS_DENY;
     case 'update':
-      return (user_access('edit any ticket', $account) || (user_access('edit own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account));
+      if (user_access('edit any ticket', $account) || (user_access('edit own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account)) {
+        return NODE_ACCESS_ALLOW;
+      }
+      return NODE_ACCESS_DENY;
     case 'delete':
-      return (user_access('delete any ticket', $account) || (user_access('delete own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account));
+      if (user_access('delete any ticket', $account) || (user_access('delete own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account)) {
+        return NODE_ACCESS_ALLOW;
+      }
+      return NODE_ACCESS_DENY;
     case 'view':
       if (isset($node->client)) {
         $client = support_client_load($node->client);
         if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
-          return ($node->uid == $account->uid && support_access_clients($client, $account));
+          if ($node->uid == $account->uid && support_access_clients($client, $account)) {
+            return NODE_ACCESS_ALLOW;
+          }
+          return NODE_ACCESS_DENY;
         }
         else {
-          return support_access_clients($client, $account);
+          if (support_access_clients($client, $account)) {
+            return NODE_ACCESS_ALLOW;
+          }
+          return NODE_ACCESS_DENY;
         }
       }
   }

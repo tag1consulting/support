@@ -2079,17 +2079,17 @@ function support_search_validate($form, &$form_state) {
   // Insert extra restrictions into the search keywords string.
   if (isset($form_state['values']['client']) && is_array($form_state['values']['client'])) {
     if (count($form_state['values']['client'])) {
-      $keys = search_query_insert($keys, 'client', implode(',', array_keys($form_state['values']['client'])));
+      $keys = search_expression_insert($keys, 'client', implode(',', array_keys($form_state['values']['client'])));
     }
   }
   if (isset($form_state['values']['state']) && is_array($form_state['values']['state'])) {
     if (count($form_state['values']['state'])) {
-      $keys = search_query_insert($keys, 'state', implode(',', array_keys($form_state['values']['state'])));
+      $keys = search_expression_insert($keys, 'state', implode(',', array_keys($form_state['values']['state'])));
     }
   }
   if (isset($form_state['values']['priority']) && is_array($form_state['values']['priority'])) {
     if (count($form_state['values']['priority'])) {
-      $keys = search_query_insert($keys, 'priority', implode(',', array_keys($form_state['values']['priority'])));
+      $keys = search_expression_insert($keys, 'priority', implode(',', array_keys($form_state['values']['priority'])));
     }
   }
 
@@ -2102,7 +2102,7 @@ function support_search_validate($form, &$form_state) {
     $keys .= ' "' . str_replace('"', ' ', $form_state['values']['phrase']) . '"';
   }
   if (!empty($keys)) {
-    form_set_value($form['basic']['inline']['processed_keys'], trim($keys), $form_state);
+    form_set_value($form['basic']['processed_keys'], trim($keys), $form_state);
   }
 }
 

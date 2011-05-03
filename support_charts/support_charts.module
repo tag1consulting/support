@@ -119,7 +119,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
       $chart['#chart_id'] = 'tickets_open';
 
       if ($type == 'user') {
-        $chart['#title'] = t('Tickets opened by !user', array('!user' => $object->name));
+        $chart['#title'] = t('Tickets opened by !user', array('!user' => check_plain($object->name)));
         $filter = "AND n.uid = $object->uid";
       }
       else {
@@ -134,11 +134,11 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
       $chart['#chart_id'] = 'tickets_per_state';
 
       if ($type == 'user') {
-        $chart['#title'] = t('Open tickets by !user per state', array('!user' => $object->name));
+        $chart['#title'] = t('Open tickets by !user per state', array('!user' => check_plain($object->name)));
         $filter = "AND n.uid = $object->uid";
       }
       else if ($type == 'user_assigned') {
-        $chart['#title'] = t('Open tickets assigned to !user per state', array('!user' => $object->name));
+        $chart['#title'] = t('Open tickets assigned to !user per state', array('!user' => check_plain($object->name)));
         $filter = "AND t.assigned = $object->uid";
       }
       else {
@@ -153,11 +153,11 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
       $chart['#chart_id'] = 'tickets_per_priority';
 
       if ($type == 'user') {
-        $chart['#title'] = t('Open tickets by !user per priority', array('!user' => $object->name));
+        $chart['#title'] = t('Open tickets by !user per priority', array('!user' => check_plain($object->name)));
         $filter = "AND n.uid = $object->uid";
       }
       else if ($type == 'user_assigned') {
-        $chart['#title'] = t('Open tickets assigned to !user per priority', array('!user' => $object->name));
+        $chart['#title'] = t('Open tickets assigned to !user per priority', array('!user' => check_plain($object->name)));
         $filter = "AND t.assigned = $object->uid";
       }
       else {
@@ -172,11 +172,11 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
       $chart['#chart_id'] = 'tickets_per_client';
 
       if ($type == 'user') {
-        $chart['#title'] = t('Open tickets by !user per client', array('!user' => $object->name));
+        $chart['#title'] = t('Open tickets by !user per client', array('!user' => check_plain($object->name)));
         $filter = "AND n.uid = $object->uid";
       }
       else if ($type == 'user_assigned') {
-        $chart['#title'] = t('Open tickets assigned to !user per client', array('!user' => $object->name));
+        $chart['#title'] = t('Open tickets assigned to !user per client', array('!user' => check_plain($object->name)));
         $filter = "AND t.assigned = $object->uid";
       }
       else {
@@ -191,7 +191,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
       $chart['#chart_id'] = 'tickets_per_assigned';
 
       if ($type == 'user_assigned') {
-        $chart['#title'] = t('Tickets assigned to !user', array('!user' => $object->name));
+        $chart['#title'] = t('Tickets assigned to !user', array('!user' => check_plain($object->name)));
         $result = db_query('SELECT COUNT(t.nid) AS count, s.state as label, s.isclosed FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {support_states} s ON t.state = s.sid LEFT JOIN {node} n ON t.nid = n.nid WHERE n.status = 1 AND t.assigned = %d GROUP BY s.isclosed ORDER BY s.isclosed', $object->uid);
       }
       else {
@@ -248,7 +248,7 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
   switch ($id) {
     case 'tickets_created':
       if ($type == 'user') {
-        $chart['#title'] = chart_title(t('Tickets created by !user in !date', array('!date' => date('F Y', $now), '!user' => $object->name)));
+        $chart['#title'] = chart_title(t('Tickets created by !user in !date', array('!date' => date('F Y', $now), '!user' => check_plain($object->name))));
         $filter = "AND n.uid = $object->uid";
       }
       else {
@@ -263,7 +263,7 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
 
     case 'tickets_updated':
       if ($type == 'user') {
-        $chart['#title'] = chart_title(t('Tickets updated by !user in !date', array('!date' => date('F Y', $now), '!user' => $object->name)));
+        $chart['#title'] = chart_title(t('Tickets updated by !user in !date', array('!date' => date('F Y', $now), '!user' => check_plain($object->name))));
         $filter = "AND n.uid = $object->uid";
       }
       else {
@@ -279,7 +279,7 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
 
     case 'tickets_closed':
       if ($type == 'user') {
-        $chart['#title'] = chart_title(t('Tickets closed by !user in !date', array('!date' => date('F Y', $now), '!user' => $object->name)));
+        $chart['#title'] = chart_title(t('Tickets closed by !user in !date', array('!date' => date('F Y', $now), '!user' => check_plain($object->name))));
         $filter = "AND n.uid = $object->uid";
       }
       else {

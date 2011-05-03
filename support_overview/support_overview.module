@@ -5,14 +5,24 @@
  */
 
 /**
- * Implementation of hook_perm().
+ * Implements hook_permission().
  */
-function support_overview_perm() {
-  return array('view client overview', 'view user overview', 'administer support overview');
+function support_overview_permission() {
+  return array(
+    'view client overview' => array(
+      'title' => t('View client overview'),
+    ),
+    'view user overview' => array(
+      'title' => t('View user overview'),
+    ),
+    'administer support overview' => array(
+      'title' => t('Administer support overview'),
+    ),
+  );
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function support_overview_menu() {
   $items = array();
@@ -52,13 +62,13 @@ function support_overview_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/support/overview'] = array(
+  $items['admin/config/support/overview'] = array(
     'title' => 'Overview settings',
     'description' => 'Support client overview',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('support_overview_summary_settings'),
     'access arguments' => array('administer support overview'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+//    'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 2,
   );
 
@@ -113,53 +123,61 @@ function support_overview_summary() {
     $current_row = 0;
     // Break down overview by ticket state
     foreach ($states as $sid => $state) {
+      $total_args = $latest_args = $oldest_args = array();
       $rows[$current_row][] = l($state, "support/$client->path/$state");
 
-      $total_sql = 'SELECT COUNT(t.nid) FROM {support_ticket} t WHERE t.client = %d';
-      $total_args = array($client->clid);
+      // TODO Fully convert these queries to D7.
+      $total_sql = 'SELECT COUNT(t.nid) FROM {support_ticket} t WHERE t.client = :client';
+      $total_args[':client'] = $client->clid;
 
-      $latest_sql = $oldest_sql = 'SELECT GREATEST(n.changed, l.last_comment_timestamp) AS last_update, n.nid FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid WHERE t.client = %d';
-      $latest_args = $oldest_args = array($client->clid);
+      $latest_sql = $oldest_sql = 'SELECT GREATEST(n.changed, l.last_comment_timestamp) AS last_update, n.nid FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid WHERE t.client = :client';
+      $latest_args[':client'] = $client->clid;
+      $oldest_args[':client'] = $client->clid;
 
       if ($sid) {
-        $total_sql .= ' AND t.state = %d';
-        $total_args[] = $sid;
-        $latest_sql .= ' AND t.state = %d';
-        $latest_args[] = $sid;
-        $oldest_sql .= ' AND t.state = %d';
-        $oldest_args[] = $sid;
+        $total_sql .= ' AND t.state = :state';
+        $total_args[':state'] = $sid;
+        $latest_sql .= ' AND t.state = :state';
+        $latest_args[':state'] = $sid;
+        $oldest_sql .= ' AND t.state = :state';
+        $oldest_args[':state'] = $sid;
       }
       $latest_sql .= ' ORDER BY last_update DESC';
       $oldest_sql .= ' ORDER BY last_update ASC';
 
-      $total = db_result(db_query($total_sql, $total_args));
-      $latest = db_fetch_object(db_query_range($latest_sql, $latest_args, 0, 1));
-      $oldest = db_fetch_object(db_query_range($oldest_sql, $oldest_args, 0, 1));
+      $total = db_query($total_sql, $total_args)->fetchField();
+      $latest = db_query_range($latest_sql, 0, 1, $latest_args)->fetch();
+      $oldest = db_query_range($oldest_sql, 0, 1, $oldest_args)->fetch();
 
-      $latest_alert = _support_overview_alert($latest->last_update);
-      $oldest_alert = _support_overview_alert($oldest->last_update);
-      $alerts = "$latest_alert $oldest_alert";
+      if (!empty($latest->nid)) {
+        $latest_alert = _support_overview_alert($latest->last_update);
+        $oldest_alert = _support_overview_alert($oldest->last_update);
+        $alerts = "$latest_alert $oldest_alert";
 
-      $node = node_load(array('nid' => $latest->nid));
-      $latest_update = $latest->last_update ? t('most recent: !time, "!title"', array('!time' => format_interval(time() - $latest->last_update), '!title' => l($node->title, "node/$node->nid"))) : '';
-      if ($latest->last_update != $oldest->last_update) {
-        $node = node_load(array('nid' => $oldest->nid));
-        $oldest_update = $oldest->last_update ? t('oldest: !time, "!title"', array('!time' => format_interval(time() - $oldest->last_update), '!title' => l($node->title, "node/$node->nid"))) : '';
+        $node = node_load($latest->nid);
+        $latest_update = $latest->last_update ? t('most recent: !time, "!title"', array('!time' => format_interval(time() - $latest->last_update), '!title' => l($node->title, "node/$node->nid"))) : '';
+        if ($latest->last_update != $oldest->last_update) {
+          $node = node_load($oldest->nid);
+          $oldest_update = $oldest->last_update ? t('oldest: !time, "!title"', array('!time' => format_interval(time() - $oldest->last_update), '!title' => l($node->title, "node/$node->nid"))) : '';
+        }
+        else {
+          $oldest_update = '';
+        }
+        $rows[$current_row][] = t('!total !latest !oldest', array('!total' => "<span class='support-overview-total $state'>$total</span>", '!latest' => "<div class='support-overview-latest $state$latest_alert'>$latest_update</div>", '!oldest' => "<div class='support-overview-oldest $state$oldest_alert'>$oldest_update</div>"));
       }
       else {
-        $oldest_update = '';
+        $rows[$current_row][] = '0';
       }
-      $rows[$current_row][] = t('!total !latest !oldest', array('!total' => "<span class='support-overview-total $state'>$total</span>", '!latest' => "<div class='support-overview-latest $state$latest_alert'>$latest_update</div>", '!oldest' => "<div class='support-overview-oldest $state$oldest_alert'>$oldest_update</div>"));
 
       foreach ($enabled_priorities as $pid) {
         if ($pid && $sid) {
-          $total = db_result(db_query('SELECT COUNT(nid) FROM {support_ticket} WHERE client = %d AND state = %d AND priority = %d', $client->clid, $sid, $pid));
+          $total = db_query('SELECT COUNT(nid) FROM {support_ticket} WHERE client = :client AND state = :state AND priority = :priority', array(':client' => $client->clid, ':state' => $sid, ':priority' => $pid))->fetchField();
         }
         else if ($pid) {
-          $total = db_result(db_query('SELECT COUNT(nid) FROM {support_ticket} WHERE client = %d AND priority = %d', $client->clid, $pid));
+          $total = db_query('SELECT COUNT(nid) FROM {support_ticket} WHERE client = :client AND priority = :priority', array(':client' => $client->clid, ':priority' => $pid))->fetchField();
         }
         else {
-          $total = db_result(db_query('SELECT COUNT(nid) FROM {support_ticket} WHERE client = %d AND state = %d', $client->clid, $sid));
+          $total = db_query('SELECT COUNT(nid) FROM {support_ticket} WHERE client = :client AND state = :state', array(':client' => $client->clid, ':state' => $sid))->fetchField();
         }
         if ($total) {
           $priority = _support_priorities($pid);
@@ -172,47 +190,55 @@ function support_overview_summary() {
       $current_row++;
     }
     // Break down overview by who the ticket is assigned to
-    $args = array();
-    $query = 'SELECT DISTINCT(assigned) AS assigned FROM {support_ticket} WHERE client = %d';
-    $args[] = $client->clid;
+    $query = db_select('support_ticket')
+      ->distinct()
+      ->fields('support_ticket', array('assigned'))
+      ->condition('client', $client->clid)
+      ->orderBy('assigned', 'ASC');
 
     if (!isset($enabled_states[0])) {
-      $state_append = ' AND state IN(';
-      $state_append .= implode(', ', $enabled_states);
-      $state_append .= ')';
-      $query .= $state_append;
+      $query->condition('state', $enabled_states, 'IN');
     }
 
-    $query .= ' ORDER BY assigned ASC';
+    $result = $query->execute();
+    foreach ($result as $assigned) {
+      $account = user_load($assigned->assigned);
 
-    $result = db_query($query, $args);
-    while ($assigned = db_fetch_object($result)) {
-      $account = user_load(array('uid' => $assigned->assigned));
+      $total_sql = db_select('support_ticket')
+        ->condition('client', $client->clid)
+        ->condition('assigned', $assigned->assigned);
+      $total_sql->addExpression('COUNT(nid)');
 
-      $total_sql = 'SELECT COUNT(nid) FROM {support_ticket} WHERE client = %d AND assigned = %d';
-      $latest_sql = $oldest_sql = 'SELECT GREATEST(n.changed, l.last_comment_timestamp) AS last_update, n.nid FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid WHERE t.client = %d AND assigned = %d';
-      if (!empty($state_append)) {
-        $total_sql .= $state_append;
-        $latest_sql .= $state_append;
-        $oldest_sql .= $state_append;
+      $latest_sql = db_select('node', 'n');
+      $latest_sql->leftJoin('support_ticket', 't', 'n.nid = t.nid');
+      $latest_sql->innerJoin('node_comment_statistics', 'l', 'n.nid = l.nid');
+      $latest_sql->addExpression('GREATEST(n.changed, l.last_comment_timestamp)', 'last_update');
+      $latest_sql->addField('n', 'nid');
+      $latest_sql->condition('t.client', $client->clid);
+      $latest_sql->condition('assigned', $assigned->assigned);
+      $latest_sql->range(0, 1);
+
+      if (!isset($enabled_states[0])) {
+        $latest_sql->condition('state', $enabled_states, 'IN');
       }
-      $total_args = $latest_args = $oldest_args = array($client->clid, $assigned->assigned);
 
-      $latest_sql .= ' ORDER BY last_update DESC';
-      $oldest_sql .= ' ORDER BY last_update ASC';
+      $oldest_sql = clone($latest_sql);
+      $latest_sql->orderBy('last_update', 'DESC');
+      $oldest_sql->orderBy('last_update', 'ASC');
 
-      $total = db_result(db_query($total_sql, $total_args));
-      $latest = db_fetch_object(db_query_range($latest_sql, $latest_args, 0, 1));
-      $oldest = db_fetch_object(db_query_range($oldest_sql, $oldest_args, 0, 1));
+
+      $total = $total_sql->execute()->fetchField();
+      $latest = $latest_sql->execute()->fetch();
+      $oldest = $oldest_sql->execute()->fetch();
 
       $latest_alert = _support_overview_alert($latest->last_update);
       $oldest_alert = _support_overview_alert($oldest->last_update);
       $alerts = "$latest_alert $oldest_alert";
 
-      $node = node_load(array('nid' => $latest->nid));
+      $node = node_load($latest->nid);
       $latest_update = $latest->last_update ? t('most recent: !time, "!title"', array('!time' => format_interval(time() - $latest->last_update), '!title' => l($node->title, "node/$node->nid"))) : '';
       if ($latest->last_update != $oldest->last_update) {
-        $node = node_load(array('nid' => $oldest->nid));
+        $node = node_load($oldest->nid);
         $oldest_update = $oldest->last_update ? t('oldest: !time, "!title"', array('!time' => format_interval(time() - $oldest->last_update), '!title' => l($node->title, "node/$node->nid"))) : '';
       }
       else {
@@ -229,14 +255,20 @@ function support_overview_summary() {
       $rows[$current_row][] = t('!total !latest !oldest', array('!total' => "<span class='support-overview-total $state'>$total</span>", '!latest' => "<div class='support-overview-latest $state$latest_alert'>$latest_update</div>", '!oldest' => "<div class='support-overview-oldest $state$oldest_alert'>$oldest_update</div>"));
 
       foreach ($enabled_priorities as $pid) {
-        $query = 'SELECT COUNT(nid) FROM {support_ticket} WHERE client = %d AND assigned = %d';
-        $args = array($client->clid, $assigned->assigned);
+        $query = db_select('support_ticket')
+          ->condition('client', $client->clid)
+          ->condition('assigned', $assigned->assigned);
+        $query->addExpression('COUNT(nid)');
+
         if ($pid) {
-          $query .= ' AND priority = %d';
-          $args[] = $pid;
+          $query->condition('priority', $pid);
         }
-        $query .= $state_append;
-        $total = db_result(db_query($query, $args));
+
+        if (!isset($enabled_states[0])) {
+          $query->condition('state', $enabled_states, 'IN');
+        }
+
+        $total = $query->execute()->fetchField();
         if ($total) {
           $priority = _support_priorities($pid);
         }
@@ -250,7 +282,7 @@ function support_overview_summary() {
     }
 
     $output .= "<a href='" . url("support/$client->path") . "'><h3 class='support-overview-client-name $alerts'>" . $client->name . '</h3></a>';
-    $output .= theme('table', $header, $rows);
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
   }
   $output .= '</div>';
   return $output;
@@ -405,7 +437,7 @@ function support_overview_user($type, &$edit, &$account) {
        ((user_access('create tickets', $account) && $user->uid == $account->uid)
          || user_access('administer support'))) {
       $items = array(l(t('Overview'), "support/overview/user/$account->uid", array('attributes' => array('title' => t("View overview of @username's tickets.", array('@username' => check_plain($account->name)))))));
-      $account->content['summary']['support']['#value'] .= theme('item_list', $items);
+      $account->content['summary']['support']['#value'] .= theme('item_list', array('items' => $items));
     }
   }
 }
@@ -444,43 +476,49 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
   $current_row = 0;
   foreach ($enabled_clients as $clid) {
     if (isset($all_clients[$clid])) {
-      $total_sql = 'SELECT COUNT(t.nid) FROM {support_ticket} t WHERE t.client = %d AND t.assigned = %d';
-      $total_args = array($clid, $account->uid);
+      $total_sql = db_select('support_ticket')
+        ->condition('client', $clid)
+        ->condition('assigned', $account->uid);
+      $total_sql->addExpression('COUNT(nid)');
 
       $enabled_states = variable_get('support_overview_states', array());
       if (!isset($enabled_states[0])) {
-        $state_append = ' AND state IN(';
-        $state_append .= implode(', ', $enabled_states);
-        $state_append .= ')';
-        $total_sql .= $state_append;
+        $total_sql->condition('state', $enabled_states, 'IN');
       }
 
-      $count = db_result(db_query($total_sql, $total_args));
+      $count = $total_sql->execute()->fetchField();
       if ($count) {
         $client = support_client_load($clid);
         $rows[$current_row][] = '<a href="' . url("support/$client->path") . '" class="support-overview-title">' . $client->name . '</a>';
 
-        $latest_sql = $oldest_sql = 'SELECT GREATEST(n.changed, l.last_comment_timestamp) AS last_update, n.nid FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid WHERE t.client = %d AND assigned = %d';
+        $latest_sql = db_select('node', 'n');
+        $latest_sql->leftJoin('support_ticket', 't', 'n.nid = t.nid');
+        $latest_sql->innerJoin('node_comment_statistics', 'l', 'n.nid = l.nid');
+        $latest_sql->addExpression('GREATEST(n.changed, l.last_comment_timestamp)', 'last_update');
+        $latest_sql->addField('n', 'nid');
+        $latest_sql->condition('t.client', $clid);
+        $latest_sql->condition('assigned', $account->uid);
+        $latest_sql->range(0, 1);
 
-        if (!empty($state_append)) {
-          $latest_sql .= $state_append;
-          $oldest_sql .= $state_append;
+        if (!isset($enabled_states[0])) {
+          $latest_sql->condition('state', $enabled_states, 'IN');
         }
-        $args = array($clid, $account->uid);
 
-        $latest_sql .= ' ORDER BY last_update DESC';
-        $latest = db_fetch_object(db_query_range($latest_sql, $args, 0, 1));
+        $oldest_sql = clone($latest_sql);
+        $latest_sql->orderBy('last_update', 'DESC');
+        $oldest_sql->orderBy('last_update', 'ASC');
+
+        $latest = $latest_sql->execute()->fetch();
         $latest_alert = _support_overview_alert($latest->last_update);
 
-        $node = node_load(array('nid' => $latest->nid));
+        $node = node_load($latest->nid);
         $latest_update = t('most recent: !time ago, "!title"', array('!time' => format_interval(time() - $latest->last_update), '!title' => l($node->title, "node/$latest->nid")));
 
         if ($count > 1) {
-          $oldest_sql .= ' ORDER BY last_update ASC';
-          $oldest = db_fetch_object(db_query_range($oldest_sql, $args, 0, 1));
+          $oldest = $oldest_sql->execute()->fetch();
           $oldest_alert = _support_overview_alert($oldest->last_update);
 
-          $node = node_load(array('nid' => $oldest->nid));
+          $node = node_load($oldest->nid);
           $oldest_update = t('oldest: !time ago, "!title"', array('!time' => format_interval(time() - $oldest->last_update), '!title' => l($node->title, "node/$oldest->nid")));
         }
         else {
@@ -492,7 +530,7 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
       $current_row++;
     }
   }
-  $output .= theme('table', $header, $rows);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
   if ($page) {
     $output .= '<div class="support-overview-link">' . l($all ? t('selected clients') : t('all clients'), $all ? "support/overview/user/$account->uid" : "support/overview/user/$account->uid/all") . '</div>';
     $output .= '</div>';
@@ -513,29 +551,31 @@ function support_overview_page_users($all = FALSE) {
     $all = TRUE;
   }
 
-  $args = array(implode(',', $enabled_clients));
   $enabled_roles = variable_get('support_overview_roles', array());
+
+  $sql = db_select('support_ticket', 't')
+    ->fields('t', array('assigned'))
+    ->distinct()
+    ->condition('t.client', $enabled_clients, 'IN');
+  $sql->join('users', 'u', 't.assigned = u.uid');
+  $sql->join('users_roles', 'r', 'u.uid = r.uid');
+  $sql->orderBy('u.name', 'ASC');
+
   if (!empty($enabled_roles)) {
-    $sql = 'SELECT DISTINCT(t.assigned) FROM {support_ticket} t LEFT JOIN {users} u ON t.assigned = u.uid LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE t.client IN (%s) AND t.assigned != 0 AND r.rid IN (%s)';
-    $args[] = implode(',', $enabled_roles);
+    $sql->condition('r.rid', $enabled_roles, 'IN');
   }
   else {
-    $sql = 'SELECT DISTINCT(t.assigned) FROM {support_ticket} t LEFT JOIN {users_roles} u ON t.assigned = u.uid WHERE t.client IN (%s) AND t.assigned != 0';
+    $sql->condition('t.assigned', 0, '!=');
   }
 
   $enabled_states = variable_get('support_overview_states', array());
-  if (!isset($enabled_states[0])) {
-    $state_append = ' AND state IN(';
-    $state_append .= implode(', ', $enabled_states);
-    $state_append .= ')';
-    $sql .= $state_append;
+  if (!isset($enabled_states[0]) && !empty($enabled_states)) {
+    $sql->condition('state', $enabled_states, 'IN');
   }
 
-  $sql .= ' ORDER BY u.name ASC';
-
-  $result = db_query($sql, $args);
-  while ($uid = db_result($result)) {
-    $account = user_load(array('uid' => $uid));
+  $result = $sql->execute();
+  foreach ($result as $uid) {
+    $account = user_load($uid);
     $output .= "<a href='" . url("support/overview/user/$uid") . "'><h3>$account->name</h3></a>";
     $output .= support_overview_page_user($account, $all, FALSE);
   }

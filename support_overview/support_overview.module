@@ -444,6 +444,7 @@ function support_overview_user($type, &$edit, &$account) {
 
 function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
   global $user;
+  $output = '';
 
   if ($page) {
     drupal_add_css(drupal_get_path('module', 'support_overview') . '/support-overview.css');
@@ -514,6 +515,7 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
         $node = node_load($latest->nid);
         $latest_update = t('most recent: !time ago, "!title"', array('!time' => format_interval(time() - $latest->last_update), '!title' => l($node->title, "node/$latest->nid")));
 
+        $oldest_alert = '';
         if ($count > 1) {
           $oldest = $oldest_sql->execute()->fetch();
           $oldest_alert = _support_overview_alert($oldest->last_update);
@@ -525,7 +527,7 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
           $oldest_update = '';
         }
 
-        $rows[$current_row][] = t('!total !latest !oldest', array('!total' => "<span class='support-overview-total'>$count</span>", '!latest' => "<div class='support-overview-latest $latest_alert'>$latest_link $latest_update</div>", '!oldest' => "<div class='support-overview-oldest $oldest_alert'>$oldest_link $oldest_update</div>"));
+        $rows[$current_row][] = t('!total !latest !oldest', array('!total' => "<span class='support-overview-total'>$count</span>", '!latest' => "<div class='support-overview-latest $latest_alert'>$latest_update</div>", '!oldest' => "<div class='support-overview-oldest $oldest_alert'>$oldest_update</div>"));
       }
       $current_row++;
     }
@@ -572,9 +574,9 @@ function support_overview_page_users($all = FALSE) {
   if (!isset($enabled_states[0]) && !empty($enabled_states)) {
     $sql->condition('state', $enabled_states, 'IN');
   }
-
   $result = $sql->execute();
-  foreach ($result as $uid) {
+  foreach ($result as $row) {
+    $uid = $row->assigned;
     $account = user_load($uid);
     $output .= "<a href='" . url("support/overview/user/$uid") . "'><h3>$account->name</h3></a>";
     $output .= support_overview_page_user($account, $all, FALSE);

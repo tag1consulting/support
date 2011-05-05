@@ -2107,39 +2107,52 @@ function support_search_validate($form, &$form_state) {
 }
 
 function support_search_form_submit($form, &$form_state) {
-  $form_id = $form['form_id']['#value'];
-  $form_state['redirect'] = 'search/support/' . trim($form_state['values'][$form_id]);
+  $keys = $form_state['values']['processed_keys'];
+  $form_state['redirect'] = 'search/support/' . $keys;
+  return;
 }
 
 /**
- * Imeplementation of hook_db_rewrite_sql().
- * Optionally remove support tickets from content search.
- *
- * TODO
- * Migrate to D7 the body of the function
- *
+ * Implementation of hook_query_alter().
  */
 function support_query_alter(QueryAlterableInterface $query) {
-  /*
-    global $user;
-    if (variable_get('support_remove_tickets', TRUE) && $query == '' && $primary_table == 'n' && $primary_field = 'nid' && empty($args)) {
-    return array('where' => " n.type != 'support_ticket'");
+  if ($query->hasTag('node_access') && !$query->hasTag('support_search')) {
+    $tables = $query->getTables();
+    $nodeAlias = FALSE;
+    $ticketAlias = FALSE;
+    foreach ($tables as $alias => $tableinfo) {
+      if ($tableinfo['table'] == 'node') {
+        $nodeAlias = $alias;
+        global $user;
+        if (variable_get('support_remove_tickets', TRUE)) {
+          $query->condition("$alias.type", 'support_ticket', '<>');
+        }
+      }
+      if ($tableinfo['table'] == 'support_ticket') {
+        $ticketAlias = $alias;
+      }
     }
-    if ($primary_table == 'n' AND $primary_field == 'nid' && !strpos($query, '{support_ticket}')) {
-    $clients = support_search_available_clients();
-    if (!empty($clients)) {
-    if (!user_access('view other users tickets') && !user_access('administer support')) {
-    return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' ((st.client IN (' . implode(',', $clients) . ') AND n.uid = ' . $user->uid . ') OR st.client IS NULL)');
+
+    if ($nodeAlias && $ticketAlias === FALSE) {
+      $clients = support_search_available_clients();
+      if (!empty($clients)) {
+        if (!user_access('view other users tickets') && !user_access('administer support')) {
+          $query->leftJoin('support_ticket', 'st', "st.nid = $nodeAlias.nid");
+          $query->condition(db_or()
+            ->condition(db_and()
+              ->condition("st.client", $clients)
+              ->condition("$nodeAlias.uid", $user->uid))
+            ->condition("st.client", null));
+        }
+        else {
+          $query->leftJoin('support_ticket', 'st', "st.nid = $nodeAlias.nid");
+          $query->condition(db_or()
+            ->condition("st.client", $clients)
+            ->condition("st.client", null));
+        }
+      }
     }
-    else {
-    return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' (st.client IN (' . implode(',', $clients) . ')  OR st.client IS NULL)');
-    }
-    }
-    else {
-    return array('where' => " n.type != 'support_ticket'");
-    }
-    }
-   */
+  }
 }
 
 /**
@@ -2165,88 +2178,62 @@ function support_search_available_clients() {
  *
  */
 
-function support_search_execute($keys, $conditions) {
-  $arguments = array();
+function support_search_execute($keys = NULL, $conditions = NULL) {
+  // Build matching conditions
+  $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
+  $query->join('node', 'n', 'n.nid = i.sid');
+  $query
+    ->condition('n.status', 1)
+    ->condition('n.type', 'support_ticket')
+    ->addTag('node_access')
+    ->addTag('support_search') // Disable hiding support tickets because we're handling access ourselves.
+    ->searchExpression($keys, 'node');
 
-  // clients
-  if ($client = search_expression_extract($keys, 'client')) {
-    $clients = array();
-    foreach (explode(',', $client) as $c) {
-      $clients[] = "jt.client = %d";
-      $arguments[] = $c;
-    }
-    $conditions .= ' AND (' . implode(' OR ', $clients) . ')';
-    $keys = search_expression_insert($keys, 'client');
-  }
-  // states
-  if ($state = search_expression_extract($keys, 'state')) {
-    $states = array();
-    foreach (explode(',', $state) as $s) {
-      $states[] = "jt.state = %d";
-      $arguments[] = $s;
-    }
-    $conditions .= ' AND (' . implode(' OR ', $states) . ')';
-    $keys = search_expression_insert($keys, 'state');
-  }
-  // priorities
-  if ($priority = search_expression_extract($keys, 'priority')) {
-    $priorities = array();
-    foreach (explode(',', $priority) as $p) {
-      $priorities[] = "jt.priority = %d";
-      $arguments[] = $p;
-    }
-    $conditions .= ' AND (' . implode(' OR ', $priorities) . ')';
-    $keys = search_expression_insert($keys, 'priority');
-  }
+  $query->leftJoin('support_ticket', 'st', 'st.nid = n.nid');
 
-  $keys = search_expression_insert($keys, 'type');
+  $query->setOption('client', 'st.client');
+  $query->setOption('state', 'st.state');
+  $query->setOption('priority', 'st.priority');
+
   $clients = support_search_available_clients();
   if (!empty($clients)) {
-    $join .= " LEFT JOIN {support_ticket} jt ON n.nid = jt.nid";
-    $conditions .= ' AND jt.client IN (' . implode(',', support_search_available_clients()) . ')';
+    $query->condition('st.client', support_search_available_clients());
   }
   else {
     // User can not access any tickets
-    $conditions .= " AND n.type != 'support_ticket'";
+    $query->condition('n.type', 'support_ticket', '<>');
   }
   if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
-    $conditions .= " AND n.uid = $user->uid";
+    $query->condition('n.uid', $user->uid);
   }
 
-  $query = db_select('search_index', 'i')->extend('SearchQuery')->extend('PagerDefault');
-  $query->join('node', 'n', 'n.nid = i.sid');
-  $query
-      ->condition('n.status', 1)
-      ->condition('n.type', 'support_ticket')
-      ->addTag('node_access')
-      ->searchExpression($keys, 'node');
+  // Only continue if the first pass query matches.
+  if (!$query->executeFirstPass()) {
+    return array();
+  }
 
   // Add the ranking expressions.
   _node_rankings($query);
 
-  // Add additional modifiers here...
-  $find = $query
-      ->limit(10)
-      ->execute();
-
   // Load results.
+  $find = $query
+    ->limit(10)
+    ->execute();
   $results = array();
   foreach ($find as $item) {
     // Build the node body.
     $node = node_load($item->sid);
-    $node->build_mode = NODE_BUILD_SEARCH_RESULT;
-    $node = node_build_content($node, FALSE, FALSE);
-    $node->body = drupal_render($node->content);
+    $build = node_view($node, 'search_result');
+    unset ($build['#theme']);
+    $node->rendered = drupal_render($build);
 
     // Fetch comments for snippet.
-    $node->body .= module_invoke('comment', 'nodeapi', $node, 'update index');
-    // Fetch terms for snippet.
-    $node->body .= module_invoke('taxonomy', 'nodeapi', $node, 'update index');
+    $node->rendered .= ' ' . module_invoke('comment', 'node_update_index', $node);
 
     $extra = module_invoke_all('node_search_result', $node);
-    if (!is_array($extra)) {
-      $extra = array();
-    }
+
+    $uri = entity_uri('node', $node);
+
     if (sizeof($clients) > 1) {
       $title = _support_client($node->client) . ': ' . $node->title;
     }
@@ -2262,15 +2249,16 @@ function support_search_execute($keys, $conditions) {
     $extra[] = _support_priorities($node->priority);
     $clients = support_search_available_clients();
     $results[] = array(
-      'link' => url('node/' . $item->sid, array('absolute' => TRUE)),
+      'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
       'type' => check_plain(node_type_get_name($node)),
       'title' => $title,
       'user' => theme('username', array('account' => $node)),
       'date' => $node->changed,
       'node' => $node,
       'extra' => $extra,
-      'score' => $item->score / $total,
-      'snippet' => search_excerpt($keys, $node->body),
+      'score' => $item->calculated_score,
+      'snippet' => search_excerpt($keys, $node->rendered),
+      'language' => $node->language,
     );
   }
   return $results;

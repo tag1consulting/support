@@ -112,10 +112,10 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
         break;
     }
 
-    $query->fields('n', array('nid', ' title', 'type', 'changed', 'uid'))
+    $query->fields('n', array('nid', 'title', 'type', 'changed', 'uid'))
       ->fields('u', array('name'))
       ->fields('s', array('comment_count'))
-      ->fields('t', array('client', ' state', 'priority', 'assigned'))
+      ->fields('t', array('client', 'state', 'priority', 'assigned'))
       ->distinct()
       ->addExpression('GREATEST(n.changed, s.last_comment_timestamp)', 'last_updated');
 

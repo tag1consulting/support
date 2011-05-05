@@ -2313,7 +2313,7 @@ function support_status_form(&$form_state, $edit, $title) {
     $node->assigned = $autoassign;
   }
   if ($cid) {
-    $comment = db_select('support_ticket_comment','c')->condition('c.cid',$cid)->fields('c')->execute()->fetchObject();
+    $comment = db_select('support_ticket_comment', 'c')->condition('c.cid', $cid)->fields('c')->execute()->fetchObject();
     if ($comment->state && $comment->priority) {
       $node->state = $comment->state;
       $node->priority = $comment->priority;

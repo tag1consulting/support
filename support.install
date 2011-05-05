@@ -471,6 +471,5 @@ function support_uninstall() {
     node_delete($node->nid);
   }
 */
-  drupal_uninstall_schema('support');
   node_type_delete('support_ticket');
 }

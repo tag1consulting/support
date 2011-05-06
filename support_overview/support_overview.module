@@ -88,7 +88,7 @@ function support_overview_summary() {
   }
   $all_clients = _support_available_clients();
   $clients = array();
-  foreach ($enabled_clients as $clid) {
+  foreach ($enabled_clients as $clid => $name) {
     // Don't display clients user doesn't have permission to see
     if (isset($all_clients[$clid])) {
       $clients[$clid] = support_client_load($clid);

@@ -1012,8 +1012,8 @@ function _support_comment_insert_update2($node, $comment) {
       if (!$uid || $user->uid == $uid) {
         continue;
       }
-      $notify = "notify_$uid";
-      support_subscribe_user($node->nid, $uid, $comment->$notify);
+      $notify = "notify-$uid";
+      support_subscribe_user($node->nid, $uid, isset($comment->{$notify}) ? $comment->{$notify} : 0);
     }
   }
 }

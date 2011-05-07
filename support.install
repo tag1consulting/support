@@ -477,6 +477,7 @@ function support_uninstall() {
 /**
  * Convert support mail variables to HTML.
  */
+/*
 function support_update_7000() {
   // Note: Other modules have to fix up their own variables.
   $vars = array(
@@ -494,3 +495,4 @@ function support_update_7000() {
     }
   }
 }
+*/

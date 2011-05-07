@@ -196,8 +196,9 @@ function support_overview_summary() {
       ->condition('client', $client->clid)
       ->orderBy('assigned', 'ASC');
 
-    if (!isset($enabled_states[0])) {
-      $query->condition('state', $enabled_states, 'IN');
+    // [0] == 'All'
+    if (!empty($enabled_states) && !isset($enabled_states[0])) {
+      $query->condition('state', $enabled_states);
     }
 
     $result = $query->execute();
@@ -218,8 +219,9 @@ function support_overview_summary() {
       $latest_sql->condition('assigned', $assigned->assigned);
       $latest_sql->range(0, 1);
 
-      if (!isset($enabled_states[0])) {
-        $latest_sql->condition('state', $enabled_states, 'IN');
+      // [0] == 'All'
+      if (!empty($enabled_states) && !isset($enabled_states[0])) {
+        $latest_sql->condition('state', $enabled_states);
       }
 
       $oldest_sql = clone($latest_sql);
@@ -264,8 +266,9 @@ function support_overview_summary() {
           $query->condition('priority', $pid);
         }
 
-        if (!isset($enabled_states[0])) {
-          $query->condition('state', $enabled_states, 'IN');
+        // [0] == 'All'
+        if (!empty($enabled_states) && !isset($enabled_states[0])) {
+          $query->condition('state', $enabled_states);
         }
 
         $total = $query->execute()->fetchField();
@@ -483,8 +486,9 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
       $total_sql->addExpression('COUNT(nid)');
 
       $enabled_states = variable_get('support_overview_states', array());
-      if (!isset($enabled_states[0])) {
-        $total_sql->condition('state', $enabled_states, 'IN');
+      // [0] == 'All'
+      if (!empty($enabled_states) && !isset($enabled_states[0])) {
+        $total_sql->condition('state', $enabled_states);
       }
 
       $count = $total_sql->execute()->fetchField();
@@ -501,8 +505,9 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
         $latest_sql->condition('assigned', $account->uid);
         $latest_sql->range(0, 1);
 
-        if (!isset($enabled_states[0])) {
-          $latest_sql->condition('state', $enabled_states, 'IN');
+        // [0] == 'All'
+        if (!empty($enabled_states) && !isset($enabled_states[0])) {
+          $latest_sql->condition('state', $enabled_states);
         }
 
         $oldest_sql = clone($latest_sql);
@@ -571,8 +576,9 @@ function support_overview_page_users($all = FALSE) {
   }
 
   $enabled_states = variable_get('support_overview_states', array());
-  if (!isset($enabled_states[0]) && !empty($enabled_states)) {
-    $sql->condition('state', $enabled_states, 'IN');
+  // [0] == 'All'
+  if (!empty($enabled_states) && !isset($enabled_states[0])) {
+    $sql->condition('state', $enabled_states);
   }
   $result = $sql->execute();
   foreach ($result as $row) {

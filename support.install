@@ -489,7 +489,7 @@ function support_update_7000() {
     'support_mail_ticket_new_subject',
   );
   foreach ($vars as $var) {
-    $fixed = str_replace(array("\r\n", "\n\r", "\n", "\r"), '<br />', variable_get($var, ''));
+    $fixed = str_replace(array("\r\n", "\n\r", "\n", "\r"), "<br />\n", variable_get($var, ''));
     if (!empty($fixed)) {
       variable_set($var, $fixed);
     }

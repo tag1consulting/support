@@ -1836,7 +1836,7 @@ function support_subscribe_user($nid, $uid, $active = 1) {
   // If this user doesn't have permission to receive ticket updates,
   // be sure they are unsubscribed.
   if (support_access_clients($client, $account)) {
-    $active_allowed = 1;
+    $active_allowed = $active;
   }
   db_merge('support_assigned')
     ->key(array(

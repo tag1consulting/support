@@ -473,3 +473,24 @@ function support_uninstall() {
 */
   node_type_delete('support_ticket');
 }
+
+/**
+ * Convert support mail variables to HTML.
+ */
+function support_update_7000() {
+  // Note: Other modules have to fix up their own variables.
+  $vars = array(
+    'support_mail_ticket_comment_new_body',
+    'support_mail_ticket_comment_new_subject',
+    'support_mail_ticket_deny_body',
+    'support_mail_ticket_deny_subject',
+    'support_mail_ticket_new_body',
+    'support_mail_ticket_new_subject',
+  );
+  foreach ($vars as $var) {
+    $fixed = str_replace(array("\r\n", "\n\r", "\n", "\r"), '<br />', variable_get($var, ''));
+    if (!empty($fixed)) {
+      variable_set($var, $fixed);
+    }
+  }
+}

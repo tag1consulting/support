@@ -1,3 +1,7 @@
+May 7th, 2011
+ - Fixed subscription.
+ - Added update to convert mail variables to html.
+
 February 20th, 2011
  - Initial conversion to Drupal 7, using Coder module.
 

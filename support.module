@@ -1831,33 +1831,22 @@ function support_subscribe_user($nid, $uid, $active = 1) {
   $clid = db_query('SELECT client FROM {support_ticket} WHERE nid = :nid', array(':nid' => $nid))->fetchField();
   $client = support_client_load($clid);
   $account = user_load($uid);
+
+  $active_allowed = 0;
+  // If this user doesn't have permission to receive ticket updates,
+  // be sure they are unsubscribed.
   if (support_access_clients($client, $account)) {
-    $is_assigned = db_select('support_assigned', 'a')
-      ->condition('uid', $uid)
-      ->condition('nid', $nid)
-      ->fields('a')
-      ->execute()->rowCount();
-    if ($is_assigned) {
-      $update = db_update('support_assigned')
-        ->fields(array(
-          'active' => $active,
-        ))
-        ->condition('uid', $uid)
-        ->condition('nid', $nid)
-        ->execute();
-    }
+    $active_allowed = 1;
   }
-  else {
-    // If this user doesn't have permission to receive ticket updates,
-    // be sure they are unsubscribed.
-    db_update('support_assigned')
-      ->fields(array(
-        'active' => 0,
-      ))
-      ->condition('uid', $uid)
-      ->condition('nid', $nid)
-      ->execute();
-  }
+  db_merge('support_assigned')
+    ->key(array(
+      'nid' => $nid,
+      'uid' => $uid,
+    ))
+    ->fields(array(
+      'active' => $active_allowed,
+    ))
+    ->execute();
 }
 
 /**

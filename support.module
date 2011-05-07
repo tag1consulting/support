@@ -1417,10 +1417,10 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!mailto' => $account->mail,
     '!date' => format_date(REQUEST_TIME, 'medium', '', NULL, $language->language),
     '!ticket_subject' => check_plain($node->title),
-    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') . "<br />" : check_markup($node->body[$node->language][0]['value']) . _support_mail_list_attachments($node, $comment),
+    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') . "<br />\n" : check_markup($node->body[$node->language][0]['value']) . _support_mail_list_attachments($node, $comment),
     '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
     '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
-    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') . "<br />" : check_markup(isset($comment->comment_body[$comment->language][0]) ? $comment->comment_body[$comment->language][0]['value'] : '') . _support_mail_list_attachments($node, $comment),
+    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') . "<br />\n" : check_markup(isset($comment->comment_body[$comment->language][0]) ? $comment->comment_body[$comment->language][0]['value'] : '') . _support_mail_list_attachments($node, $comment),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) . ' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) . ' -> ' : '') . _support_priorities($node->priority),
     '!assigned_username' => !empty($assigned) ? $assigned->name : '',
@@ -1450,7 +1450,7 @@ function _support_mail_list_attachments($node, $comment) {
   //    $attachments[] = url($file['filepath'], array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
   //  }
   //}
-  return (!empty($attachments) ? "<br />" . t('Attachments:') . "<br />" . implode("<br />", $attachments) : '');
+  return (!empty($attachments) ? "<br />\n" . t('Attachments:') . "<br />\n" . implode("<br />\n", $attachments) : '');
 }
 
 /**
@@ -1505,11 +1505,11 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
 function _support_mail_text_default($key) {
   $info = array(
     'ticket_deny_subject' => 'Support ticket creation denied',
-    'ticket_deny_body' => "System message<br /><br />You have tried to create a support ticket on the!site site. The creation of the ticket has been cancelled since the e-mail address you sent the message from is not registered at our site.<br /><br />You have to be a registered user to be able to create support tickets via mail.<br /><br />Your feedback is important to us so please register at!uri_login and try again.<br /><br />!site Team",
+    'ticket_deny_body' => "System message<br />\n<br />\n\nYou have tried to create a support ticket on the!site site. The creation of the ticket has been cancelled since the e-mail address you sent the message from is not registered at our site.<br />\n<br />\nYou have to be a registered user to be able to create support tickets via mail.<br />\n<br />\nYour feedback is important to us so please register at!uri_login and try again.<br />\n<br />\n!site Team",
     'ticket_new_subject' => '!key !ticket_subject',
-    'ticket_new_body' => "!update_username has created the ticket '!ticket_subject':<br />!ticket_url<br /><br />State:!state<br />Priority:!priority<br /><br />!reply:<br />!update_url<br /><br />Ticket text:<br />------------------------------<br />!ticket_body<br />------------------------------<br /><br />Unsubscribe from this ticket:<br />!unsubscribe_ticket<br /><br />Unsubscribe from all tickets:<br />!unsubscribe_all",
+    'ticket_new_body' => "!update_username has created the ticket '!ticket_subject':<br />\n!ticket_url<br />\n<br />\nState:!state<br />\nPriority:!priority<br />\n<br />\n!reply:<br />\n!update_url<br />\n<br />\nTicket text:<br />\n------------------------------<br />\n!ticket_body<br />\n------------------------------<br />\n<br />\nUnsubscribe from this ticket:<br />\n!unsubscribe_ticket<br />\n<br />\nUnsubscribe from all tickets:<br />\n!unsubscribe_all",
     'ticket_comment_new_subject' => '!key !ticket_subject',
-    'ticket_comment_new_body' => "!update_username has updated the ticket '!ticket_subject':<br />!ticket_url<br /><br />State:!state<br />Priority:!priority<br /><br />!reply:<br />!update_url<br /><br />Update text:<br />------------------------------<br />!update<br />------------------------------<br /><br />Unsubscribe from this ticket:<br />!unsubscribe_ticket<br /><br />Unsubscribe from all tickets:<br />!unsubscribe_all",
+    'ticket_comment_new_body' => "!update_username has updated the ticket '!ticket_subject':<br />\n!ticket_url<br />\n<br />\nState:!state<br />\nPriority:!priority<br />\n<br />\n!reply:<br />\n!update_url<br />\n<br />\nUpdate text:<br />\n------------------------------<br />\n!update<br />\n------------------------------<br />\n<br />\nUnsubscribe from this ticket:<br />\n!unsubscribe_ticket<br />\n<br />\nUnsubscribe from all tickets:<br />\n!unsubscribe_all",
   );
   drupal_alter('support_mail_text_default', $info);
   if (isset($key)) {

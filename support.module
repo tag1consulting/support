@@ -247,7 +247,7 @@ function support_menu() {
     'title' => 'Fetch mail',
     'type' => MENU_CALLBACK,
     'page callback' => 'support_client_fetch',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );

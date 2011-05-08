@@ -1080,8 +1080,6 @@ function support_comment_delete($comment) {
     $node = node_load($comment->nid);
   }
   if ($node->type == 'support_ticket') {
-    // TODO Please review the conversion of this statement to the D7 database API syntax.
-    /* db_query('DELETE FROM {support_ticket_comment} WHERE cid = %d', $comment->cid) */
     db_delete('support_ticket_comment')
       ->condition('cid', $comment->cid)
       ->execute();
@@ -1197,10 +1195,11 @@ function support_mail($key, &$message, $params) {
   if ($client->integrate_email) {
     // Add a string allowing the support module to try and strip previously
     // quoted ticket notifications from emailed replies.
-    $array = explode("\n", $message['body']);
+    // @@@ TODO This is probabaly not sane in D7.
+    $array = explode("\n", $message['body'][0]);
     $length = sizeof($array);
     $md5 = md5($length);
-    $message['body'] .= "\n\n[$length:$md5]\n";
+    $message['body'][0] .= "\n\n[$length:$md5]\n";
   }
 
   // We generate message ids based on comment cids and support nids.
@@ -1582,21 +1581,14 @@ function support_save_message($message, $client) {
     if (isset($message['suppress'])) {
       $comment->suppress = $message['suppress'];
     }
+    if (isset($message['_support_extra_fields'])) {
+      foreach ($message['_support_extra_fields'] as $k => $v) {
+        $comment->{$k} = $v;
+      }
+    }
 
     comment_save($comment);
 
-    // TODO
-    // It seems http://drupal.org/project/comment_upload has no D7 port yet?
-    //  // convert indivudal files to arrays to work with the comment_upload module
-    //  foreach ($comment['files'] as $fid => $file) {
-    //   $comment['files'][$fid] = (array) $file;
-    //  }
-    //  if (isset($message['_support_extra_fields'])) {
-    //   foreach ($message['_support_extra_fields'] as $k => $v) {
-    //  $comment[$k] = $v;
-    //   }
-    //  }
-    //
     // Add an entry to the watchdog log.
     watchdog('content', 'Comment: added %subject.', array('%subject' => $comment->subject), WATCHDOG_NOTICE, l(t('view'), 'node/' . $comment->nid, array('fragment' => 'comment-' . $comment->cid)));
     _comment_update_node_statistics($comment->nid);
@@ -1606,13 +1598,26 @@ function support_save_message($message, $client) {
     return TRUE;
   }
   else if (is_object($account)) {
-    $node = new stdClass();
     // Create new ticket if none matches and valid from address.
+
+    // Create stub node.
+    $node = (object) array(
+      'uid' => $account->uid,
+      'name' => (isset($account->name) ? $account->name : ''),
+      'type' => 'support_ticket',
+      'language' => LANGUAGE_NONE, // $account->language
+    );
     $node->title = $message['subject'];
-    $node->body = $message['body'];
-    $node->type = 'support_ticket';
-    $node->log = t('Support ticket created from email.');
-    $node->uid = $account->uid;
+
+    node_object_prepare($node);
+
+    $node->body[LANGUAGE_NONE][] = array(
+      //'summary' => '',
+      'value' => $message['body'],
+      'format' => filter_default_format($account),
+    );
+    $node->log = 'Support ticket created from email.';
+    $node->uid = $account->uid; // Set uid again because node_object_prepare likes to mess with it.
     $node->message_id = $message_id;
     $node->state = isset($message['state']) ? $message['state'] : _support_state_default();
     $node->priority = isset($message['priority']) ? $message['priority'] : _support_priority_default();

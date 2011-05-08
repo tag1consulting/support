@@ -130,7 +130,8 @@ function support_mailcmd_support_fetch_message_alter(&$message, $client) {
         // @@@ addsub / delsub
     }
   }
-  drupal_alter('support_mailcmd_command', $message, $client, $account, $commands);
+  $context = array('client' => $client, 'account' => $account, 'commands' => $commands);
+  drupal_alter('support_mailcmd_command', $message, $context);
 }
 
 /**

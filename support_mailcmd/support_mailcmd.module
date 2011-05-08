@@ -24,7 +24,7 @@ function support_mailcmd_support_fetch_message_alter(&$message, $client) {
 
   // ------------------------ BEGIN ---------------------
   // Trim leading whitespace
-  while (trim(reset($body)) == '') {
+  while (!empty($body) && trim(reset($body)) == '') {
     array_shift($body);
   }
   if (preg_match('/^\s*@/s', reset($body))) {

@@ -1509,7 +1509,7 @@ function support_notification($comment = array(), $nid, $op = 'ticket_comment_ne
     while ($account = db_fetch_object($result)) {
       $account = user_load(array('uid' => $account->uid));
       // always send emails to admins, even if update was suppressed
-      if ($account->mail && (!$suppress || user_access('administer support', $account))) {
+      if ($account->status && $account->mail && (!$suppress || user_access('administer support', $account))) {
         _support_mail_notify($op, $account, $comment, $nid, $suppress);
         if (variable_get('support_admin_notify', FALSE)) {
           if ((variable_get('support_admin_notify', FALSE) == 1 && user_access('administer support')) || variable_get('support_admin_notify', FALSE) == 2) {

@@ -1,3 +1,6 @@
+May 17th, 2011
+ - don't send notifications to blocked users
+
 February 20th, 2011
  - tagged 6.x-1.4 release (7.x branched from this release)
 

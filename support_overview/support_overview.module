@@ -359,13 +359,13 @@ function support_overview_summary_settings() {
 
   $form['user'] = array(
     '#type' => 'fieldset',
-    '#title' => 'User overview settings',
+    '#title' => t('User overview settings'),
     '#collapsible' => TRUE,
   );
   $form['user']['roles'] = array(
     '#type' => 'select',
     '#multiple' => TRUE,
-    '#title' => 'Display user from selected role(s)',
+    '#title' => t('Display user from selected role(s)'),
     '#options' => user_roles(),
     '#default_value' => variable_get('support_overview_roles', 0),
     '#description' => t('Optionally select one or more roles to limit users displayed on user overview pages.'),

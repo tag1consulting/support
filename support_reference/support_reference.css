@@ -1,0 +1,15 @@
+/* reference block- make the text field the correct width */
+#support-reference-block-form #edit-reference-wrapper {
+  display: inline;
+}
+#support-reference-block-form #edit-reference {
+  width: 115px;
+}
+#support-reference-block-form #autocomplete {
+  width: 250px !important;
+}
+
+/* Hide the submit button. */
+#support-reference-block-form #edit-submit {
+  display: none;
+}

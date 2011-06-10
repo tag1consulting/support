@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * @file
+ * Support ticket references.
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function support_reference_menu() {
+  $items = array();
+
+  $items['support_reference/autocomplete/%support_client/%'] = array(
+    'title' => 'Autocomplete ticket reference',
+    'page callback' => 'support_reference_autocomplete',
+    'page arguments' => array(2, 3),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit support ticket references'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function support_reference_perm() {
+  return array('edit support ticket references', 'view support ticket references');
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function support_reference_block($op = 'list', $delta = 0, $edit = array()) {
+  global $user;
+
+  switch ($op) {
+    case 'list':
+      $blocks = array();
+      $blocks[0]['info'] = t('Support ticket references');
+      // Turn off caching because the user MIGHT have access to the form.
+      // We don't have sufficient control over things to do any better.
+      // If we want to be more agressive, we could turn off
+      // XSRF protection by setting $form['#token'] = FALSE in the
+      // builder, but it's probably a bad idea for this form, which doesn't
+      // have confirm page protection.
+      $blocks[0]['cache'] = BLOCK_NO_CACHE;
+      return $blocks;
+
+    case 'view':
+      $block = array();
+      if ((arg(0) == 'node') && is_numeric(arg(1))) {
+        if ($node = node_load(arg(1))) {
+          if ($node->type == 'support_ticket') {
+            $view = $edit = '';
+            if (user_access('view support ticket references')) {
+              $result = db_query('SELECT rnid FROM {support_reference} WHERE nid = %d', $node->nid);
+              $references = array();
+              while ($reference = db_fetch_object($result)) {
+                $reference = node_load($reference->rnid);
+                // Only list reference if user viewing page has access.
+                $client = support_client_load($reference->client);
+                if (support_access_clients($client, $user)) {
+                  $class = 'support-reference';
+                  if ($node->client != $reference->client) {
+                    $class .= ' support-reference-crossclient';
+                  }
+                  $references[$reference->nid] = '<span class="' . $class . '">' . l(t('#!nid: !title', array('!nid' => $reference->nid, '!title' => $reference->title)), "node/$reference->nid", array('attributes' => array('title' => t('!state !priority priority ticket.', array('!state' => ucfirst(_support_state($reference->state)), '!priority' => _support_priorities($reference->priority)))))) . '</span>';
+                }
+              }
+              $view = theme('item_list', $references);
+            }
+            if (user_access('edit support ticket references')) {
+              $edit = drupal_get_form('support_reference_block_form', $node->client, $node);
+            }
+            $block['content'] = $view . $edit;
+            $block['subject'] = t('Support ticket references');
+          }
+        }
+      }
+      return $block;
+  }
+}
+
+function support_reference_block_form($form_state, $client, $node) {
+  drupal_add_css(drupal_get_path('module', 'support_reference') . '/jquery-autocomplete/jquery.autocomplete.css');
+  drupal_add_js(drupal_get_path('module', 'support_reference') . '/jquery-autocomplete/jquery.autocomplete.js');
+  drupal_add_css(drupal_get_path('module', 'support_reference') . '/support_reference.css');
+  drupal_add_js(drupal_get_path('module', 'support_reference') . '/support_reference.js');
+  drupal_add_js(array('supportReferenceAutoCompletePath' => base_path() . "support_reference/autocomplete/$client/$node->nid"), 'setting');
+
+  $form = array();
+  $form['#nid'] = $node->nid;
+
+  $form['reference'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Add / Remove Reference'),
+    '#default_value' => '',
+    '#required' => TRUE,
+  );
+
+  // This gets hidden by the css.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Change'),
+  );
+
+  return $form;
+}
+
+function support_reference_block_form_submit($form, &$form_state) {
+  $nid = $form['#nid'];
+
+  $node = node_load($nid);
+  $client = support_client_load($node->client);
+  // Make sure the user is allowed to do this.
+  if (user_access('edit support ticket references') && support_access_clients($client)) {
+    $match = array();
+    if (preg_match_all('/\[#(\d+)\]/', $form_state['values']['reference'], $match)) {
+      foreach ($match[1] as $rnid) {
+        $rnode = node_load($rnid);
+        $rclient = support_client_load($rnode->client);
+        // Additional access control check to ignore messing with any references
+        // to tickets belonging to clients that the user doesn't have access to.
+        if (support_access_clients($rclient)) {
+          // If it already exists, delete instead.
+          if (db_result(db_query('SELECT 1 FROM {support_reference} WHERE nid = %d AND rnid = %d', $nid, $rnid))) {
+            db_query('DELETE FROM {support_reference} WHERE nid = %d AND rnid = %d', $nid, $rnid);
+            db_query('DELETE FROM {support_reference} WHERE nid = %d AND rnid = %d', $rnid, $nid);
+          }
+          else {
+            db_query('INSERT INTO {support_reference} (nid, rnid) VALUES (%d, %d)', $nid, $rnid);
+            db_query('INSERT INTO {support_reference} (nid, rnid) VALUES (%d, %d)', $rnid, $nid);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @todo: should we allow cross-client references?
+ */
+function support_reference_autocomplete($client = NULL, $skipnid = 0) {
+  $matches = array();
+  if (is_object($client) && isset($client->clid) && support_access_clients($client)) {
+    $result = db_query('SELECT n.nid, n.title, r.rnid FROM {support_ticket} s INNER JOIN {node} n ON s.nid = n.nid LEFT JOIN {support_reference} r ON (r.nid = %d AND r.rnid = s.nid) WHERE s.client = %d AND s.nid <> %d ORDER BY n.nid DESC', $skipnid, $client->clid, $skipnid);
+    while ($ticket = db_fetch_object($result)) {
+      // Note that we are using check_plain on title instead of rendering it properly.
+      // This is due to speed concerns. Since we are returning ALL ticket titles for the client,
+      // we can't afford to load the nodes.
+      if (!empty($ticket->rnid)) {
+        // If rnid is non null, there's a reference already, so indicate that choosing it will cause removal.
+        $matches[] = t('[#!nid]: !title (remove)', array('!nid' => $ticket->nid, '!title' => check_plain($ticket->title)));
+      }
+      else {
+        $matches[] = t('[#!nid]: !title', array('!nid' => $ticket->nid, '!title' => check_plain($ticket->title)));
+      }
+    }
+  }
+  drupal_json($matches);
+}

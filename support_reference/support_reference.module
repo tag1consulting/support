@@ -56,7 +56,7 @@ function support_reference_block($op = 'list', $delta = 0, $edit = array()) {
           if ($node->type == 'support_ticket') {
             $view = $edit = '';
             if (user_access('view support ticket references')) {
-              $result = db_query('SELECT rnid FROM {support_reference} WHERE nid = %d', $node->nid);
+              $result = db_query('SELECT rnid FROM {support_reference} WHERE nid = %d ORDER BY nid DESC', $node->nid);
               $references = array();
               while ($reference = db_fetch_object($result)) {
                 $reference = node_load($reference->rnid);

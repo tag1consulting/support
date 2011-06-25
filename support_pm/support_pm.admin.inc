@@ -432,3 +432,135 @@ function support_pm_admin_settings_submit($form, &$form_state) {
   variable_set('support_pm_color_values', $values);
   drupal_set_message('Support plan colors updated.');
 }
+
+/**
+ * Overview of client projects.
+ */
+function support_pm_admin_project_overview() {
+  $rows = array();
+
+  $header = array(
+    array('data' => t('Project'), 'field' => 'sp.project'),
+    array('data' => t('Client(s)')),
+    array('data' => t('Weight'), 'field'=> 'sp.weight'),
+    array('data' => t('Disabled'), 'field'=> 'sp.disabled'),
+    array('data' => t('Options')),
+  );
+  $sql = 'SELECT sp.projid, sp.project, sp.weight, sp.disabled FROM {support_project} sp';
+  $sql .= tablesort_sql($header);
+  $result = pager_query($sql, 50, 0);
+  while ($project = db_fetch_object($result)) {
+    $options = l(t('edit'), "admin/support/project/$project->projid/edit");
+
+    $clients = array();
+    $result2 = db_query('SELECT spc.clid, sc.name FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = %d', $project->projid);
+    while ($client = db_fetch_object($result2)) {
+      $clients[] = check_plain($client->name);
+    }
+    if (empty($clients)) {
+      $clients[] = '<em>'. t('All clients') .'</em>';
+    }
+
+    $rows[] = array(
+      truncate_utf8(check_plain($project->project), 52, TRUE, TRUE),
+      implode(', ', $clients),
+      number_format($project->weight),
+      $project->disabled ? t('Disabled') : t('Active'),
+      $options,
+    );
+  }
+
+  if (empty($rows)) {
+    drupal_set_message(t('There are currently no projects defined.'));
+  }
+  return theme('table', $header, $rows);
+}
+
+function support_pm_admin_project_form(&$form_state, $project = array()) {
+  $form = array();
+
+  $form['project'] = array(
+    '#title' => t('Project'),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#maxlength' => 255,
+    '#default_value' => isset($project->project) ? $project->project : '',
+    '#description' => t('The project name.  This name may appear on invoices.'),
+  );
+
+  $form['disabled'] = array(
+    '#title' => t('Disabled'),
+    '#type' => 'checkbox',
+    '#default_value' => isset($project->disabled) ? $project->disabled : 0,
+    '#description' => t('Disabled projects won\'t show up as an option when creating new tickets.'),
+  );
+
+  $form['weight'] = array(
+    '#title' => t('Weight'),
+    '#type' => 'weight',
+    '#default_value' => isset($project->weight) ? $project->weight : 0,
+    '#description' => t('When multiple projects are available, the project with the smallest (negative) weight will be selected as the default.'),
+  );
+
+  $clients = _support_clients_load();
+  $form['clids'] = array(
+    '#title' => t('Clients'),
+    '#type' => 'select',
+    '#options' => $clients,
+    '#multiple' => TRUE,
+    '#size' => count($clients) > 5 ? count($clients) : 5,
+    '#default_value' => isset($project->clids) ? $project->clids : array(),
+    '#description' => t('Select the client(s) this project applies to.  Select no clients to have this project apply to all clients.'),
+  );
+
+  $form['projid'] = array(
+    '#value' => $project->projid,
+    '#type' => 'hidden',
+  );
+
+  $form['submit'] = array(
+    '#value' => isset($project->projid) ? t('Update project') : t('Add project'),
+    '#type' => 'submit',
+  );
+  if (isset($project->projid)) {
+    $form['delete'] = array(
+      '#value' => t('Delete project'),
+      '#type' => 'submit',
+    );
+    $form['cancel'] = array(
+      '#value' => l(t('Cancel'), 'admin/support/project'),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Save new or updated project definition.
+ */
+function support_pm_admin_project_form_submit($form, &$form_state) {
+  $client = support_client_load($form_state['values']['clid']);
+  if ($form_state['clicked_button']['#value'] == t('Delete project')) {
+    drupal_set_message(t('Deleted %project project.', array('%project' => $form_state['values']['project'])));
+    db_query('DELETE FROM {support_project} WHERE projid = %d', $form_state['values']['projid']);
+    db_query('DELETE FROM {support_project_client} WHERE projid = %d', $form_state['values']['projid']);
+    db_query('DELETE FROM {support_project_ticket} WHERE projid = %d', $form_state['values']['projid']);
+  }
+  else if ($form_state['clicked_button']['#value'] == t('Update project')) {
+    drupal_set_message(t('Updated %project project.', array('%project' => $form_state['values']['project'])));
+    db_query("UPDATE {support_project} SET project = '%s', disabled = %d, weight = %d WHERE projid = %d", $form_state['values']['project'], $form_state['values']['disabled'], $form_state['values']['weight'], $form_state['values']['projid']);
+    db_query('DELETE FROM {support_project_client} WHERE projid = %d', $form_state['values']['projid']);
+    foreach ($form_state['values']['clids'] as $clid) {
+      db_query('INSERT INTO {support_project_client} (projid, clid) VALUES(%d, %d)', $form_state['values']['projid'], $clid);
+    }
+  }
+  else {
+    drupal_set_message(t('Created %project project.', array('%project' => $form_state['values']['project'])));
+    db_query("INSERT INTO {support_project} (project, disabled, weight) VALUES('%s', %d, %d)", $form_state['values']['project'], $form_state['values']['disabled'], $form_state['values']['weight']);
+    $projid = db_last_insert_id('support_project', 'projid');
+    foreach ($form_state['values']['clids'] as $clid) {
+      db_query('INSERT INTO {support_project_client} (projid, clid) VALUES(%d, %d)', $projid, $clid);
+    }
+  }
+  drupal_goto('admin/support/project');
+}

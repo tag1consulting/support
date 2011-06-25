@@ -21,6 +21,7 @@ function support_pm_perm() {
     'create plans',
     'view all plans',
     'administer plans',
+    'administer support projects',
   );
 }
   
@@ -56,22 +57,51 @@ function support_pm_menu() {
     'weight' => 2,
     'type' => MENU_LOCAL_TASK,
   );
-  $items['admin/support/plan_reports'] = array(
-    'title' => 'Plans',
+  $items['admin/support/plan_report'] = array(
+    'title' => 'Plan reports',
     'description' => 'Generate support plan reports',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('support_pm_admin_reports'),
     'access arguments' => array('administer support'),
     'file' => 'support_pm.admin.inc',
   );
-  $items['admin/support/plan'] = array(
-    'title' => 'Plan settings',
+  $items['admin/support/plan_settings'] = array(
+    'title' => 'Plan report settings',
     'description' => 'Configure support plans',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('support_pm_admin_settings'),
     'access arguments' => array('administer support'),
     'file' => 'support_pm.admin.inc',
   );
+  $items['admin/support/project'] = array(
+    'title' => 'Projects',
+    'description' => 'Configure support projects',
+    'page callback' => 'support_pm_admin_project_overview',
+    'access arguments' => array('administer support projects'),
+    'file' => 'support_pm.admin.inc',
+  );
+  $items['admin/support/project/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/support/project/add'] = array(
+    'title' => 'Add project',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_pm_admin_project_form'),
+    'access arguments' => array('administer support projects'),
+    'file' => 'support_pm.admin.inc',
+  );
+  $items['admin/support/project/%support_pm_project/edit'] = array(
+    'title' => 'Edit',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_pm_admin_project_form', 3),
+    'access arguments' => array('administer support projects'),
+    'file' => 'support_pm.admin.inc',
+  );
+
   $items['support_pm/image/%'] = array(
     'page callback' => 'support_pm_display_swatch',
     'page arguments' => array(2),
@@ -103,6 +133,75 @@ function support_pm_theme() {
       'arguments' => array('diff' => NULL, 'plan' => NULL),
     ),
   );
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function support_pm_nodeapi(&$node, $op, $teaser, $page) {
+  if ($node->type == 'support_ticket') {
+    switch ($op) {
+      case 'view':
+        if (user_access('view support projects')) {
+          if ($project = support_pm_project_load_nid($node->nid)) {
+            $node->content['support-project'] = array(
+              '#value' => "<div class='support-priority'>Project: $project->project</div>",
+              '#weight' => -1,
+            );
+          }
+        }
+        break;
+      case 'load':
+        $node->project = support_pm_project_load_nid($node->nid);
+        break;
+      case 'insert':
+      case 'update':
+        db_query("UPDATE {support_project_ticket} SET projid = %d WHERE nid = %d", $node->project, $node->nid);
+        if (!db_affected_rows()) {
+          @db_query("INSERT INTO {support_project_ticket} (projid, nid) VALUES(%d, %d)", $node->project, $node->nid);
+        }
+        break;
+      case 'delete':
+        db_query("DELETE FROM {support_project_ticket} WHERE nid = %d", $node->project);
+        break;
+    }
+  }
+}
+
+function support_pm_comment(&$comment, $op) {
+  if (is_array($comment)) {
+    $node = node_load($comment['nid']);
+  }
+  else {
+    $node = node_load($comment->nid);
+  }
+  if ($node->type == 'support_ticket') {
+    switch ($op) {
+      case 'view':
+        if (user_access('view support projects')) {
+          if ($project = support_pm_project_load_nid($node->nid)) {
+            $comment->comment = "<div class='support-priority'>Project: $project->project</div>" . $comment->comment;
+          }
+        }
+    }
+  }
+}
+
+function support_pm_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'support_ticket_node_form') {
+    if (isset($form['nid']['#value'])) {
+      $node = node_load($form['nid']['#value']);
+    }
+    // @todo: include disabled project if already set to it
+    $options = support_pm_load_projects(_support_current_client());
+    $form['support']['project'] = array(
+      '#type' => 'select',
+      '#title' => t('Project'),
+      '#prefix' => '&nbsp;&nbsp;',
+      '#options' => $options,
+      '#default_value' => isset($node->project) ? $node->project : support_pm_default_project($options),
+    );
+  }
 }
 
 /**
@@ -695,4 +794,55 @@ function support_pm_timer_to_hours($time) {
   $hours = (int)$time[0];
   $minutes = round((int)$time[1] / 60, 2);
   return $hours + $minutes;
+}
+
+/**
+ * Load project from database.
+ */
+function support_pm_project_load($projid) {
+  static $projects = array();
+
+  if (!isset($projects[$projid])) {
+    $projects[$projid] = db_fetch_object(db_query('SELECT * FROM {support_project} WHERE projid = %d', $projid));
+    drupal_alter('support_pm_project_load', $projects[$projid]);
+  }
+  return $projects[$projid];
+}
+
+function support_pm_project_load_nid($nid) {
+  static $projects = array();
+
+  if (!isset($projects[$nid])) {
+    $projects[$nid] = db_fetch_object(db_query('SELECT * FROM {support_project_ticket} spt LEFT JOIN {support_project} sp ON spt.projid = sp.projid WHERE spt.nid = %d', $nid));
+    drupal_alter('support_pm_project_load_nid', $projects[$nid]);
+  }
+  return $projects[$nid];
+}
+
+/**
+ * Load projects assigned to a given client.
+ */
+function support_pm_load_projects($clid) {
+  $projects = array();
+  $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = %d OR ISNULL(spc.clid)) AND disabled = 0', $clid);
+  while ($project = db_fetch_object($result)) {
+    $projects[$project->projid] = check_plain($project->project);
+  }
+  return $projects;
+}
+
+/**
+ * Determine default for a list of projects.
+ */
+function support_pm_default_project($projects) {
+  $projids = array();
+  foreach ($projects as $projid => $project) {
+    $projids[] = $projid;
+  }
+  if (empty($projids)) {
+    return 0;
+  }
+  else {
+    return db_result(db_query_range('SELECT projid FROM {support_project} WHERE projid IN (%s) AND disabled = 0 ORDER BY weight ASC', implode(',', $projids), 0, 1));
+  }
 }

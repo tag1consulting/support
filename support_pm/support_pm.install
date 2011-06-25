@@ -49,6 +49,71 @@ function support_pm_schema() {
     'primary key' => array('pid'),
     'unique keys' => array('uid_clid_day' => array('uid', 'clid', 'day')),
   );
+  $schema['support_project'] = array(
+    'description' => 'Assign projects to support clients.',
+    'fields' => array(
+      'projid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'project' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'disabled' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => FALSE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('projid'),
+    'keys' => array('project' => array('project', 'disabled', 'weight')),
+  );
+  $schema['support_project_client'] = array(
+    'fields' => array(
+      'projid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'clid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('projid', 'clid'),
+  );
+  $schema['support_project_ticket'] = array(
+    'description' => 'Stores which projects are assigned to tickets.',
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'projid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid', 'projid'),
+  );
   return $schema;
 }
 
@@ -66,3 +131,81 @@ function support_pm_uninstall() {
   drupal_uninstall_schema('support_pm');
 }
 
+function support_pm_update_6001() {
+  $ret = $schema = array();
+  $schema['support_project'] = array(
+    'description' => 'Defines projects that can be assigned to client tickets.',
+    'fields' => array(
+      'projid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'project' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'disabled' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => FALSE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('projid'),
+    'keys' => array('project' => array('project', 'disabled', 'weight')),
+  );
+  $schema['support_project_client'] = array(
+    'description' => 'Stores which projects can be assigned to which clients.',
+    'fields' => array(
+      'projid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'clid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('projid', 'clid'),
+  );
+  $schema['support_project_ticket'] = array(
+    'description' => 'Stores which projects are assigned to tickets.',
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'projid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid', 'projid'),
+  );
+  db_create_table($ret, 'support_project', $schema['support_project']);
+  db_create_table($ret, 'support_project_client', $schema['support_project_client']);
+  db_create_table($ret, 'support_project_ticket', $schema['support_project_ticket']);
+
+  // We've added new menus, flush caches and rebuild menus.
+  drupal_flush_all_caches();
+  menu_rebuild();
+
+  return $ret;
+}

@@ -1,6 +1,8 @@
 June 25th, 2011
  - support_pm.module
     o feature #1190320: allow filtering of ticket listings by project
+    o feature #1190320: alter support_timer client reports to allowing filtering
+      by project.  (no UI yet)
 
 June 25th, 2011
  - support_pm.module

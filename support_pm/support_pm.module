@@ -28,7 +28,7 @@ function support_pm_perm() {
 /**
  * Implementation of hook_menu().
  * TODO: Include date in 'view' and 'edit' tabs
- */  
+ */
 function support_pm_menu() {
   $items = array();
  
@@ -239,6 +239,24 @@ function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args
       return array(
         'join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
         'where' => "sp.path = '$path'",
+      );
+    }
+  }
+  else if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'support_ticket_timer') && strpos($query, 't.client IN')) {
+    $project = isset($_GET['project']) ? $_GET['project'] : '';
+    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
+      return array(
+        'join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
+        'where' => "sp.path = '$project'",
+      );
+    }
+  }
+  else if ($primary_table == 'c' && $primary_field == 'cid' && strpos($query, 'support_ticket_comment_timer') && strpos($query, 't.client IN')) {
+    $project = isset($_GET['project']) ? $_GET['project'] : '';
+    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
+      return array(
+        'join' => ' LEFT JOIN {support_project_ticket} spt ON c.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
+        'where' => "sp.path = '$project'",
       );
     }
   }

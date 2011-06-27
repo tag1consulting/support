@@ -9,7 +9,7 @@
 
 /**
  * TODO:
- *  - JavaScript to calculate totals
+ *  - JavaScript to calculate support plan totals
  *  - Combined "calendar" view showing all plans on one page
  */
  
@@ -109,6 +109,34 @@ function support_pm_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // Add project sub-menu
+  $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
+  $result = db_query('SELECT sp.projid, sp.project, sp.path, sp.weight, spc.clid FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE disabled = 0 ORDER BY spc.clid, sp.weight ASC, sp.project');
+  while ($project = db_fetch_object($result)) {
+    if ($client = support_client_load($project->clid)) {
+      $clients = array($client);
+    }
+    else {
+      $result2 = db_query('SELECT clid FROM {support_client} WHERE status = 1 AND parent = 0');
+      while ($client = db_fetch_object($result2)) {
+        $clients[] = support_client_load($client->clid);
+      }
+    }
+    foreach ($clients as $client) {
+      foreach ($states as $sid => $state) {
+        $items["support/$client->path/$state/$project->path"] = array(
+          'title' => check_plain($project->project),
+          'page callback' => 'drupal_get_form',
+          'page arguments' => array('support_page_form', $client->clid, $state),
+          'access callback' => 'support_access_clients',
+          'access arguments' => array($client),
+          'weight' => $project->weight,
+          'type' => MENU_LOCAL_TASK,
+        );
+      }
+    }
+  }
+
   return $items;
 }
 
@@ -201,6 +229,18 @@ function support_pm_form_alter(&$form, $form_state, $form_id) {
       '#options' => $options,
       '#default_value' => isset($node->project) ? $node->project : support_pm_default_project($options),
     );
+  }
+}
+
+function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
+  if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'ELECT DISTINCT') && strpos($query, 'support_ticket') && strpos($query, 'client =') && arg(3)) {
+    $path = arg(3);
+    if ($path == preg_replace('/[^0-9a-zA-Z_-]/', '', $path)) {
+      return array(
+        'join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
+        'where' => "sp.path = '$path'",
+      );
+    }
   }
 }
 
@@ -804,6 +844,11 @@ function support_pm_project_load($projid) {
 
   if (!isset($projects[$projid])) {
     $projects[$projid] = db_fetch_object(db_query('SELECT * FROM {support_project} WHERE projid = %d', $projid));
+    $projects[$projid]->clids = array();
+    $result = db_query('SELECT clid FROM {support_project_client} WHERE projid = %d', $projid);
+    while ($client = db_fetch_object($result)) {
+      $projects[$projid]->clids[] = $client->clid;
+    }
     drupal_alter('support_pm_project_load', $projects[$projid]);
   }
   return $projects[$projid];

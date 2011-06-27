@@ -1,5 +1,9 @@
 June 25th, 2011
  - support_pm.module
+    o feature #1190320: allow filtering of ticket listings by project
+
+June 25th, 2011
+ - support_pm.module
     o feature #1190320: allow creation of projects to be assigned to clients
       and tickets.  No reporting or listing based on project yet.
 

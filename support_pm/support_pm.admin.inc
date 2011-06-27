@@ -488,6 +488,15 @@ function support_pm_admin_project_form(&$form_state, $project = array()) {
     '#description' => t('The project name.  This name may appear on invoices.'),
   );
 
+  $form['path'] = array(
+    '#title' => t('Path'),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#maxlength' => 255,
+    '#default_value' => isset($project->path) ? $project->path : '',
+    '#description' => t('A url friendly project path using alpha-numerics, "-", and "_".'),
+  );
+
   $form['disabled'] = array(
     '#title' => t('Disabled'),
     '#type' => 'checkbox',
@@ -538,6 +547,29 @@ function support_pm_admin_project_form(&$form_state, $project = array()) {
 /**
  * Save new or updated project definition.
  */
+function support_pm_admin_project_form_validate($form, &$form_state) {
+  $path = $form_state['values']['path'];
+  $projid = isset($form_state['values']['projid']) ? $form_state['values']['projid'] : 0;
+  if ($path != preg_replace('/[^0-9a-zA-Z_-]/', '', $path)) {
+    form_set_error('path', t('Path %path contains invalid characters.', array('%path' => $path)));
+  }
+  if ($path && $projid) {
+    $projid = db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s' AND projid != %d", $path, $form_state['values']['projid']));
+  }
+  else if ($path) {
+    $projid = db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s'", $path));
+  }
+  else {
+    $projid = NULL;
+  }
+  if ($projid) {
+    form_set_error('path', t('Path %path is already being used by another project.', array('%path' => $path)));
+  }
+}
+
+/**
+ * Save new or updated project definition.
+ */
 function support_pm_admin_project_form_submit($form, &$form_state) {
   $client = support_client_load($form_state['values']['clid']);
   if ($form_state['clicked_button']['#value'] == t('Delete project')) {
@@ -547,20 +579,21 @@ function support_pm_admin_project_form_submit($form, &$form_state) {
     db_query('DELETE FROM {support_project_ticket} WHERE projid = %d', $form_state['values']['projid']);
   }
   else if ($form_state['clicked_button']['#value'] == t('Update project')) {
-    drupal_set_message(t('Updated %project project.', array('%project' => $form_state['values']['project'])));
-    db_query("UPDATE {support_project} SET project = '%s', disabled = %d, weight = %d WHERE projid = %d", $form_state['values']['project'], $form_state['values']['disabled'], $form_state['values']['weight'], $form_state['values']['projid']);
+    db_query("UPDATE {support_project} SET project = '%s', path = '%s', disabled = %d, weight = %d WHERE projid = %d", $form_state['values']['project'], $form_state['values']['path'], $form_state['values']['disabled'], $form_state['values']['weight'], $form_state['values']['projid']);
     db_query('DELETE FROM {support_project_client} WHERE projid = %d', $form_state['values']['projid']);
     foreach ($form_state['values']['clids'] as $clid) {
       db_query('INSERT INTO {support_project_client} (projid, clid) VALUES(%d, %d)', $form_state['values']['projid'], $clid);
     }
+    drupal_set_message(t('Updated %project project.', array('%project' => $form_state['values']['project'])));
   }
   else {
-    drupal_set_message(t('Created %project project.', array('%project' => $form_state['values']['project'])));
-    db_query("INSERT INTO {support_project} (project, disabled, weight) VALUES('%s', %d, %d)", $form_state['values']['project'], $form_state['values']['disabled'], $form_state['values']['weight']);
+    db_query("INSERT INTO {support_project} (project, path, disabled, weight) VALUES('%s', '%s', %d, %d)", $form_state['values']['project'], $form_state['values']['path'], $form_state['values']['disabled'], $form_state['values']['weight']);
     $projid = db_last_insert_id('support_project', 'projid');
     foreach ($form_state['values']['clids'] as $clid) {
       db_query('INSERT INTO {support_project_client} (projid, clid) VALUES(%d, %d)', $projid, $clid);
     }
+    drupal_set_message(t('Created %project project.', array('%project' => $form_state['values']['project'])));
   }
+  menu_rebuild();
   drupal_goto('admin/support/project');
 }

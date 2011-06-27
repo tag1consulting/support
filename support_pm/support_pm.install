@@ -63,6 +63,12 @@ function support_pm_schema() {
         'not null' => FALSE,
         'default' => '',
       ),
+      'path' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
       'disabled' => array(
         'type' => 'int',
         'size' => 'tiny',
@@ -78,6 +84,7 @@ function support_pm_schema() {
     ),
     'primary key' => array('projid'),
     'keys' => array('project' => array('project', 'disabled', 'weight')),
+    'unique keys' => array('path' => array('path')),
   );
   $schema['support_project_client'] = array(
     'fields' => array(
@@ -207,5 +214,29 @@ function support_pm_update_6001() {
   drupal_flush_all_caches();
   menu_rebuild();
 
+  return $ret;
+}
+
+function support_pm_update_6002() {
+  $ret = array();
+  db_add_field($ret, 'support_project', 'path',
+    array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+      'default' => '',
+      'description' => 'Project path.',
+    )
+  );
+  $result = db_query('SELECT projid, project FROM {support_project}');
+  while ($project = db_fetch_object($result)) {
+    $path = strtolower(preg_replace('/[^0-9a-zA-Z]/', '', $project->project));
+    $ret[] = update_sql("UPDATE {support_project} SET path = '$path' WHERE projid = $project->projid");
+  }
+  // Add index after conversion, as otherwise it will fail as all paths will be
+  // the same, ''.  If there'd been an actual release of this module already,
+  // we'd add more error checking here to handle multiple projects of the same
+  // name.
+  db_add_index($ret, 'support_project', 'path', array('path'));
   return $ret;
 }

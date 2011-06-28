@@ -170,7 +170,7 @@ function support_pm_nodeapi(&$node, $op, $teaser, $page) {
   if ($node->type == 'support_ticket') {
     switch ($op) {
       case 'view':
-        if (user_access('view support projects')) {
+        if (user_access('administer support projects')) {
           if ($project = support_pm_project_load_nid($node->nid)) {
             $node->content['support-project'] = array(
               '#value' => "<div class='support-priority'>Project: $project->project</div>",
@@ -206,7 +206,7 @@ function support_pm_comment(&$comment, $op) {
   if ($node->type == 'support_ticket') {
     switch ($op) {
       case 'view':
-        if (user_access('view support projects')) {
+        if (user_access('administer support projects')) {
           if ($project = support_pm_project_load_nid($node->nid)) {
             $comment->comment = "<div class='support-priority'>Project: $project->project</div>" . $comment->comment;
           }

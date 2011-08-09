@@ -33,7 +33,9 @@ function support_admin_client_overview() {
   if (empty($rows)) {
     drupal_set_message(t('There are currently no clients defined.'));
   }
-  return theme('table', $header, $rows);
+  $output = theme('table', $header, $rows);
+  $output .= theme('pager', array(), 50, 0);
+  return $output;
 }
 
 function _support_admin_default_mail() {

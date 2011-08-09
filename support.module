@@ -34,7 +34,29 @@ function support_access($op, $node, $account) {
       if (isset($node->client)) {
         $client = support_client_load($node->client);
         if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
-          return ($node->uid == $account->uid && support_access_clients($client, $account));
+          // First check if user has access to this client.
+          if (support_access_clients($client, $account)) {
+            // Grant access if user created the ticket.
+            if ($node->uid == $account->uid) {
+              $access = TRUE;
+            }
+            else {
+              $subscribed = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d AND active = 1', $node->nid, $account->uid));
+              // Grant access if user is subscribed to the ticket.
+              if ($subscribed) {
+                $access = TRUE;
+              }
+              // Otherwise deny access.
+              else {
+                $access = FALSE;
+              }
+            }
+          }
+          // User does not have access to this client.
+          else {
+            $access = FALSE;
+          }
+          return $access;
         }
         else {
           return support_access_clients($client, $account);

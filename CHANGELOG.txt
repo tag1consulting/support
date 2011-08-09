@@ -5,6 +5,9 @@ August 9th, 2011
     o bug #683256 by kingandy: display pager on admin client listing
     o feature #775270 by Jay Matwichuk, jandrews: grant access to ticket if
       user is subscribed to ticket
+    o bug #768354: cleanup hook_access() to respect other access control
+      modules, only explicitly blocking access to tickets when we know the user
+      doesn't have access.
 
 June 25th, 2011
  - support_pm.module

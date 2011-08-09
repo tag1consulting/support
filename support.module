@@ -33,34 +33,35 @@ function support_access($op, $node, $account) {
     case 'view':
       if (isset($node->client)) {
         $client = support_client_load($node->client);
-        if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
-          // First check if user has access to this client.
-          if (support_access_clients($client, $account)) {
-            // Grant access if user created the ticket.
-            if ($node->uid == $account->uid) {
-              $access = TRUE;
-            }
-            else {
-              $subscribed = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d AND active = 1', $node->nid, $account->uid));
-              // Grant access if user is subscribed to the ticket.
-              if ($subscribed) {
-                $access = TRUE;
-              }
-              // Otherwise deny access.
-              else {
-                $access = FALSE;
-              }
-            }
+        // User can access at least some of this client's tickets.
+        if (support_access_clients($client, $account)) {
+          // User can access this ticket.
+          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
+            $access = NULL;
           }
-          // User does not have access to this client.
           else {
-            $access = FALSE;
+            // User created this ticket, allow access.
+            if ($account->uid == $node->uid && $account->uid != 0) {
+              $access = NULL;
+            }
+            // User is subscribed to this ticket, allow access.
+            else if (db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d AND active = 1', $node->nid, $account->uid))) {
+              $access = NULL;
+            }
+            // Deny access as user did not create and is not subscribed to this
+            // ticket.
+            else {
+              $access = FALSE;
+            }
           }
-          return $access;
         }
+        // User doesn't have access to any of this client's tickets.
         else {
-          return support_access_clients($client, $account);
+          $access = FALSE;
         }
+        // We return FALSE to explicitly block access to a ticket.  Otherwise
+        // we return NULL to allow other access modules to weigh in.
+        return $access;
       }
   }
 }

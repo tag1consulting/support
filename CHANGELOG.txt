@@ -1,3 +1,7 @@
+August 9th, 2011
+ - support.module
+    o bug #1219332: properly handle empty client list
+
 June 25th, 2011
  - support_pm.module
     o feature #1190320: allow filtering of ticket listings by project

@@ -2044,7 +2044,13 @@ function support_status_form(&$form_state, $edit, $title) {
       }
     }
   }
-  $clients = array(0 => '- select client -') + $clients;
+  $default = array('- select client -');
+  if (empty($clients)) {
+    $clients = $default;
+  }
+  else {
+    $clients = $default + $clients;
+  }
   if ((sizeof($clients) == 1) ||
       (!user_access('can select client') &&
        !user_access('administer support'))) {

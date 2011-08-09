@@ -334,6 +334,12 @@ function support_admin_settings() {
     '#options' => array(t('Ascending'), t('Descending')),
     '#default_value' => variable_get('support_secondary_sort_order', 0),
   );
+  $form['general']['support_require_comment'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Require comment when bulk-updating tickets'),
+    '#description' => t('Require a comment when users with %perm1 or %perm2 permissions bulk-update ticket properties on the ticket overview page.', array('%perm1' => t('edit multiple tickets'), '%perm2' => t('administer support'))),
+    '#default_value' => variable_get('support_require_comment', TRUE),
+  );
 
   $form['notification'] = array(
     '#type' => 'fieldset',

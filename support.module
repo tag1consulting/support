@@ -1214,7 +1214,9 @@ function support_mail($key, &$message, $params) {
     $references[] = _support_generate_message_id($params['nid'], $cid);
   }
   // Set up message id and threading.
-  $message['headers']['Message-Id'] = _support_generate_message_id($params['nid'], $params['cid']);
+  if (!isset($message['headers']['Message-ID'])) {
+    $message['headers']['Message-ID'] = _support_generate_message_id($params['nid'], $params['cid']);
+  }
   if (!empty($references)) {
     $message['headers']['In-Reply-To'] = $references[0];
     $message['headers']['References'] = implode(' ', array_reverse($references));

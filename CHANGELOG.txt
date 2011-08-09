@@ -1,3 +1,7 @@
+August 9th, 2011
+ - support.module
+    o bug #1035774: set Message-ID (not Message-Id) only if not set already
+
 May 7th, 2011
  - Fixed subscription.
  - Added update to convert mail variables to html.

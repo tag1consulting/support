@@ -1,4 +1,7 @@
 August 10th, 2011
+ - tagged 6.x-1.5-rc1 release candidate
+
+August 10th, 2011
  - support.module
     o bug #1158398: gracefully handle when no current client is set
     o bug #818250: don't display updates to tickets user doesn't have access to

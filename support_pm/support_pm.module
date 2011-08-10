@@ -190,7 +190,7 @@ function support_pm_nodeapi(&$node, $op, $teaser, $page) {
         }
         break;
       case 'delete':
-        db_query("DELETE FROM {support_project_ticket} WHERE nid = %d", $node->project);
+        db_query("DELETE FROM {support_project_ticket} WHERE nid = %d", $node->nid);
         break;
     }
   }

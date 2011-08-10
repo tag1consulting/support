@@ -1394,23 +1394,6 @@ function _support_get_attachments($stream, $message, $structure, $parts) {
   for ($part = 2; $part <= $parts; $part++) {
     $attachment = imap_fetchbody($stream, $message, $part);
     $details = imap_bodystruct($stream, $message, $part);
-
-    // Decoding parameters (filename etc) from MIME-encoded text to UTF-8.
-    if (isset($details->parameters) && is_array($details->parameters)) {
-      foreach ($details->parameters as $key => $object) {
-        if (is_string($object->value)) {
-          $object->value = imap_utf8($object->value);
-        }
-      }
-    }
-    if (isset($details->dparameters) && is_array($details->dparameters)) {
-      foreach ($details->dparameters as $key => $object) {
-        if (is_string($object->value)) {
-          $object->value = imap_utf8($object->value);
-        }
-      }
-    }
-
     // Decode as necessary
     if ($details->encoding == ENCBASE64) {
       $attachment = imap_base64($attachment);

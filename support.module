@@ -1762,21 +1762,39 @@ function support_search_form_submit($form, &$form_state) {
  */
 function support_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
   global $user;
+  // If enabled, remove support tickets from core search results.
   if (variable_get('support_remove_tickets', TRUE) && $query == '' && $primary_table == 'n' && $primary_field = 'nid' && empty($args)) {
     return array('where' => " n.type != 'support_ticket'");
   }
+  // Filter tickets user doesn't have access to from core tracker.
   if ($primary_table == 'n' AND $primary_field == 'nid' && !strpos($query, '{support_ticket}')) {
     $clients = support_search_available_clients();
     if (!empty($clients)) {
-      if (!user_access('view other users tickets') && !user_access('administer support')) {
-        return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' ((st.client IN ('. implode(',', $clients) .') AND n.uid = '. $user->uid .') OR st.client IS NULL)');
+      if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
+        return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' (st.client IN ('. implode(',', $clients) .')  OR st.client IS NULL)');
       }
       else {
-        return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' (st.client IN ('. implode(',', $clients) .')  OR st.client IS NULL)');
+        return array('join' => ' LEFT JOIN {support_ticket} st ON n.nid = st.nid', 'where' => ' ((st.client IN ('. implode(',', $clients) .') AND n.uid = '. $user->uid .') OR st.client IS NULL)');
       }
     }
     else {
       return array('where' => " n.type != 'support_ticket'");
+    }
+  }
+  // Filter tickets user doesn't have access to from core 'Recent comments'
+  // block.
+  else if ($primary_table == 'nc' AND $primary_field == 'nid' && !strpos($query, '{support_ticket_comment}')) {
+    $clients = support_search_available_clients();
+    if (!empty($clients)) {
+      if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
+        return array('join' => ' LEFT JOIN {support_ticket} st ON nc.nid = st.nid', 'where' => ' (st.client IN ('. implode(',', $clients) .')  OR st.client IS NULL)');
+      }
+      else {
+        return array('join' => ' LEFT JOIN {node} n ON nc.nid = n.nid LEFT JOIN {support_ticket} st ON nc.nid = st.nid', 'where' => ' (st.client IN ('. implode(',', $clients) .') AND (n.uid = '. $user->uid .' OR st.assigned = '. $user->uid .")) OR n.type != 'support_ticket'");
+      }
+    }
+    else {
+      return array('join' => ' LEFT JOIN {node} n ON nc.nid = n.nid', 'where' => " n.type != 'support_ticket'");
     }
   }
 }

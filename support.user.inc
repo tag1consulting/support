@@ -66,7 +66,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       $sql .= " AND t.assigned = $user->uid";
     }
     if (!$assigned || (user_access('only view own tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket'))) {
-      $sql .= " AND n.uid = $user->uid";
+      $sql .= " AND (n.uid = $user->uid OR t.assigned = $user->uid)";
     }
     $sql = db_rewrite_sql($sql);
     $sql .= tablesort_sql($header);

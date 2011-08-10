@@ -2669,7 +2669,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
 
   $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.assigned FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND client = $client $state $my_open";
   if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
-    $sql .= " AND n.uid = $user->uid";
+    $sql .= " AND (n.uid = $user->uid OR t.assigned = $user->uid)";
   }
   $sql = db_rewrite_sql($sql);
   $sql .= tablesort_sql($form['header']['#value']);

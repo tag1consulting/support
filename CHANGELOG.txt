@@ -5,7 +5,10 @@ August 10th, 2011
       in core 'Recent comments' block
     o bug #1101122: properly list tickets user created or is assigned to when
       they don't have 'view other users tickets' permissions
-    o bug #1245258: Fix bug preventing deleting tickets from cleaning up {support_project_ticket} properly.
+    o bug #1245258: Fix bug preventing deleting tickets from cleaning up
+      {support_project_ticket} properly.
+    o bug #810012 by span, Jeremy: Support private files; fix attachment
+      encoding issue
 
 August 9th, 2011
  - support.module

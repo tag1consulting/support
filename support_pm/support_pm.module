@@ -263,6 +263,73 @@ function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args
 }
 
 /**
+ * Allow projects to be selected.
+ */
+function support_pm_support_timer_client_report_alter(&$report) {
+  $report->header .= ' &nbsp;&nbsp;&nbsp;&nbsp;' . $report->footer . drupal_get_form('support_pm_invoice_ui_form');
+}
+
+/**
+ * Provide form for selecting projects.
+ */
+function support_pm_invoice_ui_form() {
+  $form = array();
+
+  if (user_access('administer support projects')) {
+    drupal_add_js('$(document).ready(function() { $("form#support-pm-invoice-ui-form select").change(function() { $("form#support-pm-invoice-ui-form").submit(); }); });', 'inline');
+
+    $projects = array(t('-- all projects --')) + support_pm_load_projects(_support_current_client());
+    $project = isset($_GET['project']) ? $_GET['project'] : '';
+    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
+      $selected = (int)db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s'", $project));
+    }
+    else {
+      $selected = 0;
+    }
+
+    $form['pm'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Project'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['pm']['projects']= array(
+      '#title' => t('Project'),
+      '#type' => 'select',
+      '#options' => $projects,
+      '#default_value' => $selected,
+      '#description' => t('Display invoice for selected project.'),
+    );
+    $form['pm']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Update filter'),
+    );
+  }
+  return $form;
+}
+
+/**
+ * Add url filter when projects are selected.
+ */
+function support_pm_invoice_ui_form_submit($form, &$form_state) {
+  if (!empty($form_state['values']['projects'])) {
+    $projects = support_pm_load_projects(_support_current_client());
+    if (isset($projects[$form_state['values']['projects']])) {
+      $project = support_pm_project_load($form_state['values']['projects']);
+      $path = drupal_get_path_alias(isset($_GET['q']) ? $_GET['q'] : '');
+      $query = array();
+      foreach ($_GET as $key => $value) {
+        if (!in_array($key, array('q', 'project'))) {
+          $query[$key] = $value;
+        }
+      }
+      $query['project'] = $project->path;
+      drupal_goto($path, $query);
+    }
+  }
+}
+
+/**
  *
  */
 function support_pm_plan_overview_weekly($account) {

@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * @file
+ * Support Reference database schema.
+ *
+ * Copyright (c) 2011.
+ *  Jeremy Andrews <jeremy@tag1consulting.com>
+ */
+
+/**
+ * Support Reference database schema.
+ */
+function support_reference_schema() {
+  $schema['support_reference'] = array(
+    'description' => 'Allow tickets to reference each other.',
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Node id of the current ticket.',
+      ),
+      'rnid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Node id of the referenced ticket.',
+      ),
+    ),
+    'primary key' => array('nid', 'rnid'),
+  );
+  return $schema;
+}
+
+function support_reference_install() {
+  drupal_install_schema('support_reference');
+}
+
+function support_reference_uninstall() {
+  drupal_uninstall_schema('support_reference');
+}

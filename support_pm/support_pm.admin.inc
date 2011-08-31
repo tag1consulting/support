@@ -106,7 +106,7 @@ function support_pm_admin_reports() {
       $day = support_pm_day_load($date);
       $client_day = support_pm_aggregate_client($day);
       if (is_array($client_day)) {
-        $row[] = theme('support_pm_user_client_hours_details', $client_day, 64);
+        $row[] = theme('support_pm_user_client_hours_details', array('day' => $client_day, 'scale' => 64));
       }
       else {
         $row[] = '';
@@ -123,7 +123,7 @@ function support_pm_admin_reports() {
 
       $user_day = support_pm_aggregate_user($day);
       if (is_array($user_day)) {
-        $row_user[] = theme('support_pm_user_client_hours_details', $user_day, 64);
+        $row_user[] = theme('support_pm_user_client_hours_details', array('day' => $user_day, 'scale' => 64));
       }
       else {
         $row_user[] = '';
@@ -158,8 +158,8 @@ function support_pm_admin_reports() {
           $hour_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);
           $hours_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);
         }
-        $row2[] = theme('support_pm_user_client_hours_details', $hour_client, 64);
-        $row_user[] = theme('support_pm_user_client_hours_details', $hour_user, 64);
+        $row2[] = theme('support_pm_user_client_hours_details', array('day' => $hour_client, 'scale' => 64));
+        $row_user[] = theme('support_pm_user_client_hours_details', array('day' => $hour_user, 'scale' => 64));
       }
     }
     $rows_details = array($row);
@@ -182,10 +182,10 @@ function support_pm_admin_reports() {
     $client_plan_sum = is_array($totals['client_plan']) ? array_sum($totals['client_plan']) : 0;
     $client_actual_sum = is_array($totals['client_actual']) ? array_sum($totals['client_actual']) : 0;
     $max = $client_plan_sum > $client_actual_sum ? $client_plan_sum : $client_actual_sum;
-    $row = array(theme('support_pm_user_hours_summary', $totals['client_plan'], 'support_client_load', $max, t('Not scheduled')));
+    $row = array(theme('support_pm_user_hours_summary', array('totals' => $totals['client_plan'], 'load_callback' => 'support_client_load', 'max' => $max, 'message' => t('Not scheduled'))));
     if (count($row2) > 1) {
       $header_client[] = t('Actual');
-      $row[] = theme('support_pm_user_hours_summary', $totals['client_actual'], 'support_client_load', $max, t('Not worked'));
+      $row[] = theme('support_pm_user_hours_summary', array('totals' => $totals['client_actual'], 'load_callback' => 'support_client_load', 'max' => $max, 'message' => t('Not worked')));
     }
     $rows_client = array($row);
 
@@ -193,10 +193,10 @@ function support_pm_admin_reports() {
     $user_plan_sum = is_array($totals['user_plan']) ?  array_sum($totals['user_plan']) : 0;
     $user_actual_sum = is_array($totals['user_actual']) ? array_sum($totals['user_actual']) : 0;
     $max = $user_plan_sum > $user_actual_sum ? $user_plan_sum : $user_actual_sum;
-    $row = array(theme('support_pm_user_hours_summary', $totals['user_plan'], 'user_load', $max, t('Not scheduled')));
+    $row = array(theme('support_pm_user_hours_summary', array('totals' => $totals['user_plan'], 'load_callback' => 'user_load', 'max' => $max, 'message' => t('Not scheduled'))));
     if (count($row2) > 1) {
       $header_user[] = t('Actual');
-      $row[] = theme('support_pm_user_hours_summary', $totals['user_actual'], 'user_load', $max, t('Not worked'));
+      $row[] = theme('support_pm_user_hours_summary', array('totals' => $totals['user_actual'], 'load_callback' => 'user_load', 'max' => $max, 'message' => t('Not worked')));
     }
     $rows_user = array($row);
 
@@ -206,7 +206,7 @@ function support_pm_admin_reports() {
     );
     $form['client']['client_data'] = array(
       '#type' => 'markup',
-      '#value' => theme('table', $header_client, $rows_client, array('id' => 'support_pm_summary')),
+      '#value' => theme('table', array('header' => $header_client, 'rows' => $rows_client, 'attributes' => array('id' => 'support_pm_summary'))),
     );
 
     $form['user'] = array(
@@ -215,7 +215,7 @@ function support_pm_admin_reports() {
     );
     $form['user']['user_data'] = array(
       '#type' => 'markup',
-      '#value' => theme('table', $header_user, $rows_user, array('id' => 'support_pm_summary')),
+      '#value' => theme('table', array('header' => $header_user, 'rows' => $rows_user, 'attributes' => array('id' => 'support_pm_summary'))),
     );
 
     $form['detail'] = array(
@@ -224,7 +224,7 @@ function support_pm_admin_reports() {
     );
     $form['detail']['detail_data'] = array(
       '#type' => 'markup',
-      '#value' => theme('table', $header_details, $rows_details, array('id' => 'support_pm_week')),
+      '#value' => theme('table', array('header' => $header_details, 'rows' => $rows_details, 'attributes' => array('id' => 'support_pm_week'))),
     );
   }
 

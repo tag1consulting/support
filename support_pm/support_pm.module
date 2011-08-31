@@ -383,7 +383,7 @@ function support_pm_plan_overview_weekly($account) {
         $hour[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
         $hours[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
       }
-      $row2[] = theme('support_pm_user_client_hours_details', $hour);
+      $row2[] = theme('support_pm_user_client_hours_details', array('day' => $hour));
     }
   }
   $rows = array($row);
@@ -396,22 +396,22 @@ function support_pm_plan_overview_weekly($account) {
     }
   }
 
-  $output = theme('support_pm_pager', t('‹ previous'), '<');
+  $output = theme('support_pm_pager', array('text' => t('‹ previous'), 'op' => '<'));
 
   $header2 = array(t('Plan'));
   $plan_sum = is_array($totals['plan']) ? array_sum($totals['plan']) : 0;
   $actual_sum = is_array($totals['actual']) ? array_sum($totals['actual']) : 0;
   $max = $plan_sum > $actual_sum ? $plan_sum : $actual_sum;
-  $row = array(theme('support_pm_user_hours_summary', $totals['plan'], 'support_client_load', $max, t('Not scheduled')));
+  $row = array(theme('support_pm_user_hours_summary', array('totals' => $totals['plan'], 'load_callback' => 'support_client_load', 'max' => $max, 'message' => t('Not scheduled'))));
 
   if (count($row2) > 1) {
     $header2[] = t('Actual');
-    $row[] = theme('support_pm_user_hours_summary', $totals['actual'], 'support_client_load', $max, t('Not worked'));
+    $row[] = theme('support_pm_user_hours_summary', array('totals' => isset($totals['actual']) ? $totals['actual'] : NULL, 'load_callback' => 'support_client_load', 'max' => $max, 'message' => t('Not worked')));
   }
   $rows2 = array($row);
-  $output .= theme('table', $header2, $rows2, array('id' => 'support_pm_summary'));
+  $output .= theme('table', array('header' => $header2, 'rows' => $rows2, 'attributes' => array('id' => 'support_pm_summary')));
 
-  $output .= theme('table', $header, $rows, array('id' => 'support_pm_week'));
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'support_pm_week')));
 
   $header = array(t('Client'));
   if (function_exists('imagecreatetruecolor')) {
@@ -468,7 +468,7 @@ function support_pm_plan_overview_weekly($account) {
       }
     }
     $plan = isset($totals['plan'][$clid]) ? $totals['plan'][$clid] : 0;
-    $row[] = theme('support_pm_plan_diff', $diff, $plan);
+    $row[] = theme('support_pm_plan_diff', array('diff' => $diff, 'plan' => $plan));
     $rows[] = $row;
   }
   $row = array('<strong>' . t('Total') .'</strong>');
@@ -480,11 +480,11 @@ function support_pm_plan_overview_weekly($account) {
   $row[] = '<strong>' . number_format($plan, 2) . '</strong>';
   $row[] = '<strong>' . number_format($actual, 2) . '</strong>';
   $diff = $actual - $plan;
-  $row[] = '<strong>' . theme('support_pm_plan_diff', $diff, $plan);
+  $row[] = '<strong>' . theme('support_pm_plan_diff', array('diff' => $diff, 'plan' => $plan));
   $rows[] = $row;
-  $output .= theme('table', $header, $rows, array('id' => 'support_pm_clients'));
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'support_pm_clients')));
 
-  $output .= theme('support_pm_pager', t('next ›'), '>');
+  $output .= theme('support_pm_pager', array('text' => t('next ›'), 'op' => '>'));
 
   return $output;
 }

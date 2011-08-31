@@ -125,21 +125,9 @@ function support_pm_schema() {
 }
 
 /**
- * Install support database schema.
+ * Add project tables.
  */
-function support_pm_install() {
-  drupal_install_schema('support_pm');
-}
-
-/**
- * Cleanup.
- */
-function support_pm_uninstall() {
-  drupal_uninstall_schema('support_pm');
-}
-
 function support_pm_update_6001() {
-  $ret = $schema = array();
   $schema['support_project'] = array(
     'description' => 'Defines projects that can be assigned to client tickets.',
     'fields' => array(
@@ -206,20 +194,20 @@ function support_pm_update_6001() {
     ),
     'primary key' => array('nid', 'projid'),
   );
-  db_create_table($ret, 'support_project', $schema['support_project']);
-  db_create_table($ret, 'support_project_client', $schema['support_project_client']);
-  db_create_table($ret, 'support_project_ticket', $schema['support_project_ticket']);
+  db_create_table('support_project', $schema['support_project']);
+  db_create_table('support_project_client', $schema['support_project_client']);
+  db_create_table('support_project_ticket', $schema['support_project_ticket']);
 
   // We've added new menus, flush caches and rebuild menus.
   drupal_flush_all_caches();
   menu_rebuild();
-
-  return $ret;
 }
 
+/**
+ * Add path to {support_project}.
+ */
 function support_pm_update_6002() {
-  $ret = array();
-  db_add_field($ret, 'support_project', 'path',
+  db_add_field('support_project', 'path',
     array(
       'type' => 'varchar',
       'length' => 255,
@@ -229,14 +217,16 @@ function support_pm_update_6002() {
     )
   );
   $result = db_query('SELECT projid, project FROM {support_project}');
-  while ($project = db_fetch_object($result)) {
+  foreach ($result as $project) {
     $path = strtolower(preg_replace('/[^0-9a-zA-Z]/', '', $project->project));
-    $ret[] = update_sql("UPDATE {support_project} SET path = '$path' WHERE projid = $project->projid");
+    db_update('support_project')
+      ->fields(array('path' => $path))
+      ->condition('projid', $project->projid)
+      ->execute();
   }
   // Add index after conversion, as otherwise it will fail as all paths will be
   // the same, ''.  If there'd been an actual release of this module already,
   // we'd add more error checking here to handle multiple projects of the same
   // name.
-  db_add_index($ret, 'support_project', 'path', array('path'));
-  return $ret;
+  db_add_index('support_project', 'path', array('path'));
 }

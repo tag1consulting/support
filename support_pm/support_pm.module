@@ -266,7 +266,7 @@ function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args
  * Allow projects to be selected.
  */
 function support_pm_support_timer_client_report_alter(&$report) {
-  $report->header .= ' &nbsp;&nbsp;&nbsp;&nbsp;' . $report->footer . drupal_get_form('support_pm_invoice_ui_form');
+  $report->filters .= drupal_get_form('support_pm_invoice_ui_form');
 }
 
 /**
@@ -312,21 +312,24 @@ function support_pm_invoice_ui_form() {
  * Add url filter when projects are selected.
  */
 function support_pm_invoice_ui_form_submit($form, &$form_state) {
+  $project = NULL;
   if (!empty($form_state['values']['projects'])) {
     $projects = support_pm_load_projects(_support_current_client());
     if (isset($projects[$form_state['values']['projects']])) {
       $project = support_pm_project_load($form_state['values']['projects']);
-      $path = drupal_get_path_alias(isset($_GET['q']) ? $_GET['q'] : '');
-      $query = array();
-      foreach ($_GET as $key => $value) {
-        if (!in_array($key, array('q', 'project'))) {
-          $query[$key] = $value;
-        }
-      }
-      $query['project'] = $project->path;
-      drupal_goto($path, $query);
     }
   }
+  $path = drupal_get_path_alias(isset($_GET['q']) ? $_GET['q'] : '');
+  $query = array();
+  foreach ($_GET as $key => $value) {
+    if (!in_array($key, array('q', 'project'))) {
+      $query[$key] = $value;
+    }
+  }
+  if (is_object($project)) {
+    $query['project'] = $project->path;
+  }
+  drupal_goto($path, $query);
 }
 
 /**

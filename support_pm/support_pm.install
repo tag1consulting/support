@@ -12,11 +12,6 @@ function support_pm_schema() {
   $schema['support_plan'] = array(
     'description' => 'Allows planning of hours required.',
     'fields' => array(
-      'pid' => array(
-        'type' => 'serial',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-      ),
       'clid' => array(
         'type' => 'varchar',
         'length' => 32,
@@ -46,8 +41,7 @@ function support_pm_schema() {
         'default' => '',
       ),
     ),
-    'primary key' => array('pid'),
-    'unique keys' => array('uid_clid_day' => array('uid', 'clid', 'day')),
+    'primary key' => array('uid', 'clid', 'day'),
   );
   $schema['support_project'] = array(
     'description' => 'Assign projects to support clients.',
@@ -229,4 +223,14 @@ function support_pm_update_6002() {
   // we'd add more error checking here to handle multiple projects of the same
   // name.
   db_add_index('support_project', 'path', array('path'));
+}
+
+/**
+ * Remove {support_plan}.pid, it's useless and gets in the way of doing merge queries.
+ */
+function support_pm_update_7000() {
+  db_drop_index('support_plan', 'uid_clid_day');
+//  db_drop_primary_key('support_plan');
+  db_drop_field('support_plan', 'pid');
+  db_add_primary_key('support_plan', array('uid', 'clid', 'day'));
 }

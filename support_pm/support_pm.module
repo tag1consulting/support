@@ -928,7 +928,7 @@ function support_pm_day_load($date = NULL, $user = NULL, $client = NULL) {
     $date = _support_pm_first_day();
   }
   $query = db_select('support_plan')
-    ->fields('support_plan', array('pid', 'clid', 'uid', 'day', 'hours', 'comment'))
+    ->fields('support_plan', array('clid', 'uid', 'day', 'hours', 'comment'))
     ->condition('day', $date)
     ->condition('hours', 0, '>');
 

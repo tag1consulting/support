@@ -314,7 +314,7 @@ function support_pm_aggregate_client($day) {
         $aggregate[$clid]->hours += $data->hours;
       }
       else {
-        $aggregate[$clid] = drupal_clone($data);
+        $aggregate[$clid] = clone($data);
       }
     }
   }
@@ -330,7 +330,7 @@ function support_pm_aggregate_user($day) {
         $aggregate[$uid]->hours += $data->hours;
       }
       else {
-        $aggregate[$uid] = drupal_clone($data);
+        $aggregate[$uid] = clone($data);
       }
     }
   }
@@ -370,7 +370,7 @@ function support_pm_admin_settings() {
           break;
         case 'user':
           if (!empty($id)) {
-            $object = user_load(array('uid' => $id));
+            $object = user_load($id);
           }
           if (is_object($object)) {
             $title = check_plain($object->name);

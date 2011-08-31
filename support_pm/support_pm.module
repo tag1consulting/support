@@ -14,19 +14,27 @@
  */
  
 /**
- * Implementation of hook_perm();
+ * Implements hook_permission().
  */
-function support_pm_perm() {
+function support_pm_permission() {
   return array(
-    'create plans',
-    'view all plans',
-    'administer plans',
-    'administer support projects',
+    'create plans' => array(
+      'title' => t('Create support plans'),
+    ),
+    'view all plans' => array(
+      'title' => t('View all support plans'),
+    ),
+    'administer plans' => array(
+      'title' => t('Administer support plans'),
+    ),
+    'administer support projects' => array(
+      'title' => t('Administer support projects'),
+    ),
   );
 }
   
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  * TODO: Include date in 'view' and 'edit' tabs
  */
 function support_pm_menu() {
@@ -911,7 +919,7 @@ function support_pm_chartapi_color($id, $type = 'client') {
 }
 
 function support_pm_chartapi_render($chart, $attributes = array()) {
-  return '<img src="' . support_pm_chartapi_uri() . '?' . drupal_query_string_encode($chart) . '"' . drupal_attributes($attributes) . " />\n";
+  return '<img src="' . support_pm_chartapi_uri() . '?' . drupal_http_build_query(drupal_get_query_parameters($chart)) . '"' . drupal_attributes($attributes) . " />\n";
 }
 
 /**

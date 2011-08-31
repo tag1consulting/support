@@ -2,4 +2,4 @@ name = Support Project Management
 description = Add project management functionality to the support module
 package = Support
 dependencies[] = support
-core = 6.x
+core = 7.x

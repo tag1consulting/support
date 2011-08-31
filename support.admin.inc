@@ -164,7 +164,7 @@ function support_admin_client($form, &$form_state, $client = NULL) {
   $form['mail']['thread_subject'] = array(
     '#type' => 'select',
     '#title' => t('Thread emails using subject'),
-    '#options' => array('Use global setting', 'Disabled', 'Match against new tickets', 'Match against open tickets', 'Match against all tickets'),
+    '#options' => array(0 => 'Use global setting', 1 => 'Disabled', 2 => 'Match against new tickets', 3 => 'Match against open tickets', 4 => 'Match against all tickets'),
     '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the !settings configuration will be used, however, you can override this global configuration here.', array('!settings' => l(t('general support settings'), 'admin/config/support/settings'))),
     '#default_value' => isset($client->thread_subject) ? $client->thread_subject : 0,
   );

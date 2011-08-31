@@ -28,6 +28,10 @@ April 28, 2011
 
 6.x changelog
 -------------
+August 10th, 2011
+ - support.module
+    o bug #1158398: gracefully handle when no current client is set
+
 August 9th, 2011
  - support.module
     o bug #1219332: properly handle empty client list

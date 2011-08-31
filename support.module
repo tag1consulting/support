@@ -2895,6 +2895,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   // Be sure a client is selected.  If not, select the last visited client.
   if (empty($client)) {
     if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
+      unset($_SESSION['support_client']);
       if ($client->parent) {
         $parent = support_client_load($client->parent);
         drupal_goto("support/$parent->path/$client->path");
@@ -3514,7 +3515,7 @@ function _support_access_tickets() {
  */
 function _support_autoassign($clid, $uid = 0) {
   static $autoassign = array();
-  if (!isset($autoassign[$clid])) {
+  if ($clid && !isset($autoassign[$clid])) {
     $name = null;
     if (isset($clid))
       $name = db_query('SELECT autoassign FROM {support_client} WHERE clid = :clid', array(':clid' => $clid))->fetchField();
@@ -3553,7 +3554,7 @@ function _support_autoassign($clid, $uid = 0) {
         }
     }
   }
-  return $autoassign[$clid];
+  return !empty($clid) ? $autoassign[$clid] : 0;
 }
 
 /**
@@ -3561,11 +3562,12 @@ function _support_autoassign($clid, $uid = 0) {
  */
 function _support_current_client() {
   $clients = _support_available_clients();
-  $client = null;
-  if (sizeof($clients) == 1) {
+  // Allow plug-in modules to affect which is the currently active client.
+  drupal_alter('support_current_client', $clients);
+  if (count($clients) == 1) {
     $client = key($clients);
   }
-  else {
+  else if (count($clients)) {
     if (isset($_SESSION['support_client']) && is_numeric($_SESSION['support_client'])) {
       $client = $_SESSION['support_client'];
     }
@@ -3575,6 +3577,9 @@ function _support_current_client() {
       // matching client...?
       $client = key($clients);
     }
+  }
+  else {
+    return NULL;
   }
   return $client;
 }

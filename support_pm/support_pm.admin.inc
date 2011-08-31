@@ -144,15 +144,15 @@ function support_pm_admin_reports() {
         $hour_user = array();
         // The support_timer module uses a slightly different date format
         $convert = strtotime(date('d M Y', $date));
-        $result = db_query('SELECT tt.time, t.client, n.uid FROM {support_ticket_timer} tt LEFT JOIN {support_ticket} t ON tt.nid = t.nid LEFT JOIN {node} n ON t.nid = n.nid WHERE tt.date = %d', $convert);
-        while ($timer = db_fetch_object($result)) {
+        $result = db_query('SELECT tt.time, t.client, n.uid FROM {support_ticket_timer} tt LEFT JOIN {support_ticket} t ON tt.nid = t.nid LEFT JOIN {node} n ON t.nid = n.nid WHERE tt.date = :date', array(':date' => $convert));
+        foreach ($result as $timer) {
           $hour_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hours_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hour_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);
           $hours_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);
         }
-        $result = db_query('SELECT tt.time, t.client, c.uid FROM {support_ticket_comment_timer} tt LEFT JOIN {support_ticket_comment} t ON tt.cid = t.cid LEFT JOIN {comments} c ON t.cid = c.cid WHERE tt.date = %d', $convert);
-        while ($timer = db_fetch_object($result)) {
+        $result = db_query('SELECT tt.time, t.client, c.uid FROM {support_ticket_comment_timer} tt LEFT JOIN {support_ticket_comment} t ON tt.cid = t.cid LEFT JOIN {comment} c ON t.cid = c.cid WHERE tt.date = :date', array(':date' => $convert));
+        foreach ($result as $timer) {
           $hour_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hours_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hour_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);
@@ -554,10 +554,10 @@ function support_pm_admin_project_form_validate($form, &$form_state) {
     form_set_error('path', t('Path %path contains invalid characters.', array('%path' => $path)));
   }
   if ($path && $projid) {
-    $projid = db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s' AND projid != %d", $path, $form_state['values']['projid']));
+    $projid = db_query('SELECT projid FROM {support_project} WHERE path = :path AND projid != :project', array(':path' => $path, ':project' => $projid))->fetchField();
   }
   else if ($path) {
-    $projid = db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s'", $path));
+    $projid = db_query('SELECT projid FROM {support_project} WHERE path = :path', array(':path' => $path))->fetchField();
   }
   else {
     $projid = NULL;

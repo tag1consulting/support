@@ -281,7 +281,7 @@ function support_pm_invoice_ui_form() {
     $projects = array(t('-- all projects --')) + support_pm_load_projects(_support_current_client());
     $project = isset($_GET['project']) ? $_GET['project'] : '';
     if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
-      $selected = (int)db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s'", $project));
+      $selected = (int)db_query('SELECT projid FROM {support_project} WHERE path = :path', array(':path' => $project))->fetchField();
     }
     else {
       $selected = 0;
@@ -442,7 +442,7 @@ function support_pm_plan_overview_weekly($account) {
     $row = array();
     $client = support_client_load($clid);
     $row[] = l($name, "support/$client->path");
-    $comments = db_result(db_query('SELECT comment FROM {support_plan} WHERE clid = %d AND uid = %d AND day = %d', $clid, $account->uid, $week));
+    $comments = db_query('SELECT comment FROM {support_plan} WHERE clid = :client AND uid = :uid AND day = :day', array(':client' => $clid, ':uid' => $account->uid, ':day' => $week))->fetchField();
     if (!empty($comments)) {
       $row[0] .= '<br />' . check_plain($comments);
     }
@@ -527,7 +527,7 @@ function support_pm_user_week($form, $user) {
   foreach ($clients as $clid => $name) {
     $form['client'][$clid] = array('#value' => $name);
     foreach ($dates as $date => $day) {
-      $hours = db_result(db_query("SELECT hours FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, $date));
+      $hours = db_query('SELECT hours FROM {support_plan} WHERE clid = :client AND uid = :uid AND day = :day', array(':client' => $clid, ':uid' => $user->uid, ':day' => $date))->fetchField();
       $form['textfields'][$clid]["$clid:$date"] = array(
         '#type' => 'textfield',
         '#size' => '2',
@@ -542,7 +542,7 @@ function support_pm_user_week($form, $user) {
       '#default_value' => 0,
     );
     if ($clid != 'totals') {
-      $comment = db_result(db_query("SELECT comment FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, _support_pm_first_day($week)));
+      $comment = db_query('SELECT comment FROM {support_plan} WHERE clid = :client AND uid = :uid AND day = :day', array(':client' => $clid, ':uid' => $user->uid, ':day' => _support_pm_first_day($week)))->fetchField();
       $form['textfields'][$clid]["$clid:comment"] = array(
         '#type' => 'textfield',
         '#size' => '20',
@@ -933,8 +933,8 @@ function support_pm_project_load($projid) {
   if (!isset($projects[$projid])) {
     $projects[$projid] = db_fetch_object(db_query('SELECT * FROM {support_project} WHERE projid = %d', $projid));
     $projects[$projid]->clids = array();
-    $result = db_query('SELECT clid FROM {support_project_client} WHERE projid = %d', $projid);
-    while ($client = db_fetch_object($result)) {
+    $result = db_query('SELECT clid FROM {support_project_client} WHERE projid = :project', array(':project' => $projid));
+    foreach ($result as $client) {
       $projects[$projid]->clids[] = $client->clid;
     }
     drupal_alter('support_pm_project_load', $projects[$projid]);
@@ -946,7 +946,7 @@ function support_pm_project_load_nid($nid) {
   static $projects = array();
 
   if (!isset($projects[$nid])) {
-    $projects[$nid] = db_fetch_object(db_query('SELECT * FROM {support_project_ticket} spt LEFT JOIN {support_project} sp ON spt.projid = sp.projid WHERE spt.nid = %d', $nid));
+    $projects[$nid] = db_query('SELECT * FROM {support_project_ticket} spt LEFT JOIN {support_project} sp ON spt.projid = sp.projid WHERE spt.nid = :nid', array(':nid' => $nid))->fetchObject();
     drupal_alter('support_pm_project_load_nid', $projects[$nid]);
   }
   return $projects[$nid];
@@ -976,6 +976,6 @@ function support_pm_default_project($projects) {
     return 0;
   }
   else {
-    return db_result(db_query_range('SELECT projid FROM {support_project} WHERE projid IN (%s) AND disabled = 0 ORDER BY weight ASC', implode(',', $projids), 0, 1));
+    return db_query_range('SELECT projid FROM {support_project} WHERE projid IN (:projects) AND disabled = 0 ORDER BY weight ASC', 0, 1, array(':projects' => $projids))->fetchField();
   }
 }

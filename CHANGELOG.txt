@@ -29,6 +29,10 @@ April 28, 2011
 6.x changelog
 -------------
 
+June 11th, 2011
+ - support_reference.module
+    o feature #1185544: Thanks to Bdragon, implement ticket references allowing
+      arbitrary relations be defined between tickets.
 
 May 17th, 2011
  - don't send notifications to blocked users

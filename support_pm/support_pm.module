@@ -629,7 +629,7 @@ function support_pm_user_week_submit($form, &$form_state) {
       }
     }
   }
-  drupal_goto("user/$user->uid/support_pm", "week=$week");
+  drupal_goto("user/$user->uid/support_pm", array('query' => array('week' => $week)));
 }
 
 /**
@@ -637,7 +637,7 @@ function support_pm_user_week_submit($form, &$form_state) {
  */
 function theme_support_pm_user_week($form) {
   $week = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
-  drupal_set_title(t('@start - @end', array('@start' => format_date($week, 'medium'), '@end' => format_date($week + 86400 * 6, 'medium'))));
+  drupal_set_title(t('@start - @end', array('@start' => format_date($week, 'medium'), '@end' => format_date($week + 86400 * 6, 'medium'))), PASS_THROUGH);
   $dates = _support_pm_dates($week);
   $dates['totals'] = t('Totals');
   $dates['comment'] = t('Comments');

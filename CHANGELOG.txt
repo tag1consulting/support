@@ -28,6 +28,10 @@ April 28, 2011
 
 6.x changelog
 -------------
+June 24th, 2011
+ - support_pm.module
+    o feature #1190320: rename support_plan to support_pm and add it to the
+      main support project, as a place to add project management functionality.
 
 June 11th, 2011
  - support_reference.module

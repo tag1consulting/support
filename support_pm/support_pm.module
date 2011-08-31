@@ -1,0 +1,698 @@
+<?php
+
+/**
+* @file 
+* Support Project Management.
+* @author Jeremy Andrews <jeremy@tag1consulting.com>
+* @package Support
+*/
+
+/**
+ * TODO:
+ *  - JavaScript to calculate totals
+ *  - Combined "calendar" view showing all plans on one page
+ */
+ 
+/**
+ * Implementation of hook_perm();
+ */
+function support_pm_perm() {
+  return array(
+    'create plans',
+    'view all plans',
+    'administer plans',
+  );
+}
+  
+/**
+ * Implementation of hook_menu().
+ * TODO: Include date in 'view' and 'edit' tabs
+ */  
+function support_pm_menu() {
+  $items = array();
+ 
+  $items['user/%user/support_plan'] = array(
+    'title' => 'Support plan',
+    'description' => 'Support planning',
+    'page callback' => 'support_pm_plan_overview_weekly',
+    'page arguments' => array(1),
+    'access arguments' => array('create plans'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['user/%user/support_plan/view'] = array(
+    'title' => 'Show plan',
+    'description' => 'Create support plans',
+    'page callback' => 'support_pm_plan_overview_weekly',
+    'page arguments' => array(1),
+    'access arguments' => array('create plans'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['user/%user/support_plan/edit'] = array(
+    'title' => 'Edit plan',
+    'description' => 'Create support plans',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_pm_user_week', 1),
+    'access arguments' => array('create plans'),
+    'weight' => 2,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/support/plan_reports'] = array(
+    'title' => 'Plans',
+    'description' => 'Generate support plan reports',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_pm_admin_reports'),
+    'access arguments' => array('administer support'),
+    'file' => 'support_pm.admin.inc',
+  );
+  $items['admin/support/plan'] = array(
+    'title' => 'Plan settings',
+    'description' => 'Configure support plans',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_pm_admin_settings'),
+    'access arguments' => array('administer support'),
+    'file' => 'support_pm.admin.inc',
+  );
+  $items['support_pm/image/%'] = array(
+    'page callback' => 'support_pm_display_swatch',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function support_pm_theme() {
+  return array(
+    'support_pm_user_week' => array(
+      'arguments' => array('form' => NULL),
+    ),
+    'support_pm_pager' => array(
+      'arguments' => array('text' => NULL, 'op' => NULL, 'parameters' => array(), 'attributes' => array()),
+    ),
+    'support_pm_user_client_hours_details' => array(
+      'arguments' => array('day' => array(), 'scale' => NULL),
+    ),
+    'support_pm_user_hours_summary' => array(
+      'arguments' => array('totals' => array(), 'load_callback' => NULL, 'max' => NULL, 'message' => 'Mismatch'),
+    ),
+    'support_pm_plan_diff' => array(
+      'arguments' => array('diff' => NULL, 'plan' => NULL),
+    ),
+  );
+}
+
+/**
+ *
+ */
+function support_pm_plan_overview_weekly($account) {
+  $output = NULL;
+  $week = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
+
+  // Set the page title (keep it consisten with the editing page)
+  drupal_set_title(t('@start - @end', array('@start' => format_date($week, 'medium'), '@end' => format_date($week + 86400 * 6, 'medium'))));
+
+  $header = array('');
+  $row = array('<strong>'. t('Plan') .'</strong>');
+  $row2 = array('<strong>'. t('Actual') .'</strong>');
+  $totals = array();
+  $hours = array();
+  // TODO: Allow for 5 day weeks, etc
+  for ($i = 0; $i < 7; $i++) {
+    $date = $week + 86400 * $i;
+    $header[] = t('!day<br />!date', array('!day' => format_date($date, 'custom', 'l'), '!date' => format_date($date, 'custom', 'M d')));
+    $day = support_pm_day_load($date, $account);
+    if (is_array($day[$account->uid])) {
+      $row[] = theme('support_pm_user_client_hours_details', $day[$account->uid]);
+    }
+    else {
+      $row[] = '';
+    }
+    // Add up totals
+    if (is_array($day[$account->uid])) {
+      foreach ($day[$account->uid] as $clid => $data) {
+        $totals['plan'][$clid] += $data->hours;
+      }
+    }
+    else if (!is_array($totals['plan'])) {
+      $totals['plan'] = array();
+    }
+
+    // Integrate with the support_timer module, if enabled
+    $hour = array();
+    if (module_exists('support_timer')) {
+      // The support_timer module uses a slightly different date format
+      $convert = strtotime(date('d M Y', $date));
+      $result = db_query('SELECT tt.time, t.client FROM {support_ticket_timer} tt LEFT JOIN {support_ticket} t ON tt.nid = t.nid LEFT JOIN {node} n ON t.nid = n.nid WHERE tt.date = %d AND n.uid = %d', $convert, $account->uid);
+      while ($timer = db_fetch_object($result)) {
+        $hour[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
+        $hours[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
+      }
+      $result = db_query('SELECT tt.time, t.client FROM {support_ticket_comment_timer} tt LEFT JOIN {support_ticket_comment} t ON tt.cid = t.cid LEFT JOIN {comments} c ON t.cid = c.cid WHERE tt.date = %d AND c.uid = %d', $convert, $account->uid);
+      while ($timer = db_fetch_object($result)) {
+        $hour[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
+        $hours[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
+      }
+      $row2[] = theme('support_pm_user_client_hours_details', $hour);
+    }
+  }
+  $rows = array($row);
+  // Only display actual data if support_timer is enabled to collect it
+  if (count($row2) > 1) {
+    $rows[] = $row2;
+    foreach ($hours as $clid => $data) {
+      // Add up totals
+      $totals['actual'][$clid] = $data->hours;
+    }
+  }
+
+  $output = theme('support_pm_pager', t('‹ previous'), '<');
+
+  $header2 = array(t('Plan'));
+  $plan_sum = is_array($totals['plan']) ? array_sum($totals['plan']) : 0;
+  $actual_sum = is_array($totals['actual']) ? array_sum($totals['actual']) : 0;
+  $max = $plan_sum > $actual_sum ? $plan_sum : $actual_sum;
+  $row = array(theme('support_pm_user_hours_summary', $totals['plan'], 'support_client_load', $max, t('Not scheduled')));
+
+  if (count($row2) > 1) {
+    $header2[] = t('Actual');
+    $row[] = theme('support_pm_user_hours_summary', $totals['actual'], 'support_client_load', $max, t('Not worked'));
+  }
+  $rows2 = array($row);
+  $output .= theme('table', $header2, $rows2, array('id' => 'support_pm_summary'));
+
+  $output .= theme('table', $header, $rows, array('id' => 'support_pm_week'));
+
+  $header = array(t('Client'));
+  if (function_exists('imagecreatetruecolor')) {
+    $header[] = t('Color');
+  }
+  $header[] = t('Planned');
+  $header[] = t('Worked');
+  $header[] = t('Difference');
+  if (isset($totals['plan']) || isset($totals['actual'])) {
+    if (isset($totals['plan']) && isset($totals['actual'])) {
+      $all_clients = $totals['plan'] + $totals['actual'];
+    }
+    else {
+      $all_clients = isset($totals['plan']) ? $totals['plan'] : $totals['actual'];
+    }
+  }
+  else {
+    $all_clients = array();
+  }
+  $rows = $clients = array();
+  foreach ($all_clients as $clid => $data) {
+    $client = support_client_load($clid);
+    $clients[$clid] = $client->name;
+  }
+  asort($clients);
+  $rows = array();
+  foreach ($clients as $clid => $name) {
+    $row = array();
+    $client = support_client_load($clid);
+    $row[] = l($name, "support/$client->path");
+    $comments = db_result(db_query('SELECT comment FROM {support_plan} WHERE clid = %d AND uid = %d AND day = %d', $clid, $account->uid, $week));
+    if (!empty($comments)) {
+      $row[0] .= '<br />' . check_plain($comments);
+    }
+    if (function_exists('imagecreatetruecolor')) {
+      $row[] = "<img src='". url('support_pm/image/') . support_pm_chartapi_color($clid) ."' alt='swatch' height='15' width='15' />";
+    }
+    $row[] = isset($totals['plan'][$clid]) ? number_format($totals['plan'][$clid], 2) : "0.00";
+    $row[] = isset($totals['actual'][$clid]) ? number_format($totals['actual'][$clid], 2) : "0.00";
+    if (isset($totals['plan'][$clid])) {
+      if (isset($totals['actual'][$clid])) {
+        $diff = $totals['actual'][$clid] - $totals['plan'][$clid];
+      }
+      else {
+        $diff = -$totals['plan'][$clid];
+      }
+    }
+    else {
+      if (isset($totals['actual'][$clid])) {
+        $diff = $totals['actual'][$clid];
+      }
+      else {
+        $diff = 0.00;
+      }
+    }
+    $plan = isset($totals['plan'][$clid]) ? $totals['plan'][$clid] : 0;
+    $row[] = theme('support_pm_plan_diff', $diff, $plan);
+    $rows[] = $row;
+  }
+  $row = array('<strong>' . t('Total') .'</strong>');
+  if (function_exists('imagecreatetruecolor')) {
+    $row[] = "<img src='". url('support_pm/image/DDDDDD'). "' alt='swatch' height='15' width='15' />";
+  }
+  $plan = isset($totals['plan']) ? array_sum($totals['plan']) : 0;
+  $actual = isset($totals['actual']) ? array_sum($totals['actual']) : 0;
+  $row[] = '<strong>' . number_format($plan, 2) . '</strong>';
+  $row[] = '<strong>' . number_format($actual, 2) . '</strong>';
+  $diff = $actual - $plan;
+  $row[] = '<strong>' . theme('support_pm_plan_diff', $diff, $plan);
+  $rows[] = $row;
+  $output .= theme('table', $header, $rows, array('id' => 'support_pm_clients'));
+
+  $output .= theme('support_pm_pager', t('next ›'), '>');
+
+  return $output;
+}
+
+function support_pm_display_swatch($color) {
+  $color = preg_replace('/[^0-9a-fA-F]/', '', $color);
+  if (strlen($color)) {
+    if (strlen($color) == 3) {
+      $color = $color . $color;
+    }
+    if (strlen($color) > 6) {
+      $color = substr($color, 0, 6);
+    }
+    else if (strlen($color) < 6) {
+      $color = 'FFFFFF';
+    }
+  }
+  $image = imagecreatetruecolor(15, 15);
+  $swatch = imagecolorallocate($image, hexdec(substr($color, 0, 2)), hexdec(substr($color, 2, 2)), hexdec(substr($color, 4, 2)));
+  imagefill($image, 0, 0, $swatch);
+  header('Content-type: image/png');
+  imagepng($image);
+  imagedestroy($image);
+}
+
+/**     
+ * Page callback.
+ */
+function support_pm_user_week($form, $user) {
+  $form = array();
+
+  $week = isset($_GET['week']) ? (int)$_GET['week'] : time();
+  $dates = _support_pm_dates($week);
+
+  drupal_add_js(array('support_pm' => array('unload_warning' => variable_get('support_pm_unload_warning', TRUE), 'elapsed' => $elapsed)), 'setting');
+  drupal_add_js(drupal_get_path('module', 'support_pm'). '/support_pm.js');
+
+  $clients = _support_available_clients($user);
+  $clients['totals'] = '<strong>' . t('Totals') . '</strong>';
+  foreach ($clients as $clid => $name) {
+    $form['client'][$clid] = array('#value' => $name);
+    foreach ($dates as $date => $day) {
+      $hours = db_result(db_query("SELECT hours FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, $date));
+      $form['textfields'][$clid]["$clid:$date"] = array(
+        '#type' => 'textfield',
+        '#size' => '2',
+        '#default_value' => $hours ? $hours : 0,
+        '#disabled' => ($clid == 'totals' ? TRUE : FALSE),
+      );
+    }
+    $form['textfields'][$clid]["$clid:totals"] = array(
+      '#type' => 'textfield',
+      '#size' => '2',
+      '#disabled' => TRUE,
+      '#default_value' => 0,
+    );
+    if ($clid != 'totals') {
+      $comment = db_result(db_query("SELECT comment FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, _support_pm_first_day($week)));
+      $form['textfields'][$clid]["$clid:comment"] = array(
+        '#type' => 'textfield',
+        '#size' => '20',
+        '#disabled' => FALSE,
+        '#default_value' => $comment,
+      );
+    }
+  }
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $user->uid,
+  );
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save plan'));
+
+  return $form;
+}
+
+/**
+ * Save user's week plan.
+ */
+function support_pm_user_week_submit($form, &$form_state) {
+  $week = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
+  $dates = _support_pm_dates($week);
+  $dates['totals'] = t('Totals');
+  $user = user_load(array('uid' => $form_state['values']['uid']));
+  $clients = _support_available_clients($user);
+  foreach ($form_state['values'] as $key => $value) {
+    $key = explode(':', $key);
+    $clid = $key[0];
+    $day = $key[1];
+    if (!empty ($day)) {
+      if (isset($clients[$clid]) && $day != 'totals') {
+        if ($day == 'comment') {
+          db_query("UPDATE {support_plan} SET comment = '%s' WHERE clid = '%s' AND uid = %d AND day = %d", $value, $clid, $user->uid, $week);
+        }
+        else {
+          db_query("UPDATE {support_plan} SET hours = %f WHERE clid = '%s' AND uid = %d AND day = %d", $value, $clid, $user->uid, $day);
+        }
+        // If we affected 0 rows, we are probably creating a new plan
+        if (!db_affected_rows()) {
+          // We must create new rows to store the plan.
+          if ($day == 'comment') {
+            // We may not have changed this row, but it may already exist
+            $exists = db_result(db_query("SELECT clid FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, $week));
+            if (!$exists) {
+              db_query("INSERT INTO {support_plan} (comment, clid, uid, day) VALUES ('%s', '%s', %d, %d)", $value, $clid, $user->uid, $week);
+            }
+          }
+          else {
+            // We may not have changed this row, but it may already exist
+            $exists = db_result(db_query("SELECT clid FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, $day));
+            if (!$exists) {
+              db_query("INSERT INTO {support_plan} (hours, clid, uid, day) VALUES (%f, '%s', %d, %d)", $value, $clid, $user->uid, $day);
+            }
+          }
+        }
+      }
+    }
+  }
+  drupal_goto("user/$user->uid/support_pm", "week=$week");
+}
+
+/**
+ * TODO: Auto-calculate totals whenever a field is updated.
+ */
+function theme_support_pm_user_week($form) {
+  $week = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
+  drupal_set_title(t('@start - @end', array('@start' => format_date($week, 'medium'), '@end' => format_date($week + 86400 * 6, 'medium'))));
+  $dates = _support_pm_dates($week);
+  $dates['totals'] = t('Totals');
+  $dates['comment'] = t('Comments');
+  foreach (element_children($form['client']) as $key) {
+    // Don't take form control structures
+    if (is_array($form['client'][$key])) {
+      $row = array();
+      $row[] = array(
+        'data' => drupal_render($form['client'][$key]),
+        'class' => 'support-client',
+        'id' => 'client-'. $form['client'][$key]['#value'],
+      );
+      if (is_array($form['textfields'][$key])) {
+        foreach ($dates as $date => $name) {
+          $row[] = array(
+            'data' => drupal_render($form['textfields'][$key]["$key:$date"]),
+            'class' => 'textfield',
+            'title' => $name,
+          );
+        }
+      }
+    }
+    $rows[] = $row;
+  }
+  $header[] = (t('Client'));
+  foreach ($dates as $date => $name) {
+    if ($name == format_date($date, 'custom', 'l')) {
+      $header[] = t('!day<br />!date', array('!day' => format_date($date, 'custom', 'l'), '!date' => format_date($date, 'custom', 'M d')));
+    }
+    else {
+      $header[] = $name;
+    }
+  }
+  $output = theme('support_pm_pager', t('‹ previous'), '<');
+  $output .= theme('table', $header, $rows, array('id' => 'permissions'));
+  $output .= drupal_render($form);
+  $output .= theme('support_pm_pager', t('next ›'), '>');
+  return $output;
+}
+
+/**
+ * Bar graph details.
+ */
+function theme_support_pm_user_client_hours_details($day, $scale = 12) {
+  static $comment;
+
+  $clients = array();
+  $chart = array();
+  $hours = array();
+  $colors = array();
+
+  foreach ($day as $clid => $data) {
+    $hours[$clid] = $data->hours;
+    $colors[$clid] = support_pm_chartapi_color($clid);
+  }
+
+  if (empty($hours)) {
+    $hours[] = 0;
+    $colors[] = support_pm_chartapi_color(0);
+  }
+
+  // TODO: Allow attribute overrides
+  $attributes = array('class' => 'chart');
+  $output = support_pm_chartapi_render(array(
+    'cht' => 'bvs',
+    'chd' => 't:' . implode('|', $hours),
+    'chco' => implode(',', $colors),
+    'chs' => '45x70',
+    'chl' => format_plural(array_sum($hours), '1 hr', '@count hrs'),
+    'chma' => '7,0,7',
+    'chds' => "0,$scale",
+  ), $attributes);
+
+  return $output;
+}
+
+/**
+ * Pie chart summary.
+ */
+function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_client_load', $max = NULL, $message = 'Mismatch') {
+  if (!is_array($totals)) {
+    return;
+  }
+
+  arsort($totals);
+
+  $data = array();
+  foreach ($totals as $id => $total) {
+    if ($id) {
+      $data['totals'][$id] += $total;
+      $data['labels'][$id] = format_plural($total, '1 hr', '@count hrs');
+      $data['colors'][$id] = support_pm_chartapi_color($id, 'user');
+      $details = $load_callback($id);
+      $data['legend'][$id] = check_plain($details->name);
+    }
+  }
+
+  if (is_array($data['totals'])) {
+    foreach ($data['totals'] as $id => $total) {
+      if (!$total) {
+        unset($data['totals'][$id]);
+        unset($data['labels'][$id]);
+        unset($data['colors'][$id]);
+        unset($data['legend'][$id]);
+      }
+    }
+  }
+
+  if (!empty($data)) {
+    $total = array_sum($data['totals']);
+    if ($max && $total < $max) {
+      $data['totals']['filler'] += $max - $total;
+      $data['labels']['filler'] = format_plural($max - $total, '1 hr', '@count hrs');
+      $data['colors']['filler'] = 'DDDDDD';
+      $data['legend']['filler'] = $message;
+    }
+    // TODO: Allow attribute overrides
+    $attributes = array('class' => 'chart');
+    $output = support_pm_chartapi_render(array(
+      'cht' => 'p',
+      'chs' => '450x245',
+      'chtt' => format_plural($total, '1 hr', '@count hrs'),
+      'chd' => 't:' . implode(',', $data['totals']),
+      'chdl' => implode('|', $data['legend']),
+      'chco' => implode(',', $data['colors']),
+      'chl' => implode('|', $data['labels']),
+      'chma' => '25,0,15,15',
+    ), $attributes);
+  }
+  return $output;
+}
+
+/**
+ * Helper function to show previous and next weeks.
+ */
+function theme_support_pm_pager($text, $op, $parameters = array(), $attributes = array()) {
+  $first_day = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
+  $week = $first_day;
+  switch ($op) {
+    case '<':
+      $week -= 86400 * 7;
+      $prepend = '‹ ';
+      break;
+    case '>':
+      $week += 86400 * 7;
+      $append = ' ›';
+      break;
+    default:
+      $append = '';
+      $prepend = '';
+      break;
+  }
+  $dates = t('@start - @end', array('@start' => format_date($week, 'medium'), '@end' => format_date($week + 86400 * 6, 'medium')));
+  $text = t('@prepend@dates@append', array('@prepend' => $prepend, '@dates' => $dates, '@append' => $append));
+
+  $query = array();
+  if (!isset($parameters['week'])) {
+    $parameters['week'] = $week;
+  }
+  if (count($parameters)) {
+    $query[] = drupal_query_string_encode($parameters, array());
+  }
+  if (!isset($attributes['title'])) {
+    $attributes['title'] = t('View plan for week of @week', array('@week' => $dates));
+  }
+
+  return l($text, $_GET['q'], array('attributes' => $attributes, 'query' => count($query) ? implode('&', $query) : NULL));
+}
+
+function theme_support_pm_plan_diff($diff, $plan) {
+  $diff = number_format($diff, 2);
+  $percent = $plan ? number_format($diff / $plan * 100, 2) : 0;
+  if ($diff < 0) {
+    return "<font color='red'>$diff ($percent%)</font>";
+  }
+  else if ($diff > 0) {
+    if ($plan) {
+      return "<font color='green'>$diff (+$percent%)</font>";
+    }
+    else {
+      return "<font color='brown'>$diff</font>";
+    }
+  }
+  return $diff;
+}
+
+/**
+ * TODO: Proper timezone support
+ */
+function _support_pm_first_day($time = 0) {
+  // Use Drupal core's configurable first day of the week.
+  $date_first_day = variable_get('date_first_day', 0);
+  if (!$time) {
+    $time = time();
+  }
+  // Determine what day of the week $time is
+  $day = date('w', $time);
+  // Now calculate a timestamp for the first day of this week,
+  // respecting the configured first day of the week.
+  if ($day >= $date_first_day) {
+    $days = $day - $date_first_day;
+  }
+  else {
+    $days = $day + 7 - $date_first_day;
+  }
+  return (strtotime(date('M d, Y 12:00', $time - 86400 * $days)));
+}
+
+/**
+ * Return array of days, $timestamp => $day where $timestamp is the first
+ * second of the named $day.
+ */
+function _support_pm_dates($start = 0) {
+  // TODO: Make configurable (ie, disable weekends)
+  $day = array(t('Sunday'), t('Monday'), t('Tuesday'), t('Wednesday'), t('Thursday'), t('Friday'), t('Saturday'));
+  $date = _support_pm_first_day($start);
+  $day_of_week = variable_get('date_first_day', 0);
+  // Build an array of $timestamp => $day pairs
+  for ($i = 0; $i < 7; $i++) {
+    $dates[$date] = $day[$day_of_week];
+    $date += 86400;
+    if (++$day_of_week > 6) {
+      $day_of_week = 0;
+    }
+  }
+  return $dates;
+}
+
+function support_pm_day_load($date = NULL, $user = NULL, $client = NULL) {
+  if (is_null($date)) {
+    // default to this week
+    $date = _support_pm_first_day();
+  }
+  $query = 'SELECT pid, clid, uid, day, hours, comment FROM {support_plan} WHERE day = %d AND hours > 0';
+  $args = array($date);
+
+  if (is_object($user) && isset($user->uid)) {
+    $query .= ' AND uid = %d';
+    $args[] = $user->uid;
+  }
+
+  if (is_object($client) && isset($client->clid)) {
+    $query .= ' AND clid = %d';
+    $args[] = $client->clid;
+  }
+
+  $day = array();
+  $result = db_query($query, $args);
+  while ($row = db_fetch_object($result)) {
+    $day[$row->uid][$row->clid] = $row;
+  }
+  return $day;
+}
+
+/**
+ * Google ChartAPI calls.
+ *  TODO: Move into a helper module? (chartapi module seems abandoned)
+ **/
+
+/**
+ * In order to optimize displaying multiple charts on one page,
+ * we generate unique urls for the charts.
+ * TODO: Why does this break?
+ */
+function support_pm_chartapi_uri() {
+  return 'http://chart.apis.google.com/chart';
+  static $i = 0;
+  $uri = "http://$i.chart.apis.google.com/chart";
+  if (++$i > 9) {
+    $i = 0;
+  }
+  return $uri;
+}
+
+function support_pm_chartapi_color($id, $type = 'client') {
+  static $color = 0;
+  static $values = NULL;
+  $update = FALSE;
+
+  if (!isset($values)) {
+    $values = variable_get('support_pm_color_values', array());
+    $color = variable_get('support_pm_color', 0);
+  }
+  $colors = array('66FF99', '6699CC', 'FFCCFF', 'FFFF99', 'FFFF00', '6633CC', '666600', 'FFCC00', '666666', '66FF00', '66CC66', '66FFFF', '669933', 'FF6600', '6666FF', 'FF3300', '66CCFF', '663333', 'FF0000');
+
+  if (!isset($values[$type][$id])) {
+    $values[$type][$id] = $colors[$color++];
+    $update = TRUE;
+  }
+  if ($color > count($colors)) {
+    $color = 0;
+  }
+  if ($update) {
+    variable_set('support_pm_color_values', $values);
+    variable_set('support_pm_color', $color);
+  }
+  return $values[$type][$id];
+}
+
+function support_pm_chartapi_render($chart, $attributes = array()) {
+  return '<img src="' . support_pm_chartapi_uri() . '?' . drupal_query_string_encode($chart) . '"' . drupal_attributes($attributes) . " />\n";
+}
+
+/**
+ * Convert from timer time format to decimal.
+ */
+function support_pm_timer_to_hours($time) {
+  $time = explode(':', $time);
+  $hours = (int)$time[0];
+  $minutes = round((int)$time[1] / 60, 2);
+  return $hours + $minutes;
+}

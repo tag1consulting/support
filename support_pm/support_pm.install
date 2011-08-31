@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * Helpdesk / support ticket project management database schema.
+ * Copyright (c) 2010-11 Tag1 Consulting, Inc <jeremy@tag1consulting.com>.
+ */
+
+/**
+ * Support project management database schema definition.
+ */
+function support_pm_schema() {
+  $schema['support_plan'] = array(
+    'description' => 'Allows planning of hours required.',
+    'fields' => array(
+      'pid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'clid' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'day' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'hours' => array(
+        'type' => 'float',
+        'not null' => FALSE,
+        'unsigned' => TRUE,
+        'default' => 0.0,
+      ),
+      'comment' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('pid'),
+    'unique keys' => array('uid_clid_day' => array('uid', 'clid', 'day')),
+  );
+  return $schema;
+}
+
+/**
+ * Install support database schema.
+ */
+function support_pm_install() {
+  drupal_install_schema('support_pm');
+}
+
+/**
+ * Cleanup.
+ */
+function support_pm_uninstall() {
+  drupal_uninstall_schema('support_pm');
+}
+

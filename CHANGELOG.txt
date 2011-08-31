@@ -32,6 +32,9 @@ August 9th, 2011
  - support.module
     o bug #1219332: properly handle empty client list
     o bug #1035774: set Message-ID (not Message-Id) only if not set already
+    o bug #683256 by kingandy: display pager on admin client listing
+    o feature #775270 by Jay Matwichuk, jandrews: grant access to ticket if
+      user is subscribed to ticket
 
 June 25th, 2011
  - support_pm.module

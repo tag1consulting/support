@@ -291,14 +291,14 @@ function support_pm_invoice_ui_form() {
       '#type' => 'fieldset',
       '#title' => t('Project'),
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#collapsed' => $selected ? FALSE : TRUE,
     );
     $form['pm']['projects']= array(
       '#title' => t('Project'),
       '#type' => 'select',
       '#options' => $projects,
       '#default_value' => $selected,
-      '#description' => t('Display invoice for selected project.'),
+      '#description' => t('Filter report by selected project.'),
     );
     $form['pm']['submit'] = array(
       '#type' => 'submit',

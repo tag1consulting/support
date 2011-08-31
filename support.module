@@ -3147,7 +3147,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     $form['update'] = array(
       '#title' => t('Update'),
       '#type' => 'textarea',
-      '#required' => TRUE,
+      '#required' => variable_get('support_require_comment', TRUE),
       '#description' => t('This text will be added to all selected tickets.'),
     );
     if (user_access('can suppress notification') && variable_get('support_notifications', TRUE)) {

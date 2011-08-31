@@ -17,38 +17,35 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
   }
   $state = _support_get_state($state);
 
+  $sort = variable_get('support_default_sort_tickets', SUPPORT_SORT_UPDATE);
+  if (variable_get('support_default_sort_order', SUPPORT_SORT_DESC) == SUPPORT_SORT_DESC) {
+    $order = 'desc';
+  }
+  else {
+    $order = 'asc';
+  }
+  foreach (array(
+    SUPPORT_SORT_UPDATE => array('data' => t('Updated'), 'field' => 'last_updated'),
+    SUPPORT_SORT_NID => array('data' => t('Id'), 'field' => 'n.nid'),
+    SUPPORT_SORT_STATE => array('data' => t('State'), 'field' => 't.state'),
+    SUPPORT_SORT_PRIORITY => array('data' => t('Priority'), 'field' => 't.priority')) as $key => $array) {
+    if ($sort == $key) {
+      $headers[$key] = $array + array('sort' => $order);
+    }
+    else {
+      $headers[$key] = $array;
+    }
+  }
+
   $rows = array();
   $header = array(
-    array(
-      'data' => t('Id'),
-      'field' => 'n.nid',
-      'class' => array('id'),
-    ),
-    array(
-      'data' => t('Ticket'),
-      'field' => 'n.title',
-    ),
-    array(
-      'data' => t('Updated'),
-      'field' => 'last_updated',
-      'sort' => 'desc',
-    ),
-    array(
-      'data' => t('Reported by'),
-      'field' => 'n.uid',
-    ),
-    array(
-      'data' => t('State'),
-      'field' => 't.state',
-    ),
-    array(
-      'data' => t('Priority'),
-      'field' => 't.priority',
-    ),
-    array(
-      'data' => t('Updates'),
-      'field' => 'l.comment_count',
-    ),
+    $headers[SUPPORT_SORT_NID],
+    array('data' => t('Ticket'), 'field' => 'n.title'),
+    $headers[SUPPORT_SORT_UPDATE],
+    array('data' => t('Reported by'), 'field' => 'n.uid'),
+    $headers[SUPPORT_SORT_STATE],
+    $headers[SUPPORT_SORT_PRIORITY],
+    array('data' => t('Updates'), 'field' => 'l.comment_count'),
   );
 
   if (_support_access_tickets() > 1) {
@@ -89,25 +86,17 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       $query->condition('n.uid', $user->uid);
     }
 
-    switch (variable_get('support_secondary_sort_order', 0)) {
-      case 0:
-        $order = 'ASC';
-        break;
-      case 1:
-        $order = 'DESC';
-        break;
-    }
-    switch (variable_get('support_secondary_sort_tickets', 0)) {
-      case 1:
+    switch (variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE)) {
+      case SUPPORT_SORT_UPDATE:
         $query->orderBy('last_updated', $order);
         break;
-      case 2:
+      case SUPPORT_SORT_NID:
         $query->orderBy('n.nid', $order);
         break;
-      case 3:
+      case SUPPORT_SORT_STATE:
         $query->orderBy('t.state', $order);
         break;
-      case 4:
+      case SUPPORT_SORT_PRIORITY:
         $query->orderBy('t.priority', $order);
         break;
     }

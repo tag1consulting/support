@@ -5,6 +5,15 @@
  */
 define('SUPPORT_STATE_CLOSED', -3);
 
+define('SUPPORT_SORT_NONE', 0);
+define('SUPPORT_SORT_UPDATE', 1);
+define('SUPPORT_SORT_NID', 2);
+define('SUPPORT_SORT_STATE', 3);
+define('SUPPORT_SORT_PRIORITY', 4);
+
+define('SUPPORT_SORT_ASC', 0);
+define('SUPPORT_SORT_DESC', 1);
+
 /**
  * Implementation of hook_node_info().
  */
@@ -2945,43 +2954,38 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     );
     $form['#attached']['js']['misc/tableselect.js'] = array();
   }
+
+  $sort = variable_get('support_default_sort_tickets', SUPPORT_SORT_UPDATE);
+  if (variable_get('support_default_sort_order', SUPPORT_SORT_DESC) == SUPPORT_SORT_DESC) {
+    $order = 'desc';
+  }
+  else {
+    $order = 'asc';
+  }
+  foreach (array(
+    SUPPORT_SORT_UPDATE => array('data' => t('Updated'), 'field' => 'last_updated'),
+    SUPPORT_SORT_NID => array('data' => t('Id'), 'field' => 'n.nid'),
+    SUPPORT_SORT_STATE => array('data' => t('State'), 'field' => 't.state'),
+    SUPPORT_SORT_PRIORITY => array('data' => t('Priority'), 'field' => 't.priority')) as $key => $array) {
+    if ($sort == $key) {
+      $headers[$key] = $array + array('sort' => $order);
+    }
+    else {
+      $headers[$key] = $array;
+    }
+  }
   $form['header'] = array(
     '#type' => 'value',
     '#value' => array(
       $checkboxes,
-      array(
-        'data' => t('Id'),
-        'field' => 'n.nid',
-      ),
-      array(
-        'data' => t('Ticket'),
-        'field' => 'n.title',
-      ),
-      array(
-        'data' => t('Updated'),
-        'field' => 'last_updated',
-        'sort' => 'desc',
-      ),
-      array(
-        'data' => t('Reported by'),
-        'field' => 'n.uid',
-      ),
-      array(
-        'data' => t('Assigned to'),
-        'field' => 't.assigned',
-      ),
-      array(
-        'data' => t('State'),
-        'field' => 't.state',
-      ),
-      array(
-        'data' => t('Priority'),
-        'field' => 't.priority',
-      ),
-      array(
-        'data' => t('Updates'),
-        'field' => 's.comment_count',
-      ),
+      $headers[SUPPORT_SORT_NID],
+      array('data' => t('Ticket'), 'field' => 'n.title'),
+      $headers[SUPPORT_SORT_UPDATE],
+      array('data' => t('Reported by'), 'field' => 'n.uid'),
+      array('data' => t('Assigned to'), 'field' => 't.assigned'),
+      $headers[SUPPORT_SORT_STATE],
+      $headers[SUPPORT_SORT_PRIORITY],
+      array('data' => t('Updates'), 'field' => 's.comment_count'),
     ),
   );
 
@@ -3015,25 +3019,17 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     $query->condition('t.state', $state);
   }
 
-  switch (variable_get('support_secondary_sort_order', 0)) {
-    case 0:
-      $order = 'ASC';
-      break;
-    case 1:
-      $order = 'DESC';
-      break;
-  }
-  switch (variable_get('support_secondary_sort_tickets', 0)) {
-    case 1:
+  switch (variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE)) {
+    case SUPPORT_SORT_UPDATE:
       $query->orderBy('last_updated', $order);
       break;
-    case 2:
+    case SUPPORT_SORT_NID:
       $query->orderBy('n.nid', $order);
       break;
-    case 3:
+    case SUPPORT_SORT_STATE:
       $query->orderBy('t.state', $order);
       break;
-    case 4:
+    case SUPPORT_SORT_PRIORITY:
       $query->orderBy('t.priority', $order);
       break;
   }

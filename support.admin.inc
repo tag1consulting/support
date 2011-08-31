@@ -357,19 +357,33 @@ function support_admin_settings() {
     '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') . '>', '%nobody' => '<' . t('nobody') . '>')),
     '#default_value' => variable_get('support_autoassign_ticket', '<nobody>'),
   );
+  $form['general']['support_default_sort_tickets'] = array(
+    '#type' => 'radios',
+    '#title' => t('Default sort column'),
+    '#description' => t('Ticket views are sorted by clicking on the title of any given column.  This options defines the default sort option if no column title has been clicked.'),
+    '#options' => array(SUPPORT_SORT_NONE => t('None'), SUPPORT_SORT_UPDATE => t('Last update'), SUPPORT_SORT_NID => t('Node ID'), SUPPORT_SORT_STATE => t('State'), SUPPORT_SORT_PRIORITY => t('Priority')),
+    '#default_value' => variable_get('support_default_sort_tickets', SUPPORT_SORT_UPDATE),
+  );
+  $form['general']['support_default_sort_order'] = array(
+    '#type' => 'radios',
+    '#title' => t('Default sort order'),
+    '#description' => t('The default sort order.'),
+    '#options' => array(t('Ascending'), t('Descending')),
+    '#default_value' => variable_get('support_default_sort_order', SUPPORT_SORT_DESC),
+  );
   $form['general']['support_secondary_sort_tickets'] = array(
     '#type' => 'radios',
     '#title' => t('Secondary sort column'),
     '#description' => t('Ticket views are sorted by clicking on the title of any given column.  This option allows you to set a secondary sort column.  For example, you can sort tickets by priority, and configure the secondary sort field here to sort all tickets of the same priority by node id. For best performance, do not set a secondary sort column.'),
-    '#options' => array(t('None'), t('Last update'), t('Node ID'), t('State'), t('Priority')),
-    '#default_value' => variable_get('support_secondary_sort_tickets', 0),
+    '#options' => array(SUPPORT_SORT_NONE => t('None'), SUPPORT_SORT_UPDATE => t('Last update'), SUPPORT_SORT_NID => t('Node ID'), SUPPORT_SORT_STATE => t('State'), SUPPORT_SORT_PRIORITY => t('Priority')),
+    '#default_value' => variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE),
   );
   $form['general']['support_secondary_sort_order'] = array(
     '#type' => 'radios',
     '#title' => t('Secondary sort order'),
-    '#description' => t('If specifying a secondary sort column, you can also specify a secondary sort order.'),
+    '#description' => t('If specifying a secondary sort column, you can also specify a secondary sort order..'),
     '#options' => array(t('Ascending'), t('Descending')),
-    '#default_value' => variable_get('support_secondary_sort_order', 0),
+    '#default_value' => variable_get('support_default_sort_order', SUPPORT_SORT_DESC),
   );
   $form['general']['support_require_comment'] = array(
     '#type' => 'checkbox',

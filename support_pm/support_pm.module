@@ -353,22 +353,25 @@ function support_pm_plan_overview_weekly($account) {
   $header = array('');
   $row = array('<strong>'. t('Plan') .'</strong>');
   $row2 = array('<strong>'. t('Actual') .'</strong>');
-  $totals = array();
+  $totals = array('plan' => array());
   $hours = array();
   // TODO: Allow for 5 day weeks, etc
   for ($i = 0; $i < 7; $i++) {
     $date = $week + 86400 * $i;
     $header[] = t('!day<br />!date', array('!day' => format_date($date, 'custom', 'l'), '!date' => format_date($date, 'custom', 'M d')));
     $day = support_pm_day_load($date, $account);
-    if (is_array($day[$account->uid])) {
-      $row[] = theme('support_pm_user_client_hours_details', $day[$account->uid]);
+    if (isset($day[$account->uid]) && is_array($day[$account->uid])) {
+      $row[] = theme('support_pm_user_client_hours_details', array('day' => $day[$account->uid]));
     }
     else {
       $row[] = '';
     }
     // Add up totals
-    if (is_array($day[$account->uid])) {
+    if (isset($day[$account->uid]) && is_array($day[$account->uid])) {
       foreach ($day[$account->uid] as $clid => $data) {
+        if (!isset($totals['plan'][$clid])) {
+          $totals['plan'][$clid] = 0;
+        }
         $totals['plan'][$clid] += $data->hours;
       }
     }
@@ -381,13 +384,25 @@ function support_pm_plan_overview_weekly($account) {
     if (module_exists('support_timer')) {
       // The support_timer module uses a slightly different date format
       $convert = strtotime(date('d M Y', $date));
-      $result = db_query('SELECT tt.time, t.client FROM {support_ticket_timer} tt LEFT JOIN {support_ticket} t ON tt.nid = t.nid LEFT JOIN {node} n ON t.nid = n.nid WHERE tt.date = %d AND n.uid = %d', $convert, $account->uid);
-      while ($timer = db_fetch_object($result)) {
+      $result = db_query('SELECT tt.time, t.client FROM {support_ticket_timer} tt LEFT JOIN {support_ticket} t ON tt.nid = t.nid LEFT JOIN {node} n ON t.nid = n.nid WHERE tt.date = :date AND n.uid = :uid', array(':date' => $convert, ':uid' => $account->uid));
+      foreach ($result as $timer) {
+        if (!isset($hour[$timer->client])) {
+          $hour[$timer->client] = new stdClass();
+        }
+        if (!isset($hours[$timer->client])) {
+          $hours[$timer->client] = new stdClass();
+        }
         $hour[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
         $hours[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
       }
-      $result = db_query('SELECT tt.time, t.client FROM {support_ticket_comment_timer} tt LEFT JOIN {support_ticket_comment} t ON tt.cid = t.cid LEFT JOIN {comments} c ON t.cid = c.cid WHERE tt.date = %d AND c.uid = %d', $convert, $account->uid);
-      while ($timer = db_fetch_object($result)) {
+      $result = db_query('SELECT tt.time, t.client FROM {support_ticket_comment_timer} tt LEFT JOIN {support_ticket_comment} t ON tt.cid = t.cid LEFT JOIN {comment} c ON t.cid = c.cid WHERE tt.date = :date AND c.uid = :uid', array(':date' => $convert, ':uid' => $account->uid));
+      foreach ($result as $timer) {
+        if (!isset($hour[$timer->client])) {
+          $hour[$timer->client] = new stdClass();
+        }
+        if (!isset($hours[$timer->client])) {
+          $hours[$timer->client] = new stdClass();
+        }
         $hour[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
         $hours[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
       }
@@ -408,7 +423,7 @@ function support_pm_plan_overview_weekly($account) {
 
   $header2 = array(t('Plan'));
   $plan_sum = is_array($totals['plan']) ? array_sum($totals['plan']) : 0;
-  $actual_sum = is_array($totals['actual']) ? array_sum($totals['actual']) : 0;
+  $actual_sum = isset($totals['actual']) && is_array($totals['actual']) ? array_sum($totals['actual']) : 0;
   $max = $plan_sum > $actual_sum ? $plan_sum : $actual_sum;
   $row = array(theme('support_pm_user_hours_summary', array('totals' => $totals['plan'], 'load_callback' => 'support_client_load', 'max' => $max, 'message' => t('Not scheduled'))));
 
@@ -527,7 +542,7 @@ function support_pm_user_week($form, $user) {
   $week = isset($_GET['week']) ? (int)$_GET['week'] : time();
   $dates = _support_pm_dates($week);
 
-  drupal_add_js(array('support_pm' => array('unload_warning' => variable_get('support_pm_unload_warning', TRUE), 'elapsed' => $elapsed)), 'setting');
+  drupal_add_js(array('support_pm' => array('unload_warning' => variable_get('support_pm_unload_warning', TRUE), 'elapsed' => 0)), 'setting');
   drupal_add_js(drupal_get_path('module', 'support_pm'). '/support_pm.js');
 
   $clients = _support_available_clients($user);
@@ -579,6 +594,10 @@ function support_pm_user_week_submit($form, &$form_state) {
   $clients = _support_available_clients($user);
   foreach ($form_state['values'] as $key => $value) {
     $key = explode(':', $key);
+    // Skip values that aren't part of the matrix.
+    if (count($key) != 2) {
+      continue;
+    }
     $clid = $key[0];
     $day = $key[1];
     if (!empty ($day)) {
@@ -622,9 +641,10 @@ function theme_support_pm_user_week($form) {
   $dates = _support_pm_dates($week);
   $dates['totals'] = t('Totals');
   $dates['comment'] = t('Comments');
+  $rows = array();
   foreach (element_children($form['client']) as $key) {
     // Don't take form control structures
-    if (is_array($form['client'][$key])) {
+    if (isset($form['client'][$key]) && is_array($form['client'][$key])) {
       $row = array();
       $row[] = array(
         'data' => drupal_render($form['client'][$key]),
@@ -645,7 +665,7 @@ function theme_support_pm_user_week($form) {
   }
   $header[] = (t('Client'));
   foreach ($dates as $date => $name) {
-    if ($name == format_date($date, 'custom', 'l')) {
+    if (is_numeric($date) && $name == format_date($date, 'custom', 'l')) {
       $header[] = t('!day<br />!date', array('!day' => format_date($date, 'custom', 'l'), '!date' => format_date($date, 'custom', 'M d')));
     }
     else {
@@ -708,6 +728,9 @@ function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_
   $data = array();
   foreach ($totals as $id => $total) {
     if ($id) {
+      if (!isset($data['totals'][$id])) {
+        $data['totals'][$id] = 0;
+      }
       $data['totals'][$id] += $total;
       $data['labels'][$id] = format_plural($total, '1 hr', '@count hrs');
       $data['colors'][$id] = support_pm_chartapi_color($id, 'user');
@@ -716,7 +739,7 @@ function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_
     }
   }
 
-  if (is_array($data['totals'])) {
+  if (isset($data['totals']) && is_array($data['totals'])) {
     foreach ($data['totals'] as $id => $total) {
       if (!$total) {
         unset($data['totals'][$id]);
@@ -730,6 +753,9 @@ function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_
   if (!empty($data)) {
     $total = array_sum($data['totals']);
     if ($max && $total < $max) {
+      if (!isset($data['totals']['filler'])) {
+        $data['totals']['filler'] = 0;
+      }
       $data['totals']['filler'] += $max - $total;
       $data['labels']['filler'] = format_plural($max - $total, '1 hr', '@count hrs');
       $data['colors']['filler'] = 'DDDDDD';
@@ -757,6 +783,7 @@ function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_
 function theme_support_pm_pager($text, $op, $parameters = array(), $attributes = array()) {
   $first_day = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
   $week = $first_day;
+  $prepend = $append = '';
   switch ($op) {
     case '<':
       $week -= 86400 * 7;

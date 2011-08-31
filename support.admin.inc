@@ -28,7 +28,8 @@ function support_admin_client_overview() {
     ),
     array('data' => t('Options')),
   );
-  $select = db_select('support_client', 'sc')->extend('TableSort');
+  $select = db_select('support_client', 'sc')->extend('TableSort')->extend('PagerDefault');
+  $select->limit(50);
   $results = $select->fields('sc', array('clid', 'name', 'status', 'integrate_email', 'mailfrom'))->orderByHeader($header)->execute();
   foreach ($results as $client) {
     $options = l(t('edit'), "admin/config/support/clients/$client->clid/edit");
@@ -47,7 +48,7 @@ function support_admin_client_overview() {
     drupal_set_message(t('There are currently no clients defined.'));
   }
   $output = theme('table', array('header' => $header, 'rows' => $rows));
-  $output .= theme('pager', array('limit' => 50));
+  $output .= theme('pager');
   return $output;
 }
 

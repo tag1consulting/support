@@ -2378,13 +2378,13 @@ function support_status_form(&$form_state, $edit, $title) {
       }
     }
   }
-  if (is_array($clients))
-    $clients = array(0 => '- select client -') + $clients;
-  else
-    $clients = array(0 => '- select client -');
-
-  $client = isset($node->client) && is_numeric($node->client) ? $node->client : 0;
-
+  $default = array('- select client -');
+  if (empty($clients)) {
+    $clients = $default;
+  }
+  else {
+    $clients = $default + $clients;
+  }
   if ((sizeof($clients) == 1) || (!user_access('can select client') && !user_access('administer support'))) {
     $form['support']['client'] = array(
       '#type' => 'hidden',

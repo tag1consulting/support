@@ -276,7 +276,7 @@ function support_pm_invoice_ui_form() {
   $form = array();
 
   if (user_access('administer support projects')) {
-    drupal_add_js('$(document).ready(function() { $("form#support-pm-invoice-ui-form select").change(function() { $("form#support-pm-invoice-ui-form").submit(); }); });', 'inline');
+    drupal_add_js('jQuery(document).ready(function() { jQuery("form#support-pm-invoice-ui-form select").change(function() { jQuery("form#support-pm-invoice-ui-form").submit(); }); });', 'inline');
 
     $projects = array(t('-- all projects --')) + support_pm_load_projects(_support_current_client());
     $project = isset($_GET['project']) ? $_GET['project'] : '';

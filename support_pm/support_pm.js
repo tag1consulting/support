@@ -2,10 +2,10 @@
  * Throw warning if user navigates away from page without saving timer
  * information
  */
-$(document).ready(function() {
+jQuery(document).ready(function() {
   if (Drupal.settings.suppot_pm.unload_warning) {
-    $('#support-plan-user-week').bind("change", function() { confirm_unload(true); });
-    $("#edit-submit").click(function() { window.confirm_unload(false); });
+    jQuery('#support-plan-user-week').bind("change", function() { confirm_unload(true); });
+    jQuery("#edit-submit").click(function() { window.confirm_unload(false); });
   }
 });
 

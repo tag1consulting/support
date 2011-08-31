@@ -63,11 +63,13 @@ function support_reference_block($op = 'list', $delta = 0, $edit = array()) {
                 // Only list reference if user viewing page has access.
                 $client = support_client_load($reference->client);
                 if (support_access_clients($client, $user)) {
-                  $class = 'support-reference';
+                  $state = _support_state($reference->state);
+                  $priority = _support_priorities($reference->priority);
+                  $class = "support-reference state-$state priority-$priority";
                   if ($node->client != $reference->client) {
-                    $class .= ' support-reference-crossclient';
+                    $class .= ' crossclient';
                   }
-                  $references[$reference->nid] = '<span class="' . $class . '">' . l(t('#!nid: !title', array('!nid' => $reference->nid, '!title' => $reference->title)), "node/$reference->nid", array('attributes' => array('title' => t('!state !priority priority ticket.', array('!state' => ucfirst(_support_state($reference->state)), '!priority' => _support_priorities($reference->priority)))))) . '</span>';
+                  $references[$reference->nid] = '<span class="' . $class . '">' . l(t('#!nid: !title', array('!nid' => $reference->nid, '!title' => $reference->title)), "node/$reference->nid", array('attributes' => array('title' => t('!state !priority priority ticket.', array('!state' => ucfirst($state), '!priority' => $priority))))) . '</span>';
                 }
               }
               $view = theme('item_list', $references);

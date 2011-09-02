@@ -83,7 +83,9 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     }
 
     if (!$assigned || (user_access('only view own tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket'))) {
-      $query->condition('n.uid', $user->uid);
+      $query->condition(db_or()
+        ->condition('n.uid', $user->uid)
+        ->condition('t.assigned', $user->uid));
     }
 
     switch (variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE)) {

@@ -33,6 +33,8 @@ August 10th, 2011
     o bug #1158398: gracefully handle when no current client is set
     o bug #818250: don't display updates to tickets user doesn't have access to
       in core 'Recent comments' block
+    o bug #1101122: properly list tickets user created or is assigned to when
+      they don't have 'view other users tickets' permissions
 
 August 9th, 2011
  - support.module

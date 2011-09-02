@@ -3006,7 +3006,9 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
         ->condition('t.client', $client);
 
   if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
-    $query->condition('n.uid', $user->uid);
+    $query->condition(db_or()
+      ->condition('n.uid', $user->uid)
+      ->condition('t.assigned', $user->uid));
   }
 
   if ($state == -2)

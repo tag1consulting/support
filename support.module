@@ -2158,18 +2158,18 @@ function support_query_alter(QueryAlterableInterface $query) {
     if ($nodeAlias && $ticketAlias === FALSE) {
       $clients = support_search_available_clients();
       if (!empty($clients)) {
-        if (!user_access('view other users tickets') && !user_access('administer support')) {
+        if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
           $query->leftJoin('support_ticket', 'st', "st.nid = $nodeAlias.nid");
           $query->condition(db_or()
-            ->condition(db_and()
-              ->condition("st.client", $clients)
-              ->condition("$nodeAlias.uid", $user->uid))
+            ->condition("st.client", $clients)
             ->condition("st.client", null));
         }
         else {
           $query->leftJoin('support_ticket', 'st', "st.nid = $nodeAlias.nid");
           $query->condition(db_or()
-            ->condition("st.client", $clients)
+            ->condition(db_and()
+              ->condition("st.client", $clients)
+              ->condition("$nodeAlias.uid", $user->uid))
             ->condition("st.client", null));
         }
       }

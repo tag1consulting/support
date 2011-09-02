@@ -31,6 +31,8 @@ April 28, 2011
 August 10th, 2011
  - support.module
     o bug #1158398: gracefully handle when no current client is set
+    o bug #818250: don't display updates to tickets user doesn't have access to
+      in core 'Recent comments' block
 
 August 9th, 2011
  - support.module

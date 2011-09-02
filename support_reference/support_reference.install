@@ -35,10 +35,16 @@ function support_reference_schema() {
   return $schema;
 }
 
-function support_reference_install() {
-  drupal_install_schema('support_reference');
-}
+/**
+ * Remove hardcoded block deltas.
+ */
+function support_reference_update_7000(&$sandbox) {
+  // Get an array of the renamed block deltas, organized by module.
+  $renamed_deltas = array(
+    'support_reference' => array(
+      '0' => 'support_reference_references',
+    ),
+  );
 
-function support_reference_uninstall() {
-  drupal_uninstall_schema('support_reference');
+  update_fix_d7_block_deltas($sandbox, $renamed_deltas);
 }

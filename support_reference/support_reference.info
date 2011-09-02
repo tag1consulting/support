@@ -2,4 +2,4 @@ name = Support Reference
 package = Support
 description = Tracks ticket references
 dependencies[] = support
-core = 6.x
+core = 7.x

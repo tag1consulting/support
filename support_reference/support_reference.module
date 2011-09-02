@@ -59,6 +59,7 @@ function support_reference_block_info() {
  * Implements hook_block_view().
  */
 function support_reference_block_view($delta = '') {
+  global $user;
   $block = array();
   if ($delta == 'support_reference_references' && arg(0) == 'node' && is_numeric(arg(1))) {
     if ($node = node_load(arg(1))) {
@@ -86,8 +87,6 @@ function support_reference_block_view($delta = '') {
         if (user_access('edit support ticket references')) {
           $edit = drupal_get_form('support_reference_block_form', $node->client, $node);
         }
-        dpm($view);
-        dpm($edit);
         $block['content'][] = array('#markup' => $view);
         $block['content'][] = $edit;
         $block['subject'] = t('Support ticket references');

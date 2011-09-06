@@ -2955,6 +2955,11 @@ function _support_truncate($text, $maxlen = 64) {
  */
 function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   global $user;
+
+  if (isset($client) && is_numeric($client)) {
+    $client = support_client_load($client);
+  }
+
   // Be sure a client is selected. If not, select the last visited client.
   if (empty($client)) {
     if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
@@ -2982,15 +2987,8 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     }
   }
   else {
-    if (!empty($client) && !is_numeric($client)) {
-      // TODO: Don't load client then throw it away.
-      $client = support_client_load($client, FALSE);
-      if (is_object($client)) {
-        $client = $client->clid;
-      }
-    }
-    if (is_numeric($client)) {
-      $_SESSION['support_client'] = $client;
+    if (isset($client->clid)) {
+      $_SESSION['support_client'] = $client->clid;
     }
     else {
       drupal_set_message(t('Client does not exist or is not enabled.'), 'error');
@@ -3062,7 +3060,9 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   $query->join('users', 'u', 'u.uid = n.uid');
   $query->condition('n.status', NODE_PUBLISHED)
         ->condition('n.type', 'support_ticket')
-        ->condition('t.client', $client);
+        ->condition('t.client', $client->clid)
+        ->addMetaData('support_client', $client)
+        ->addTag('support_pager');
 
   if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
     $query->condition(db_or()

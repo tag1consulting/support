@@ -109,6 +109,14 @@ function support_pm_menu() {
     'access arguments' => array('administer support projects'),
     'file' => 'support_pm.admin.inc',
   );
+  $items['admin/support/project/%support_pm_project/delete'] = array(
+    'title' => 'Delete',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_pm_admin_project_delete_form', 3),
+    'access arguments' => array('administer support projects'),
+    'file' => 'support_pm.admin.inc',
+  );
 
   $items['support_pm/image/%'] = array(
     'page callback' => 'support_pm_display_swatch',

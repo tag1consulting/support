@@ -522,22 +522,22 @@ function support_pm_admin_project_form(&$form_state, $project = array()) {
     '#description' => t('Select the client(s) this project applies to.  Select no clients to have this project apply to all clients.'),
   );
 
-  $form['projid'] = array(
-    '#value' => $project->projid,
-    '#type' => 'hidden',
-  );
+  if (!empty($project)) {
+    $form['#project'] = $project;
+  }
 
-  $form['submit'] = array(
-    '#value' => isset($project->projid) ? t('Update project') : t('Add project'),
+  $form['actions']['submit'] = array(
+    '#value' => t('Save'),
     '#type' => 'submit',
   );
   if (isset($project->projid)) {
-    $form['delete'] = array(
-      '#value' => t('Delete project'),
+    $form['actions']['delete'] = array(
+      '#value' => t('Delete'),
       '#type' => 'submit',
+      '#submit' => array('support_pm_admin_project_form_delete_submit'),
     );
-    $form['cancel'] = array(
-      '#value' => l(t('Cancel'), 'admin/support/project'),
+    $form['actions']['cancel'] = array(
+      '#markup' => l(t('Cancel'), 'admin/support/project'),
     );
   }
 
@@ -549,7 +549,7 @@ function support_pm_admin_project_form(&$form_state, $project = array()) {
  */
 function support_pm_admin_project_form_validate($form, &$form_state) {
   $path = $form_state['values']['path'];
-  $projid = isset($form_state['values']['projid']) ? $form_state['values']['projid'] : 0;
+  $projid = isset($form['#project']) ? $form['#project']->projid : 0;
   if ($path != preg_replace('/[^0-9a-zA-Z_-]/', '', $path)) {
     form_set_error('path', t('Path %path contains invalid characters.', array('%path' => $path)));
   }
@@ -571,29 +571,62 @@ function support_pm_admin_project_form_validate($form, &$form_state) {
  * Save new or updated project definition.
  */
 function support_pm_admin_project_form_submit($form, &$form_state) {
-  $client = support_client_load($form_state['values']['clid']);
-  if ($form_state['clicked_button']['#value'] == t('Delete project')) {
-    drupal_set_message(t('Deleted %project project.', array('%project' => $form_state['values']['project'])));
-    db_query('DELETE FROM {support_project} WHERE projid = %d', $form_state['values']['projid']);
-    db_query('DELETE FROM {support_project_client} WHERE projid = %d', $form_state['values']['projid']);
-    db_query('DELETE FROM {support_project_ticket} WHERE projid = %d', $form_state['values']['projid']);
+  $projid = 0;
+  if (!empty($form['#project']->projid)) {
+    $projid = $form['#project']->projid;
   }
-  else if ($form_state['clicked_button']['#value'] == t('Update project')) {
-    db_query("UPDATE {support_project} SET project = '%s', path = '%s', disabled = %d, weight = %d WHERE projid = %d", $form_state['values']['project'], $form_state['values']['path'], $form_state['values']['disabled'], $form_state['values']['weight'], $form_state['values']['projid']);
-    db_query('DELETE FROM {support_project_client} WHERE projid = %d', $form_state['values']['projid']);
-    foreach ($form_state['values']['clids'] as $clid) {
-      db_query('INSERT INTO {support_project_client} (projid, clid) VALUES(%d, %d)', $form_state['values']['projid'], $clid);
-    }
+
+  $fields = array(
+    'project' => $form_state['values']['project'],
+    'path' => $form_state['values']['path'],
+    'disabled' => $form_state['values']['disabled'],
+    'weight' => $form_state['values']['weight'],
+  );
+
+  if ($projid) {
+    db_update('support_project')->fields($fields)->condition('projid', $projid)->execute();
     drupal_set_message(t('Updated %project project.', array('%project' => $form_state['values']['project'])));
   }
   else {
-    db_query("INSERT INTO {support_project} (project, path, disabled, weight) VALUES('%s', '%s', %d, %d)", $form_state['values']['project'], $form_state['values']['path'], $form_state['values']['disabled'], $form_state['values']['weight']);
-    $projid = db_last_insert_id('support_project', 'projid');
-    foreach ($form_state['values']['clids'] as $clid) {
-      db_query('INSERT INTO {support_project_client} (projid, clid) VALUES(%d, %d)', $projid, $clid);
-    }
+    $projid = db_insert('support_project')->fields($fields)->execute();
     drupal_set_message(t('Created %project project.', array('%project' => $form_state['values']['project'])));
   }
+
+  db_delete('support_project_client')->condition('projid', $projid)->execute();
+  foreach ($form_state['values']['clids'] as $clid) {
+    db_insert('support_project_client')->fields(array(
+      'projid' => $projid,
+      'clid' => $clid,
+    ))->execute();
+  }
+
   menu_rebuild();
   drupal_goto('admin/support/project');
+}
+
+/**
+ * Button submit function: handle the 'Delete' button on the project form.
+ */
+function support_pm_admin_project_form_delete_submit($form, &$form_state) {
+  $destination = array();
+  if (isset($_GET['destination'])) {
+    $destination = drupal_get_destination();
+    unset($_GET['destination']);
+  }
+  $project = $form['#project'];
+  $form_state['redirect'] = array('admin/support/project/' . $project->projid . '/delete', array('query' => $destination));
+}
+
+function support_pm_admin_project_delete_form($form, &$form_state, $project) {
+  $form['#project'] = $project;
+  return confirm_form($form, t('Are you sure you want to delete %project?', array('%project' => $project->project)), 'admin/support/project', t('This action cannot be undone.'), t('Delete'), t('Cancel'));
+}
+
+function support_pm_admin_project_delete_form_submit($form, &$form_state) {
+  $project = $form['#project'];
+  drupal_set_message(t('Deleted %project project.', array('%project' => $project->project)));
+  db_delete('support_project')->condition('projid', $project->projid)->execute();
+  db_delete('support_project_client')->condition('projid', $project->projid)->execute();
+  db_delete('support_project_ticket')->condition('projid', $project->projid)->execute();
+  $form_state['redirect'] = 'admin/support/project';
 }

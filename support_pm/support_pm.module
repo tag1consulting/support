@@ -157,59 +157,90 @@ function support_pm_menu() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function support_pm_theme() {
   return array(
     'support_pm_user_week' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => 'form',
     ),
     'support_pm_pager' => array(
-      'arguments' => array('text' => NULL, 'op' => NULL, 'parameters' => array(), 'attributes' => array()),
+      'variables' => array('text' => NULL, 'op' => NULL, 'parameters' => array(), 'attributes' => array()),
     ),
     'support_pm_user_client_hours_details' => array(
-      'arguments' => array('day' => array(), 'scale' => NULL),
+      'variables' => array('day' => array(), 'scale' => 12),
     ),
     'support_pm_user_hours_summary' => array(
-      'arguments' => array('totals' => array(), 'load_callback' => NULL, 'max' => NULL, 'message' => 'Mismatch'),
+      'variables' => array('totals' => array(), 'load_callback' => 'support_client_load', 'max' => NULL, 'message' => 'Mismatch'),
     ),
     'support_pm_plan_diff' => array(
-      'arguments' => array('diff' => NULL, 'plan' => NULL),
+      'variables' => array('diff' => NULL, 'plan' => NULL),
     ),
   );
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_node_view().
  */
-function support_pm_nodeapi(&$node, $op, $teaser, $page) {
-  if ($node->type == 'support_ticket') {
-    switch ($op) {
-      case 'view':
-        if (user_access('administer support projects')) {
-          if ($project = support_pm_project_load_nid($node->nid)) {
-            $node->content['support-project'] = array(
-              '#value' => "<div class='support-priority'>Project: $project->project</div>",
-              '#weight' => -1,
-            );
-          }
-        }
-        break;
-      case 'load':
-        $node->project = support_pm_project_load_nid($node->nid);
-        break;
-      case 'insert':
-      case 'update':
-        db_query("UPDATE {support_project_ticket} SET projid = %d WHERE nid = %d", $node->project, $node->nid);
-        if (!db_affected_rows()) {
-          @db_query("INSERT INTO {support_project_ticket} (projid, nid) VALUES(%d, %d)", $node->project, $node->nid);
-        }
-        break;
-      case 'delete':
-        db_query("DELETE FROM {support_project_ticket} WHERE nid = %d", $node->nid);
-        break;
+function support_pm_node_view($node, $view_mode, $langcode) {
+  if ($node->type != 'support_ticket') {
+    return;
+  }
+  if (user_access('administer support projects')) {
+    if ($project = support_pm_project_load_nid($node->nid)) {
+      $node->content['support-project'] = array(
+        '#markup' => "<div class='support-priority'>Project: $project->project</div>",
+        '#weight' => -1,
+      );
     }
   }
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function support_pm_node_load($nodes, $types) {
+  if (!in_array('support_ticket', $types)) {
+    return;
+  }
+  foreach (array_keys($nodes) as $nid) {
+    // @@@ This seems silly.
+    $nodes[$nid]->project = support_pm_project_load_nid($nid);
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function support_pm_node_insert($node) {
+  return support_pm_node_update($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function support_pm_node_update($node) {
+  if ($node->type != 'support_ticket') {
+    return;
+  }
+  db_merge('support_project_ticket')
+    ->key(array('nid' => $node->nid))
+    ->fields(array(
+      'projid' => $node->project,
+  ))
+    ->execute();
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function support_pm_node_delete($node) {
+  if ($node->type != 'support_ticket') {
+    return;
+  }
+  db_delete('support_project_ticket')
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 function support_pm_comment(&$comment, $op) {

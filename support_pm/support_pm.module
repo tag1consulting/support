@@ -65,7 +65,7 @@ function support_pm_menu() {
     'weight' => 2,
     'type' => MENU_LOCAL_TASK,
   );
-  $items['admin/support/plan_report'] = array(
+  $items['admin/config/support/plan_report'] = array(
     'title' => 'Plan reports',
     'description' => 'Generate support plan reports',
     'page callback' => 'drupal_get_form',
@@ -73,26 +73,26 @@ function support_pm_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support_pm.admin.inc',
   );
-  $items['admin/support/plan_settings'] = array(
+  $items['admin/config/support/plan_settings'] = array(
     'title' => 'Plan report settings',
-    'description' => 'Configure support plans',
+    'description' => 'Configure support plans.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('support_pm_admin_settings'),
     'access arguments' => array('administer support'),
     'file' => 'support_pm.admin.inc',
   );
-  $items['admin/support/project'] = array(
+  $items['admin/config/support/project'] = array(
     'title' => 'Projects',
-    'description' => 'Configure support projects',
+    'description' => 'Configure support projects.',
     'page callback' => 'support_pm_admin_project_overview',
     'access arguments' => array('administer support projects'),
     'file' => 'support_pm.admin.inc',
   );
-  $items['admin/support/project/list'] = array(
+  $items['admin/config/support/project/list'] = array(
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/support/project/add'] = array(
+  $items['admin/config/support/project/add'] = array(
     'title' => 'Add project',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
@@ -101,19 +101,19 @@ function support_pm_menu() {
     'access arguments' => array('administer support projects'),
     'file' => 'support_pm.admin.inc',
   );
-  $items['admin/support/project/%support_pm_project/edit'] = array(
+  $items['admin/config/support/project/%support_pm_project/edit'] = array(
     'title' => 'Edit',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('support_pm_admin_project_form', 3),
+    'page arguments' => array('support_pm_admin_project_form', 4),
     'access arguments' => array('administer support projects'),
     'file' => 'support_pm.admin.inc',
   );
-  $items['admin/support/project/%support_pm_project/delete'] = array(
+  $items['admin/config/support/project/%support_pm_project/delete'] = array(
     'title' => 'Delete',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('support_pm_admin_project_delete_form', 3),
+    'page arguments' => array('support_pm_admin_project_delete_form', 4),
     'access arguments' => array('administer support projects'),
     'file' => 'support_pm.admin.inc',
   );

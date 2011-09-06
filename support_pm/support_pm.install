@@ -234,3 +234,16 @@ function support_pm_update_7000() {
   db_drop_field('support_plan', 'pid');
   db_add_primary_key('support_plan', array('uid', 'clid', 'day'));
 }
+
+/**
+ * Ensure clid 0 row exists for "All Clients" in {support_project_client}.
+ */
+function support_pm_update_7001() {
+  $result = db_query('SELECT p.projid FROM {support_project} p LEFT JOIN {support_project_client} c ON p.projid = c.projid WHERE c.projid IS NULL');
+  foreach ($result as $project) {
+    db_insert('support_project_client')->fields(array(
+      'projid' => $project->projid,
+      'clid' => 0,
+    ))->execute();
+  }
+}

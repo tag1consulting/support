@@ -455,7 +455,7 @@ function support_pm_admin_project_overview() {
     $options = l(t('edit'), "admin/support/project/$project->projid/edit");
 
     $clients = array();
-    $result2 = db_query('SELECT spc.clid, sc.name FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = :project', array(':project' => $project->projid));
+    $result2 = db_query('SELECT spc.clid, sc.name FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = :project AND spc.clid <> 0', array(':project' => $project->projid));
     foreach ($result2 as $client) {
       $clients[] = check_plain($client->name);
     }
@@ -513,15 +513,18 @@ function support_pm_admin_project_form($form, &$form_state, $project = array()) 
     '#description' => t('When multiple projects are available, the project with the smallest (negative) weight will be selected as the default.'),
   );
 
-  $clients = _support_clients_load();
+  $clients = array(
+    0 => t('-- All clients --'),
+  ) + _support_clients_load();
   $form['clids'] = array(
     '#title' => t('Clients'),
     '#type' => 'select',
     '#options' => $clients,
     '#multiple' => TRUE,
+    '#required' => TRUE,
     '#size' => count($clients) > 5 ? count($clients) : 5,
-    '#default_value' => isset($project->clids) ? $project->clids : array(),
-    '#description' => t('Select the client(s) this project applies to.  Select no clients to have this project apply to all clients.'),
+    '#default_value' => isset($project->clids) ? $project->clids : array(0),
+    '#description' => t('Select the client(s) this project applies to.'),
   );
 
   if (!empty($project)) {

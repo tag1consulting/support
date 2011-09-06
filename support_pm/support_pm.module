@@ -1043,7 +1043,7 @@ function support_pm_project_load_nid($nid) {
  */
 function support_pm_load_projects($clid) {
   $projects = array();
-  $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = :client OR ISNULL(spc.clid)) AND disabled = 0', array(':client' => $clid));
+  $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp INNER JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = :client OR spc.clid = 0) AND disabled = 0', array(':client' => $clid));
   foreach ($result as $project) {
     $projects[$project->projid] = check_plain($project->project);
   }

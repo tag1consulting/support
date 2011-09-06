@@ -544,9 +544,7 @@ function support_pm_display_swatch($color) {
 /**     
  * Page callback.
  */
-function support_pm_user_week($form, $user) {
-  $form = array();
-
+function support_pm_user_week($form, &$form_state, $user) {
   $week = isset($_GET['week']) ? (int)$_GET['week'] : time();
   $dates = _support_pm_dates($week);
 
@@ -556,7 +554,7 @@ function support_pm_user_week($form, $user) {
   $clients = _support_available_clients($user);
   $clients['totals'] = '<strong>' . t('Totals') . '</strong>';
   foreach ($clients as $clid => $name) {
-    $form['client'][$clid] = array('#value' => $name);
+    $form['client'][$clid] = array('#markup' => $name);
     foreach ($dates as $date => $day) {
       $hours = db_query('SELECT hours FROM {support_plan} WHERE clid = :client AND uid = :uid AND day = :day', array(':client' => $clid, ':uid' => $user->uid, ':day' => $date))->fetchField();
       $form['textfields'][$clid]["$clid:$date"] = array(
@@ -598,7 +596,7 @@ function support_pm_user_week_submit($form, &$form_state) {
   $week = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
   $dates = _support_pm_dates($week);
   $dates['totals'] = t('Totals');
-  $user = user_load(array('uid' => $form_state['values']['uid']));
+  $user = user_load($form_state['values']['uid']);
   $clients = _support_available_clients($user);
   foreach ($form_state['values'] as $key => $value) {
     $key = explode(':', $key);
@@ -611,28 +609,28 @@ function support_pm_user_week_submit($form, &$form_state) {
     if (!empty ($day)) {
       if (isset($clients[$clid]) && $day != 'totals') {
         if ($day == 'comment') {
-          db_query("UPDATE {support_plan} SET comment = '%s' WHERE clid = '%s' AND uid = %d AND day = %d", $value, $clid, $user->uid, $week);
+          db_merge('support_plan')
+            ->key(array(
+              'clid' => $clid,
+              'uid' => $user->uid,
+              'day' => $week,
+            ))
+            ->fields(array(
+              'comment' => $value,
+            ))
+            ->execute();
         }
         else {
-          db_query("UPDATE {support_plan} SET hours = %f WHERE clid = '%s' AND uid = %d AND day = %d", $value, $clid, $user->uid, $day);
-        }
-        // If we affected 0 rows, we are probably creating a new plan
-        if (!db_affected_rows()) {
-          // We must create new rows to store the plan.
-          if ($day == 'comment') {
-            // We may not have changed this row, but it may already exist
-            $exists = db_result(db_query("SELECT clid FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, $week));
-            if (!$exists) {
-              db_query("INSERT INTO {support_plan} (comment, clid, uid, day) VALUES ('%s', '%s', %d, %d)", $value, $clid, $user->uid, $week);
-            }
-          }
-          else {
-            // We may not have changed this row, but it may already exist
-            $exists = db_result(db_query("SELECT clid FROM {support_plan} WHERE clid = '%s' AND uid = %d AND day = %d", $clid, $user->uid, $day));
-            if (!$exists) {
-              db_query("INSERT INTO {support_plan} (hours, clid, uid, day) VALUES (%f, '%s', %d, %d)", $value, $clid, $user->uid, $day);
-            }
-          }
+          db_merge('support_plan')
+            ->key(array(
+              'clid' => $clid,
+              'uid' => $user->uid,
+              'day' => $day,
+            ))
+            ->fields(array(
+              'hours' => $value,
+            ))
+            ->execute();
         }
       }
     }
@@ -643,7 +641,8 @@ function support_pm_user_week_submit($form, &$form_state) {
 /**
  * TODO: Auto-calculate totals whenever a field is updated.
  */
-function theme_support_pm_user_week($form) {
+function theme_support_pm_user_week($variables) {
+  $form = $variables['form'];
   $week = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
   drupal_set_title(t('@start - @end', array('@start' => format_date($week, 'medium'), '@end' => format_date($week + 86400 * 6, 'medium'))), PASS_THROUGH);
   $dates = _support_pm_dates($week);
@@ -657,7 +656,7 @@ function theme_support_pm_user_week($form) {
       $row[] = array(
         'data' => drupal_render($form['client'][$key]),
         'class' => 'support-client',
-        'id' => 'client-'. $form['client'][$key]['#value'],
+        'id' => drupal_clean_css_identifier('client-' . $form['client'][$key]['#markup']),
       );
       if (is_array($form['textfields'][$key])) {
         foreach ($dates as $date => $name) {
@@ -680,17 +679,19 @@ function theme_support_pm_user_week($form) {
       $header[] = $name;
     }
   }
-  $output = theme('support_pm_pager', t('‹ previous'), '<');
-  $output .= theme('table', $header, $rows, array('id' => 'permissions'));
-  $output .= drupal_render($form);
-  $output .= theme('support_pm_pager', t('next ›'), '>');
+  $output = theme('support_pm_pager', array('text' => t('‹ previous'), 'op' => '<'));
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'permissions')));
+  $output .= drupal_render_children($form);
+  $output .= theme('support_pm_pager', array('text' => t('next ›'), 'op' => '>'));
   return $output;
 }
 
 /**
  * Bar graph details.
  */
-function theme_support_pm_user_client_hours_details($day, $scale = 12) {
+function theme_support_pm_user_client_hours_details($variables) {
+  $day = $variables['day'];
+  $scale = $variables['scale'];
   static $comment;
 
   $clients = array();
@@ -726,7 +727,12 @@ function theme_support_pm_user_client_hours_details($day, $scale = 12) {
 /**
  * Pie chart summary.
  */
-function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_client_load', $max = NULL, $message = 'Mismatch') {
+function theme_support_pm_user_hours_summary($variables) {
+  $output = '';
+  $totals = $variables['totals'];
+  $load_callback = $variables['load_callback'];
+  $max = $variables['max'];
+  $message = $variables['message'];
   if (!is_array($totals)) {
     return;
   }
@@ -788,7 +794,11 @@ function theme_support_pm_user_hours_summary($totals, $load_callback = 'support_
 /**
  * Helper function to show previous and next weeks.
  */
-function theme_support_pm_pager($text, $op, $parameters = array(), $attributes = array()) {
+function theme_support_pm_pager($variables) {
+  $text = $variables['text'];
+  $op = $variables['op'];
+  $parameters = $variables['parameters'];
+  $attributes = $variables['attributes'];
   $first_day = isset($_GET['week']) ? _support_pm_first_day((int)$_GET['week']) : _support_pm_first_day(time());
   $week = $first_day;
   $prepend = $append = '';
@@ -813,17 +823,16 @@ function theme_support_pm_pager($text, $op, $parameters = array(), $attributes =
   if (!isset($parameters['week'])) {
     $parameters['week'] = $week;
   }
-  if (count($parameters)) {
-    $query[] = drupal_query_string_encode($parameters, array());
-  }
   if (!isset($attributes['title'])) {
     $attributes['title'] = t('View plan for week of @week', array('@week' => $dates));
   }
 
-  return l($text, $_GET['q'], array('attributes' => $attributes, 'query' => count($query) ? implode('&', $query) : NULL));
+  return l($text, $_GET['q'], array('attributes' => $attributes, 'query' => $parameters));
 }
 
-function theme_support_pm_plan_diff($diff, $plan) {
+function theme_support_pm_plan_diff($variables) {
+  $diff = $variables['diff'];
+  $plan = $variables['plan'];
   $diff = number_format($diff, 2);
   $percent = $plan ? number_format($diff / $plan * 100, 2) : 0;
   if ($diff < 0) {
@@ -887,22 +896,22 @@ function support_pm_day_load($date = NULL, $user = NULL, $client = NULL) {
     // default to this week
     $date = _support_pm_first_day();
   }
-  $query = 'SELECT pid, clid, uid, day, hours, comment FROM {support_plan} WHERE day = %d AND hours > 0';
-  $args = array($date);
+  $query = db_select('support_plan')
+    ->fields('support_plan', array('pid', 'clid', 'uid', 'day', 'hours', 'comment'))
+    ->condition('day', $date)
+    ->condition('hours', 0, '>');
 
   if (is_object($user) && isset($user->uid)) {
-    $query .= ' AND uid = %d';
-    $args[] = $user->uid;
+    $query->condition('uid', $user->uid);
   }
 
   if (is_object($client) && isset($client->clid)) {
-    $query .= ' AND clid = %d';
-    $args[] = $client->clid;
+    $query->condition('clid', $client->clid);
   }
 
   $day = array();
-  $result = db_query($query, $args);
-  while ($row = db_fetch_object($result)) {
+  $result = $query->execute();
+  foreach ($result as $row) {
     $day[$row->uid][$row->clid] = $row;
   }
   return $day;
@@ -974,7 +983,10 @@ function support_pm_project_load($projid) {
   static $projects = array();
 
   if (!isset($projects[$projid])) {
-    $projects[$projid] = db_fetch_object(db_query('SELECT * FROM {support_project} WHERE projid = %d', $projid));
+    $projects[$projid] = db_query('SELECT * FROM {support_project} WHERE projid = :project', array(':project' => $projid))->fetchObject();
+    if (empty($projects[$projid])) {
+      return FALSE;
+    }
     $projects[$projid]->clids = array();
     $result = db_query('SELECT clid FROM {support_project_client} WHERE projid = :project', array(':project' => $projid));
     foreach ($result as $client) {
@@ -1000,8 +1012,8 @@ function support_pm_project_load_nid($nid) {
  */
 function support_pm_load_projects($clid) {
   $projects = array();
-  $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = %d OR ISNULL(spc.clid)) AND disabled = 0', $clid);
-  while ($project = db_fetch_object($result)) {
+  $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = :client OR ISNULL(spc.clid)) AND disabled = 0', array(':client' => $clid));
+  foreach ($result as $project) {
     $projects[$project->projid] = check_plain($project->project);
   }
   return $projects;

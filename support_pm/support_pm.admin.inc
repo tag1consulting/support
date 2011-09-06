@@ -446,15 +446,17 @@ function support_pm_admin_project_overview() {
     array('data' => t('Disabled'), 'field'=> 'sp.disabled'),
     array('data' => t('Options')),
   );
-  $sql = 'SELECT sp.projid, sp.project, sp.weight, sp.disabled FROM {support_project} sp';
-  $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0);
-  while ($project = db_fetch_object($result)) {
+  $query = db_select('support_project', 'sp')->extend('TableSort')->extend('PagerDefault');
+  $query->fields('sp', array('projid', 'project', 'weight', 'disabled'));
+  $query->orderByHeader($header);
+  $query->limit(50);
+  $result = $query->execute();
+  foreach ($result as $project) {
     $options = l(t('edit'), "admin/support/project/$project->projid/edit");
 
     $clients = array();
-    $result2 = db_query('SELECT spc.clid, sc.name FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = %d', $project->projid);
-    while ($client = db_fetch_object($result2)) {
+    $result2 = db_query('SELECT spc.clid, sc.name FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = :project', array(':project' => $project->projid));
+    foreach ($result2 as $client) {
       $clients[] = check_plain($client->name);
     }
     if (empty($clients)) {
@@ -473,12 +475,12 @@ function support_pm_admin_project_overview() {
   if (empty($rows)) {
     drupal_set_message(t('There are currently no projects defined.'));
   }
-  return theme('table', $header, $rows);
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= theme('pager');
+  return $output;
 }
 
-function support_pm_admin_project_form(&$form_state, $project = array()) {
-  $form = array();
-
+function support_pm_admin_project_form($form, &$form_state, $project = array()) {
   $form['project'] = array(
     '#title' => t('Project'),
     '#type' => 'textfield',

@@ -3036,6 +3036,8 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
       ->fields('t', array('client', ' state', 'priority', 'assigned'))
       ->addExpression('GREATEST(n.changed, s.last_comment_timestamp)', 'last_updated');
 
+  $query->limit(50);
+
   $result = $query->execute();
 
   $rows = array();

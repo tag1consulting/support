@@ -243,21 +243,18 @@ function support_pm_node_delete($node) {
     ->execute();
 }
 
-function support_pm_comment(&$comment, $op) {
-  if (is_array($comment)) {
-    $node = node_load($comment['nid']);
-  }
-  else {
-    $node = node_load($comment->nid);
-  }
-  if ($node->type == 'support_ticket') {
-    switch ($op) {
-      case 'view':
-        if (user_access('administer support projects')) {
-          if ($project = support_pm_project_load_nid($node->nid)) {
-            $comment->comment = "<div class='support-priority'>Project: $project->project</div>" . $comment->comment;
-          }
-        }
+/**
+ * Implements hook_comment_view().
+ */
+function support_pm_comment_view($comment, $view_mode, $langcode) {
+  if ($comment->node_type == 'comment_node_support_ticket' && user_access('administer support projects') && $project = support_pm_project_load_nid($comment->nid)) {
+    // @@@ Why is this being appended to every comment? It seems weird for something that doesn't change state via ticket updates... --Bdragon
+    if (!empty($project->project)) {
+      $comment->content['support']['project'] = array(
+        '#markup' => '<div class="support-project">' . t('Project') . ': ' . check_plain($project->project) . '</div>',
+      );
+      // Make sure the weight is correct.
+      $comment->content['support']['#weight'] = -1;
     }
   }
 }

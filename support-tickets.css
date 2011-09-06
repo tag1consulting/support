@@ -85,6 +85,12 @@
   background: #edf4f9;
   font-size: .85em;
 }
+.support-project {
+  padding: 3px;
+  padding-left: 16px;
+  background: #edf4f9;
+  font-size: .85em;
+}
 
 /* Theme ticket id in ticket listing. */
 .ticket-id:before {

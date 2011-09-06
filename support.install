@@ -467,7 +467,7 @@ function support_uninstall() {
   // TODO:
 /*
   $result = db_query("SELECT nid FROM {node} WHERE type = :type", array(':type' => 'support_ticket'));
-  while ($node = db_fetch_object($result)) {
+  foreach ($result as $node) {
     node_delete($node->nid);
   }
 */

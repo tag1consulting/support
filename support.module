@@ -184,7 +184,7 @@ function support_menu() {
     0 => 'all',
     1 => 'all open',
     2 => 'my open',
-      ) + _support_states();
+  ) + _support_states();
 
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
   foreach ($result as $client) {

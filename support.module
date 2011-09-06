@@ -2994,11 +2994,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   $query->leftjoin('support_ticket', 't', 't.nid = n.nid');
   $query->join('node_comment_statistics', 's', 's.nid = n.nid');
   $query->join('users', 'u', 'u.uid = n.uid');
-  $query->leftjoin('comment', 'c', 'c.nid = n.nid');
-  $query->condition(db_or()
-          ->condition('c.status', COMMENT_PUBLISHED)
-          ->isNull('c.status'))
-        ->condition('n.status', NODE_PUBLISHED)
+  $query->condition('n.status', NODE_PUBLISHED)
         ->condition('n.type', 'support_ticket')
         ->condition('t.client', $client);
 

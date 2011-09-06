@@ -2889,10 +2889,7 @@ function _support_truncate($text, $maxlen = 64) {
  */
 function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   global $user;
-
-  $form = array();
-
-  // Be sure a client is selected.  If not, select the last visited client.
+  // Be sure a client is selected. If not, select the last visited client.
   if (empty($client)) {
     if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
       unset($_SESSION['support_client']);

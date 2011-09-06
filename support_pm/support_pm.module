@@ -276,6 +276,20 @@ function support_pm_form_alter(&$form, $form_state, $form_id) {
   }
 }
 
+/**
+ * Alter the ticket listing query to consider projects.
+ */
+function support_pm_query_support_pager_alter($query) {
+  $client = $query->getMetaData('support_client');
+  if ($project = arg(3)) {
+    $project = db_query('SELECT p.projid FROM {support_project} p LEFT JOIN {support_project_client} c ON p.projid = c.projid WHERE (c.clid = :clid OR c.clid IS NULL) AND p.path = :path', array(':clid' => $client->clid, ':path' => $project))->fetchField();
+    if ($project) {
+      $query->leftJoin('support_project_ticket', 'spt', 'n.nid = spt.nid');
+      $query->condition('spt.projid', $project);
+    }
+  }
+}
+
 function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
   if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'ELECT DISTINCT') && strpos($query, 'support_ticket') && strpos($query, 'client =') && arg(3)) {
     $path = arg(3);

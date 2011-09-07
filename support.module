@@ -2529,7 +2529,7 @@ function _support_available_clients($account = NULL) {
       }
     }
     else {
-      drupal_set_message(t('There are no support clients configured/enabled.'), 'error');
+      drupal_set_message(t('There are no support clients configured/enabled.'), 'error', FALSE);
     }
   }
   return isset($valid[$account->uid]) ? $valid[$account->uid] : NULL;

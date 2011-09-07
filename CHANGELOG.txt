@@ -1,3 +1,8 @@
+September 7th, 2011
+ - support.module
+    o bug #1271038: Don't repeat notification message when no clients are
+      defined
+
 September 6th, 2011
  - support.module
     o bug #1271180: Don't join to {comments} on the ticket overview query.

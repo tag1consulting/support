@@ -509,3 +509,18 @@ function support_update_6007() {
   menu_rebuild();
   return array();
 }
+
+/**
+ * Remove unnecessary 'active' field from {support_assigned} table.
+ */
+function support_update_6008() {
+  $ret = array();
+
+  // Remove inactive entries from table.
+  $ret[] = update_sql('DELETE FROM {support_assigned} WHERE active = 0');
+
+  // Remove unnecessary status field.
+  db_drop_field($ret, 'support_assigned', 'active');
+
+  return $ret;
+}

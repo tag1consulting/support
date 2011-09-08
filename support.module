@@ -54,7 +54,7 @@ function support_access($op, $node, $account) {
               $access = NULL;
             }
             // User is subscribed to this ticket, allow access.
-            else if (db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d AND active = 1', $node->nid, $account->uid))) {
+            else if (db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $account->uid))) {
               $access = NULL;
             }
             // Deny access as user did not create and is not subscribed to this
@@ -434,7 +434,7 @@ function support_unsubscribe_user($node, $account, $key) {
   if (is_object($node) && is_object($account)) {
     $lock = md5($account->uid . $node->nid);
     if ($key == $lock) {
-      db_query('UPDATE {support_assigned} SET active = 0 WHERE uid = %d AND nid = %d', $account->uid, $node->nid);
+      db_query('DELETE FROM {support_assigned} WHERE uid = %d AND nid = %d', $account->uid, $node->nid);
       drupal_set_message(t('%email has been unsubscribed from ticket %ticket.', array('%email' => check_plain($account->mail), '%ticket' => check_plain($node->title))));
     }
     else {
@@ -445,7 +445,7 @@ function support_unsubscribe_user($node, $account, $key) {
   else if (is_object($account)) {
     $lock = md5($account->uid);
     if ($key == $lock) {
-      db_query('UPDATE {support_assigned} SET active = 0 WHERE uid = %d', $account->uid);
+      db_query('DELETE FROM {support_assigned} WHERE uid = %d', $account->uid);
       drupal_set_message(t('%email has been unsubscribed from all tickets.', array('%email' => check_plain($account->mail))));
     }
     else {
@@ -1006,7 +1006,7 @@ function _support_node_move($node, $destination) {
   $comment['uid'] = $account->uid;
   $comment['message_id'] = db_result(db_query('SELECT message_id FROM {support_ticket} WHERE nid = %d', $node->nid));
   $comment['support_email'] = TRUE;
-  $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $destination->nid, $account->uid));
+  $comment['notification'] = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d', $destination->nid, $account->uid));
   // Preserve the existing values for the support ticket status.
   $comment['state'] = $destination->state;
   $comment['priority'] = $destination->priority;
@@ -1253,7 +1253,7 @@ function support_save_message($message, $client) {
     $comment['priority'] = isset($message['priority']) ? $message['priority'] : $ticket->priority;
     $comment['client'] = $ticket->client;
     $comment['assigned'] = isset($message['assigned']) ? $message['assigned'] : $ticket->assigned;
-    $comment['notification'] = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
+    $comment['notification'] = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d', $ticket->nid, $account->uid));
     $comment['support_email'] = TRUE;
     $comment['files'] = _support_save_attachments($message['attachments'], $account);
     if (isset($message['suppress'])) {
@@ -1504,20 +1504,22 @@ function _support_get_message_body($stream, $message, $mime_type, $structure = F
 /**
  * Subscribe a user to a ticket.
  */
-function support_subscribe_user($nid, $uid, $active = 1) {
+function support_subscribe_user($nid, $uid, $subscribe = 1) {
   $clid = db_result(db_query('SELECT client FROM {support_ticket} WHERE nid = %d', $nid));
   $client = support_client_load($clid);
   $account = user_load(array('uid' => $uid));
   if (support_access_clients($client, $account)) {
-    db_query('UPDATE {support_assigned} SET active = %d WHERE uid = %d AND nid = %d', $active, $uid, $nid);
-    if (!db_affected_rows()) {
-      @db_query('INSERT INTO {support_assigned} (nid, uid, active) VALUES(%d, %d, %d)', $nid, $uid, $active);
+    if ($subscribe) {
+      @db_query('INSERT INTO {support_assigned} (nid, uid) VALUES(%d, %d)', $nid, $uid);
+    }
+    else {
+      db_query('DELETE FROM {support_assigned} WHERE nid = %d AND uid = %d', $nid, $uid);
     }
   }
   else {
     // If this user doesn't have permission to receive ticket updates,
     // be sure they are unsubscribed.
-    db_query('UPDATE {support_assigned} SET active = 0 WHERE uid = %d AND nid = %d', $uid, $nid);
+    db_query('DELETE FROM {support_assigned} WHERE nid = %d AND uid = %d', $nid, $uid);
   }
 }
 
@@ -1545,7 +1547,7 @@ function _support_autosubscribe($nid, $client, $save = TRUE) {
  */
 function support_notification($comment = array(), $nid, $op = 'ticket_comment_new', $suppress = FALSE) {
   if (variable_get('support_notifications', TRUE)) {
-    $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $nid);
+    $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d', $nid);
     while ($account = db_fetch_object($result)) {
       $account = user_load(array('uid' => $account->uid));
       // always send emails to admins, even if update was suppressed
@@ -2273,7 +2275,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       $notification = TRUE;
     }
     else if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
-      $notification = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
+      $notification = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d', $edit['nid']['#value'], $user->uid));
     }
     else if (is_object($edit) && isset($edit->notification)) {
       $notification = $edit->notification;
@@ -2306,7 +2308,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
       if ($available === FALSE) {
         $account = user_load(array('uid' => $node->assigned));
-        $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d AND active = 1', $node->nid);
+        $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d', $node->nid);
         $accounts = array();
         while ($a = db_fetch_object($result)) {
           $account = user_load(array('uid' => $a->uid));
@@ -2330,7 +2332,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
         foreach ($available as $uid => $name) {
           if (!$uid) continue;
           if (isset($node->nid) && $node->nid) {
-            $enabled = db_result(db_query('SELECT active FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
+            $enabled = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
             if (!isset($enabled)) {
               $enabled = _support_enabled($node->client, $uid);
             }

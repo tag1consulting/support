@@ -766,7 +766,7 @@ function support_nodeapi(&$node, $op, $teaser, $page) {
           foreach ($notifications as $notify) {
             $account = user_load(array('name' => trim($notify)));
             if (!empty($account)) {
-              support_subscribe_user($node->nid, $account->uid, TRUE);
+              support_subscribe_user($node->nid, $account->uid);
             }
           }
         }

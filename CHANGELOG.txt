@@ -1,4 +1,4 @@
-September 8th, 2011
+September 8th, 2011 (6.x-1.5)
  - support.module
     o bug #1256500: Remove 'active' column and unnecessary enries from
       support_assigned table

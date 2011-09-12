@@ -602,6 +602,21 @@ function support_update_7001() {
  * Migrate comment_upload data for support.module to a file.module field.
  */
 function support_update_7002(&$sandbox) {
+  // Tag1 hack
+  // DO NOT COMMIT
+  // DO NOT COMMIT
+  // DO NOT COMMIT
+  // DO NOT COMMIT
+  if (variable_get('site_name', 'Drupal') == 'Tag1 Consulting Support') {
+    db_query("alter table file_managed change column uri uri varchar(255) binary not null default '' comment 'URI of file.'");
+    db_query("delete from files where fid = 16572");
+    db_query("delete from comment_upload where fid = 16572");
+  }
+  // DO NOT COMMIT
+  // DO NOT COMMIT
+  // DO NOT COMMIT
+  // DO NOT COMMIT
+
   // Code was heavily based on system_update_7061().
   if (!db_table_exists('comment_upload')) {
     return;

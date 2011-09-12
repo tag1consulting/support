@@ -39,6 +39,7 @@ August 10th, 2011
       {support_project_ticket} properly.
     o bug #810012 by span, Jeremy: Support private files; fix attachment
       encoding issue
+    o bug #981622 by rsevero: Properly utf-8 encode attachment names
 
 August 9th, 2011
  - support.module

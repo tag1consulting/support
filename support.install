@@ -246,18 +246,8 @@ function support_schema() {
         'unsigned' => TRUE,
         'default' => 0,
       ),
-      'active' => array(
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 1,
-      ),
     ),
     'primary key' => array('uid', 'nid'),
-    'indexes' => array(
-      'active' => array('active')
-    ),
   );
 
   $schema['support_states'] = array(
@@ -522,5 +512,16 @@ function support_update_6008() {
   // Remove unnecessary status field.
   db_drop_field($ret, 'support_assigned', 'active');
 
+  return $ret;
+}
+
+/**
+ * Make sure the 'active' field is removed from new installs.
+ */
+function support_update_6009() {
+  $ret = array();
+  if (db_column_exists('support_assigned', 'active')) {
+    $ret = support_update_6008();
+  }
   return $ret;
 }

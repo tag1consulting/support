@@ -28,6 +28,10 @@ April 28, 2011
 
 6.x changelog
 -------------
+September 6th, 2011
+ - support.module
+    o bug #1271180: Don't join to {comments} on the ticket overview query.
+
 August 15th, 2011
  - support.module
     o bug #1098316: don't display multi-ticket update fields if there are no

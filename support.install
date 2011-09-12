@@ -478,6 +478,16 @@ function support_uninstall() {
 }
 
 /**
+ * Remove unnecessary 'active' field from {support_assigned} table.
+ */
+function support_update_6008() {
+  // Remove inactive entries from table.
+  db_delete('support_assigned')->condition('active', 0)->execute();
+  // Remove unnecessary status field.
+  db_drop_field('support_assigned', 'active');
+}
+
+/**
  * Make sure support_ticket has a field available for node and comment file attachments.
  */
 function _support_ensure_upload_field() {
@@ -728,5 +738,14 @@ function support_update_7002(&$sandbox) {
   else {
     // Indicate our current progress to the batch update system.
     $sandbox['#finished'] = $sandbox['progress'] / $sandbox['max'];
+  }
+}
+
+/**
+ * Ensure support_update_6008 has run: Remove unnecessary 'active' field from {support_assigned} table.
+ */
+function support_update_7003() {
+  if (db_field_exists('support_assigned', 'active')) {
+    support_update_6008();
   }
 }

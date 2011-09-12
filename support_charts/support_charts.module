@@ -77,6 +77,8 @@ function support_charts($page = 'global', $object = NULL) {
 function support_charts_display($page = 'global', $object) {
   $output = '';
 
+  drupal_add_css(drupal_get_path('module', 'support_charts') . '/support_charts.css');
+
   switch ($page) {
     case 'global':
       $output .= support_charts_build_pie('tickets_open');

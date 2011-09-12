@@ -39,6 +39,8 @@ August 10th, 2011
       {support_project_ticket} properly.
     o bug #810012 by span, Jeremy: Support private files; fix attachment
       encoding issue
+ - support_charts.module
+    o bug #920374: include support_charts.css when displaying charts
 
 August 9th, 2011
  - support.module

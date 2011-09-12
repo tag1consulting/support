@@ -1473,13 +1473,13 @@ function _support_mail_list_attachments($node, $comment) {
       // Try using the defined upload field first.
       if (!empty($node->{$field}[LANGUAGE_NONE])) {
         foreach ($node->{$field}[LANGUAGE_NONE] as $file) {
-          $attachments[] = url(file_create_url($file['uri']), array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
+          $attachments[] = file_create_url($file['uri']);
         }
       }
       // Fall back to the 'upload' field from 6.x core upgrades.
       elseif (!empty($node->upload[LANGUAGE_NONE])) {
         foreach ($node->upload[LANGUAGE_NONE] as $file) {
-          $attachments[] = url(file_create_url($file['uri']), array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
+          $attachments[] = file_create_url($file['uri']);
         }
       }
     }
@@ -1487,7 +1487,7 @@ function _support_mail_list_attachments($node, $comment) {
   // If there was a comment, we prefer it over the node.
   elseif (!empty($comment->{$field}[LANGUAGE_NONE])) {
     foreach ($comment->{$field}[LANGUAGE_NONE] as $file) {
-      $attachments[] = url(file_create_url($file['uri']), array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
+      $attachments[] = file_create_url($file['uri']);
     }
   }
   return (!empty($attachments) ? "<br />\n" . t('Attachments:') . "<br />\n" . implode("<br />\n", $attachments) : '');
@@ -1726,15 +1726,15 @@ function _support_save_attachments($attachments, $account, $entity_type = 'node'
           switch (strtoupper($parm->attribute)) {
             case 'NAME':
             case 'FILENAME':
-              $attachment->filename = $parm->value;
+              $attachment->filename = mb_decode_mimeheader($parm->value);
               break;
             case 'NAME*1*':
             case 'FILENAME*1*':
-              $attachment->filename = urldecode($parm->value);
+              $attachment->filename = urldecode(mb_decode_mimeheader($parm->value));
               break;
             default:
               // put everything else in the attributes array;
-              $attachment->attributes[$parm->attribute] = $parm->value;
+              $attachment->attributes[$parm->attribute] = mb_decode_mimeheader($parm->value);
           }
         }
       }
@@ -1743,11 +1743,11 @@ function _support_save_attachments($attachments, $account, $entity_type = 'node'
           switch (strtoupper($parm->attribute)) {
             case 'NAME':
             case 'FILENAME':
-              $attachment->filename = $parm->value;
+              $attachment->filename = mb_decode_mimeheader($parm->value);
               break;
             default:
               // put everything else in the attributes array;
-              $attachment->attributes[$parm->attribute] = $parm->value;
+              $attachment->attributes[$parm->attribute] = mb_decode_mimeheader($parm->value);
           }
         }
       }
@@ -1758,6 +1758,11 @@ function _support_save_attachments($attachments, $account, $entity_type = 'node'
         else {
           $attachment->filename = 'noname';
         }
+      }
+
+      // Transliterate special characters if transliteration is enabled.
+      if (function_exists('transliteration_clean_filename')) {
+        $attachment->filename = transliteration_clean_filename($attachment->filename, language_default());
       }
 
       // Create an appropriate file destination based on the field settings in play.
@@ -1841,7 +1846,7 @@ function _support_get_message_body_part($stream, $message, $mime_type, $structur
   if (!empty($structure)) {
     foreach ($structure->parameters as $parameter) {
       if (strtoupper($parameter->attribute) == 'CHARSET') {
-        $encoding = $parameter->value;
+        $encoding = mb_decode_mimeheader($parameter->value);
         break;
       }
     }

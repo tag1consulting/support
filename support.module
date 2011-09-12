@@ -3208,7 +3208,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     '#type' => 'checkboxes',
     '#options' => isset($tickets) && (user_access('edit multiple tickets') || user_access('administer support')) ? $tickets : array(),
   );
-  if (user_access('edit multiple tickets') || user_access('administer support')) {
+  if (count($tickets) && (user_access('edit multiple tickets') || user_access('administer support'))) {
     $form['update'] = array(
       '#title' => t('Update'),
       '#type' => 'textarea',

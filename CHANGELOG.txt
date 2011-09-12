@@ -28,6 +28,11 @@ April 28, 2011
 
 6.x changelog
 -------------
+August 15th, 2011
+ - support.module
+    o bug #1098316: don't display multi-ticket update fields if there are no
+      tickets available to update
+
 August 10th, 2011
  - tagged 6.x-1.5-rc1 release candidate
 

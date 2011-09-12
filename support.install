@@ -254,18 +254,8 @@ function support_schema() {
         'unsigned' => TRUE,
         'default' => 0,
       ),
-      'active' => array(
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 1,
-      ),
     ),
     'primary key' => array('uid', 'nid'),
-    'indexes' => array(
-      'active' => array('active'),
-    ),
   );
 
   $schema['support_states'] = array(
@@ -486,6 +476,14 @@ function support_update_6008() {
   // Remove unnecessary status field.
   db_drop_field('support_assigned', 'active');
 }
+
+/**
+ * Update 6009 skipped in Drupal 7.
+ */
+/*
+function support_update_6009() {
+}
+*/
 
 /**
  * Make sure support_ticket has a field available for node and comment file attachments.

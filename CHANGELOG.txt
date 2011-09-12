@@ -28,6 +28,11 @@ April 28, 2011
 
 6.x changelog
 -------------
+September 12, 2011
+ - support.install
+    o bug #1256500 followup: Make sure the schema is in sync after the 'active'
+      removal from the support_assigned table.
+
 September 8th, 2011 (6.x-1.5)
  - support.module
     o bug #1256500: Remove 'active' column and unnecessary enries from

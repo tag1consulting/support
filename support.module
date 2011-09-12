@@ -912,7 +912,7 @@ function _support_node_insert_update($node) {
     foreach ($notifications as $notify) {
       $account = array_shift(user_load_multiple(array(), array('name' => trim($notify))));
       if (!empty($account)) {
-        support_subscribe_user($node->nid, $account->uid, TRUE);
+        support_subscribe_user($node->nid, $account->uid);
       }
     }
   }

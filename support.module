@@ -1466,17 +1466,30 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
  */
 function _support_mail_list_attachments($node, $comment) {
   $attachments = array();
-  if (empty($comment) && is_object($node) && is_array($node->files)) {
-    foreach ($node->files as $fid => $file) {
-      $attachments[] = url($file->filepath, array('absolute' => TRUE, 'alias' => variable_get('support_user_aliased_urls', TRUE)));
+  $field = variable_get('support_mail_upload_field', 'support_ticket_upload');
+  // If there isn't a comment, look at the node for attachments.
+  if (empty($comment)) {
+    if (is_object($node)) {
+      // Try using the defined upload field first.
+      if (!empty($node->{$field}[LANGUAGE_NONE])) {
+        foreach ($node->{$field}[LANGUAGE_NONE] as $file) {
+          $attachments[] = url(file_create_url($file['uri']), array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
+        }
+      }
+      // Fall back to the 'upload' field from 6.x core upgrades.
+      elseif (!empty($node->upload[LANGUAGE_NONE])) {
+        foreach ($node->upload[LANGUAGE_NONE] as $file) {
+          $attachments[] = url(file_create_url($file['uri']), array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
+        }
+      }
     }
   }
-  // TODO comment_upload dont has D7 port
-  // else if (isset($comment['files']) && is_array($comment['files'])) {
-  //  foreach ($comment['files'] as $fid => $file) {
-  //    $attachments[] = url($file['filepath'], array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
-  //  }
-  //}
+  // If there was a comment, we prefer it over the node.
+  elseif (!empty($comment->{$field}[LANGUAGE_NONE])) {
+    foreach ($comment->{$field}[LANGUAGE_NONE] as $file) {
+      $attachments[] = url(file_create_url($file['uri']), array('absolute' => TRUE, 'alias' => variable_get('support_use_aliased_urls', TRUE)));
+    }
+  }
   return (!empty($attachments) ? "<br />\n" . t('Attachments:') . "<br />\n" . implode("<br />\n", $attachments) : '');
 }
 
@@ -1591,10 +1604,14 @@ function support_save_message($message, $client) {
     $comment->mail = $account->mail;
     $comment->subject = $message['subject'];
     $comment->timestamp = REQUEST_TIME;
-    $comment->comment_body = array(LANGUAGE_NONE => array($message['body']));
-// TODO
-// It seems http://drupal.org/project/comment_upload has no D7 port yet?
-// $comment->files = _support_save_attachments($message['attachments'], $account);
+    $comment->comment_body[LANGUAGE_NONE][] = array(
+      //'summary' => '',
+      'value' => $message['body'],
+      'format' => filter_default_format($account),
+    );
+    if ($upload_field = _support_upload_field_name('comment')) {
+      $comment->{$upload_field} = _support_save_attachments($message['attachments'], $account, 'comment');
+    }
     $comment->message_id = $message_id;
     $comment->state = isset($message['state']) ? $message['state'] : $ticket->state;
     $comment->priority = isset($message['priority']) ? $message['priority'] : $ticket->priority;
@@ -1653,26 +1670,55 @@ function support_save_message($message, $client) {
     $node->assigned = _support_autoassign($client->clid, $account->uid);
     $node->notification = TRUE;
     $node->support_email = TRUE;
-    $node->language = $account->language;
-    // Save/record attachments
-    if (isset($message['attachments'])) {
-      $node->files = _support_save_attachments($message['attachments'], $account);
+    if ($upload_field = _support_upload_field_name('node')) {
+      $node->{$upload_field} = _support_save_attachments($message['attachments'], $account, 'node');
     }
     $node->created_by_email = TRUE;
-    // TODO
-    // It seems http://drupal.org/project/comment_upload has no D7 port yet?
-    //  if (isset($message['_support_extra_fields'])) {
-    //    foreach ($message['_support_extra_fields'] as $k => $v) {
-    //      $node->{$k} = $v;
-    //    }
-    // }
+    if (isset($message['_support_extra_fields'])) {
+      foreach ($message['_support_extra_fields'] as $k => $v) {
+        $node->{$k} = $v;
+      }
+    }
     node_save($node);
   }
 }
 
-function _support_save_attachments($attachments, $account) {
+function _support_upload_field($entity_type = 'node', $bundle = 'empty') {
+  if ($entity_type == 'node') {
+    $bundle = 'support_ticket';
+  }
+  elseif ($entity_type == 'comment') {
+    $bundle = 'comment_node_support_ticket';
+  }
+  $field_name = variable_get('support_mail_upload_field', 'support_ticket_upload');
+  $info = field_info_field($field_name);
+  if ($info && isset($info['bundles'][$entity_type]) && in_array($bundle, $info['bundles'][$entity_type])) {
+    $info['instance'] = field_info_instance($entity_type, $field_name, $bundle);
+    return $info;
+  }
+  // Try the upload field as well.
+  $info = field_info_field('upload');
+  if ($info && isset($info['bundles'][$entity_type]) && in_array($bundle, $info['bundles'][$entity_type])) {
+    $info['instance'] = field_info_instance($entity_type, $field_name, $bundle);
+    return $info;
+  }
+}
+
+function _support_upload_field_name($entity_type = 'node', $bundle = 'empty') {
+  $info = _support_upload_field($entity_type, $bundle);
+  return isset($info['field_name']) ? $info['field_name'] : FALSE;
+}
+
+function _support_save_attachments($attachments, $account, $entity_type = 'node') {
   $files = array();
   if (count($attachments)) {
+    $field = _support_upload_field($entity_type);
+    if (!$field) {
+      watchdog('support', 'Unable to save attachments - no field was found to save to!', WATCHDOG_WARNING);
+      return;
+    }
+
+    $weight = 0;
     foreach ($attachments as $attachment) {
       $attachment = (object) $attachment;
       if (is_array($attachment->parameters)) {
@@ -1713,21 +1759,41 @@ function _support_save_attachments($attachments, $account) {
           $attachment->filename = 'noname';
         }
       }
-      $attachment->filepath = file_save_data($attachment->attachment, file_directory_path() . '/' . utf8_encode($attachment->filename));
-      if ($attachment->filepath) {
-        watchdog('support', 'Saved %size byte %type attachment %file to %path.', array('%size' => number_format($attachment->bytes), '%type' => $attachment->filemime, '%file' => utf8_encode($attachment->filename), '%path' => $attachment->filepath), WATCHDOG_INFO);
-        // TODO Please convert this statement to the D7 database API syntax.
-        /* db_query("INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp) VALUES(%d, '%s', '%s', '%s', %d, %d, %d)", $account->uid, utf8_encode($attachment->filename), $attachment->filepath, $attachment->filemime, $attachment->bytes, 1, REQUEST_TIME) */
-        NULL;
-        $attachment->fid = db_last_insert_id('files', 'fid');
-        $attachment->new = $attachment->list = TRUE;
-        $attachment->weight = 0;
-        $attachment->description = $attachment->filename;
-        $files[$attachment->fid] = $attachment;
+
+      // Create an appropriate file destination based on the field settings in play.
+      $destination = $field['settings']['uri_scheme'] . '://' . $field['instance']['settings']['file_directory'] . '/' . utf8_encode($attachment->filename);
+      $destination = file_stream_wrapper_uri_normalize($destination);
+
+      if ($uri = file_unmanaged_save_data($attachment->attachment, $destination, FILE_EXISTS_RENAME)) {
+        // Create a file object.
+        $file = new stdClass();
+        $file->fid = NULL;
+        $file->uri = $uri;
+        // The *display* filename is based on the destination. Avoids _1, etc.
+        $file->filename = basename($destination);
+        // Differs from core -- filemime can come from the email directly.
+        // Don't use core logic unless filemime is missing.
+        if (isset($attachment->filemime)) {
+          $file->filemime = $attachment->filemime;
+        }
+        else {
+          $file->filemime = file_get_mimetype($file->uri);
+        }
+        $file->uid = $account->uid;
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
+
+        $files[LANGUAGE_NONE][] = array(
+          'fid' => $file->fid,
+          'description' => $file->filename,
+          'display' => $field['settings']['display_default'],
+          '_weight' => $weight,
+        );
       }
       else {
         watchdog('support', 'Failed to save attachment %file, file_save_data() returned error.', array('%file' => utf8_encode($attachment->filename)));
       }
+      $weight++;
     }
   }
   return $files;

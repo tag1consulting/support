@@ -458,6 +458,9 @@ function support_install() {
   $support_node_type = node_type_set_defaults($support_node_type);
   node_type_save($support_node_type);
   node_add_body_field($support_node_type);
+
+  // Set up a file field for uploads.
+  _support_ensure_upload_field();
 }
 
 /**
@@ -472,6 +475,99 @@ function support_uninstall() {
   }
 */
   node_type_delete('support_ticket');
+}
+
+/**
+ * Make sure support_ticket has a field available for node and comment file attachments.
+ */
+function _support_ensure_upload_field() {
+  // Force the file module to be enabled.
+  module_enable(array('file'));
+
+  // If you want to migrate from the comment_upload data in D6 but don't want
+  // to use this automatically created field, create a file field manually
+  // and set this variable to the field name.
+  $field_name = variable_get('support_mail_upload_field', 'support_ticket_upload');
+
+  $info = field_info_field($field_name);
+
+  if (!$info) {
+    // Field is missing, create it.
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'file',
+      'module' => 'file',
+      'locked' => FALSE,
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'translatable' => FALSE,
+      'settings' => array(
+        'display_field' => 1,
+        'display_default' => variable_get('upload_list_default', 1),
+        'uri_scheme' => file_default_scheme(),
+        'default_file' => 0,
+      ),
+    );
+    field_create_field($field);
+  }
+
+  $upload_size = variable_get('upload_uploadsize_default', 1);
+  // Base instance.
+  $base_instance = array(
+    'field_name' => $field_name,
+    'entity_type' => NULL,
+    'bundle' => NULL,
+    'label' => 'File attachments',
+    'required' => 0,
+    'description' => '',
+    'widget' => array(
+      'weight' => '1',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'file_generic',
+    ),
+    'settings' => array(
+      'max_filesize' => $upload_size ? ($upload_size . ' MB') : '',
+      'file_extensions' => variable_get('upload_extensions_default', 'jpg jpeg gif png txt doc xls pdf ppt pps odt ods odp'),
+      'file_directory' => 'support', // @@@ I think this is a good idea personally but need a second opinion.
+      'description_field' => 1,
+    ),
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'type' => 'file_table',
+        'settings' => array(),
+        'weight' => 0,
+        'module' => 'file',
+      ),
+    ),
+  );
+
+  if (!$info || !isset($info['bundles']['comment']) || !in_array('comment_node_support_ticket', $info['bundles']['comment'])) {
+    // Field isn't associated with support_ticket comments, attach it.
+    $instance = $base_instance;
+    $instance['entity_type'] = 'comment';
+    $instance['bundle'] = 'comment_node_support_ticket';
+    $instance['display']['full'] = $instance['display']['default'];
+    field_create_instance($instance);
+  }
+
+  if (!$info || !isset($info['bundles']['node']) || !in_array('support_ticket', $info['bundles']['node'])) {
+    // Additionally check if the 'upload' field is available -- we support falling back to that
+    // if the field is missing, so users with 6.x sites don't end up with 2 fields.
+    $info2 = field_info_field('upload');
+    if (!$info2 || !isset($info2['bundles']['node']) || !in_array('support_ticket', $info2['bundles']['node'])) {
+      // Field isn't associated with support_ticket nodes and there wasn't a legacy upload field, attach it.
+      $instance = $base_instance;
+      $instance['entity_type'] = 'node';
+      $instance['bundle'] = 'support_ticket';
+      $instance['display']['full'] = $instance['display']['default'];
+      $instance['display']['rss'] = $instance['display']['default'];
+      $instance['display']['teaser'] = $instance['display']['default'];
+      $instance['display']['teaser']['type'] = 'hidden';
+      field_create_instance($instance);
+    }
+  }
 }
 
 /**
@@ -492,5 +588,130 @@ function support_update_7000() {
     if (!empty($fixed)) {
       variable_set($var, $fixed);
     }
+  }
+}
+
+/**
+ * Ensure an upload field is created for uploading to comments.
+ */
+function support_update_7001() {
+  _support_ensure_upload_field();
+}
+
+/**
+ * Migrate comment_upload data for support.module to a file.module field.
+ */
+function support_update_7002(&$sandbox) {
+  // Code was heavily based on system_update_7061().
+  if (!db_table_exists('comment_upload')) {
+    return;
+  }
+  $fieldname = variable_get('support_mail_upload_field', 'support_ticket_upload');
+
+  if (!isset($sandbox['progress'])) {
+    // Initialize batch update information.
+    $sandbox['progress'] = 0;
+    $sandbox['last_cid_processed'] = -1;
+    $sandbox['max'] = db_query("SELECT COUNT(*) FROM {comment_upload} u INNER JOIN {node} n ON u.nid = n.nid WHERE n.type = 'support_ticket'")->fetchField();
+  }
+
+  // Determine cids for this batch.
+  // Process all files attached to a given comment during the same batch.
+  $limit = variable_get('upload_update_batch_size', 100);
+  $cids = db_query_range("SELECT u.cid FROM {comment_upload} u INNER JOIN {node} n ON u.nid = n.nid WHERE n.type = 'support_ticket' AND u.cid > :lastcid ORDER BY cid", 0, $limit, array(':lastcid' => $sandbox['last_cid_processed']))
+    ->fetchCol();
+
+  // Retrieve information on all the files attached to these comments.
+  if (!empty($cids)) {
+    $comments = array();
+    $result = db_query('SELECT c.fid, c.nid, c.cid, c.description, c.list, c.weight FROM {comment_upload} c WHERE c.cid IN (:cids) ORDER BY c.cid, c.weight, c.fid', array(':cids' => $cids));
+    foreach ($result as $record) {
+      // For each uploaded file, retrieve the corresponding data from the old
+      // files table (since comment_upload doesn't know about the new entry in the
+      // file_managed table).
+      $file = db_select('files', 'f')
+        ->fields('f', array('fid', 'uid', 'filename', 'filepath', 'filemime', 'filesize', 'status', 'timestamp'))
+        ->condition('f.fid', $record->fid)
+        ->execute()
+        ->fetchAssoc();
+      if (!$file) {
+        continue;
+      }
+
+      // Add in the file information from the upload table.
+      $file['description'] = $record->description;
+      $file['display'] = $record->list;
+
+      // Create one record for each revision that contains all the uploaded
+      // files.
+      $comments[$record->cid]['cid'] = $record->cid;
+      $comments[$record->cid]['file'][LANGUAGE_NONE][] = $file;
+    }
+
+    // Now that we know which files belong to which comments, update the
+    // files'// database entries, and save a reference to each file in the
+    // upload field on their node revisions.
+    $basename = variable_get('file_directory_path', conf_path() . '/files');
+    $scheme = file_default_scheme() . '://';
+    foreach ($comments as $cid => $comment) {
+      foreach ($comment['file'][LANGUAGE_NONE] as $delta => $file) {
+        // We will convert filepaths to uri using the default scheme
+        // and stripping off the existing file directory path.
+        $file['uri'] = $scheme . str_replace($basename, '', $file['filepath']);
+        $file['uri'] = file_stream_wrapper_uri_normalize($file['uri']);
+        unset($file['filepath']);
+        // Insert into the file_managed table.
+        // Each fid should only be stored once in file_managed.
+        db_merge('file_managed')
+          ->key(array(
+            'fid' => $file['fid'],
+          ))
+          ->fields(array(
+            'uid' => $file['uid'],
+            'filename' => $file['filename'],
+            'uri' => $file['uri'],
+            'filemime' => $file['filemime'],
+            'filesize' => $file['filesize'],
+            'status' => $file['status'],
+            'timestamp' => $file['timestamp'],
+          ))
+          ->execute();
+
+        // Add the usage entry for the file.
+        $file = (object) $file;
+        file_usage_add($file, 'file', 'comment', $comment['cid']);
+
+        // Update the comment's upload file field with the file data.
+        $comment['file'][LANGUAGE_NONE][$delta] = array('fid' => $file->fid, 'display' => $file->display, 'description' => $file->description);
+      }
+
+      // Write the comment's upload field data into the field_upload tables.
+      $comment = (object) $comment;
+      _update_7000_field_sql_storage_write('comment', 'comment_node_support_ticket', $comment->cid, $comment->cid, $fieldname, $comment->file);
+
+      // Update our progress information for the batch update.
+      $sandbox['progress']++;
+      $sandbox['last_cid_processed'] = $cid;
+    }
+  }
+
+  // If less than limit comments were processed, the update process is
+  // finished.
+  if (count($cids) < $limit) {
+    $finished = TRUE;
+  }
+
+  // If there's no max value then there's nothing to update and we're finished.
+  if (empty($sandbox['max']) || isset($finished)) {
+    // Remove our processed migrated files while leaving the table (as people may be using comment_upload for other things as well)
+    $fids = db_query("SELECT fid FROM {comment_upload} c INNER JOIN {node} n ON c.nid = n.nid WHERE n.type = 'support_ticket'")->fetchCol();
+    db_delete('comment_upload')
+      ->condition('fid', $fids, 'IN')
+      ->execute();
+    return t('Comment Upload data associated with Support tickets has been migrated to File module.');
+  }
+  else {
+    // Indicate our current progress to the batch update system.
+    $sandbox['#finished'] = $sandbox['progress'] / $sandbox['max'];
   }
 }

@@ -1604,7 +1604,9 @@ function support_save_message($message, $client) {
       'format' => filter_default_format($account),
     );
     if ($upload_field = _support_upload_field_name('comment')) {
-      $comment->{$upload_field} = _support_save_attachments($message['attachments'], $account, 'comment');
+      if (!empty($message['attachments'])) {
+        $comment->{$upload_field} = _support_save_attachments($message['attachments'], $account, 'comment');
+      }
     }
     $comment->message_id = $message_id;
     $comment->state = isset($message['state']) ? $message['state'] : $ticket->state;

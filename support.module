@@ -2472,6 +2472,7 @@ function support_status_form(&$form_state, $edit, $title) {
     drupal_set_message(t('A site administrator must !create a client before you can create support tickets.', array('!create' => l(t('create and enable'), 'admin/config/support/clients/add'))), 'error');
   }
   $clients = array('- select client -') + $clients;
+  $client = isset($node->client) && is_numeric($node->client) ? $node->client : 0;
   if ($available == 1 ||
       (!user_access('can select client') &&
        !user_access('administer support'))) {

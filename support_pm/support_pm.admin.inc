@@ -152,6 +152,14 @@ function support_pm_admin_reports() {
         $convert = strtotime(date('d M Y', $date));
         $result = db_query('SELECT tt.time, t.client, n.uid FROM {support_ticket_timer} tt LEFT JOIN {support_ticket} t ON tt.nid = t.nid LEFT JOIN {node} n ON t.nid = n.nid WHERE tt.date = :date', array(':date' => $convert));
         foreach ($result as $timer) {
+          if (!isset($hour_client[$timer->client])) {
+            $hour_client[$timer->client]->hours = 0;
+            $hours_client[$timer->client]->hours = 0;
+          }
+          if (!isset($hour_user[$timer->uid])) {
+            $hour_user[$timer->uid]->hours = 0;
+            $hours_user[$timer->uid]->hours = 0;
+          }
           $hour_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hours_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hour_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);
@@ -159,6 +167,14 @@ function support_pm_admin_reports() {
         }
         $result = db_query('SELECT tt.time, t.client, c.uid FROM {support_ticket_comment_timer} tt LEFT JOIN {support_ticket_comment} t ON tt.cid = t.cid LEFT JOIN {comment} c ON t.cid = c.cid WHERE tt.date = :date', array(':date' => $convert));
         foreach ($result as $timer) {
+          if (!isset($hour_client[$timer->client])) {
+            $hour_client[$timer->client]->hours = 0;
+            $hours_client[$timer->client]->hours = 0;
+          }
+          if (!isset($hour_user[$timer->uid])) {
+            $hour_user[$timer->uid]->hours = 0;
+            $hours_user[$timer->uid]->hours = 0;
+          }
           $hour_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hours_client[$timer->client]->hours += support_pm_timer_to_hours($timer->time);
           $hour_user[$timer->uid]->hours += support_pm_timer_to_hours($timer->time);

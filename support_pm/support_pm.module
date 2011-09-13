@@ -291,33 +291,27 @@ function support_pm_query_support_pager_alter($query) {
   }
 }
 
-function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
-  if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'ELECT DISTINCT') && strpos($query, 'support_ticket') && strpos($query, 'client =') && arg(3)) {
-    $path = arg(3);
-    if ($path == preg_replace('/[^0-9a-zA-Z_-]/', '', $path)) {
-      return array(
-        'join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
-        'where' => "sp.path = '$path'",
-      );
-    }
+/**
+ * Alter the timer report for nodes to consider projects.
+ */
+function support_pm_query_support_timer_node_alter($query) {
+  $project = isset($_GET['project']) ? $_GET['project'] : '';
+  if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
+    $query->leftJoin('support_project_ticket', 'spt', 'n.nid = spt.nid');
+    $query->leftJoin('support_project', 'sp', 'spt.projid = sp.projid');
+    $query->condition('sp.path', $project);
   }
-  else if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'support_ticket_timer') && strpos($query, 't.client IN')) {
-    $project = isset($_GET['project']) ? $_GET['project'] : '';
-    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
-      return array(
-        'join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
-        'where' => "sp.path = '$project'",
-      );
-    }
-  }
-  else if ($primary_table == 'c' && $primary_field == 'cid' && strpos($query, 'support_ticket_comment_timer') && strpos($query, 't.client IN')) {
-    $project = isset($_GET['project']) ? $_GET['project'] : '';
-    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
-      return array(
-        'join' => ' LEFT JOIN {support_project_ticket} spt ON c.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',
-        'where' => "sp.path = '$project'",
-      );
-    }
+}
+
+/**
+ * Alter the timer report for comments to consider projects.
+ */
+function support_pm_query_support_timer_comment_alter($query) {
+  $project = isset($_GET['project']) ? $_GET['project'] : '';
+  if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
+    $query->leftJoin('support_project_ticket', 'spt', 'c.nid = spt.nid');
+    $query->leftJoin('support_project', 'sp', 'spt.projid = sp.projid');
+    $query->condition('sp.path', $project);
   }
 }
 

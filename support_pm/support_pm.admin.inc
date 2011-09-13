@@ -294,7 +294,7 @@ function support_pm_admin_reports_submit($form, &$form_state) {
   if (!empty($form_state['values']['report_client'])) {
     $args['rc'] = implode(',', $form_state['values']['report_client']);
   }
-  drupal_goto('admin/config/support/plan_reports', $args);
+  drupal_goto('admin/config/support/plan_report', $args);
 }
 
 function _support_pm_first_day_month($time) {

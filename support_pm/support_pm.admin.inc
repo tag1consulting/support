@@ -97,7 +97,7 @@ function support_pm_admin_reports() {
     $header_details = array('');
     $row = array('<strong>'. t('Plan') .'</strong>');
     $row2 = array('<strong>'. t('Actual') .'</strong>');
-    $totals = array();
+    $totals = array('client_plan' => array(), 'user_plan' => array());
     $hours_client = array();
     $hours_user = array();
     for ($i = 0; $i < $days; $i++) {
@@ -114,6 +114,9 @@ function support_pm_admin_reports() {
       // Add up totals
       if (is_array($client_day)) {
         foreach ($client_day as $clid => $data) {
+          if (!isset($totals['client_plan'][$clid])) {
+            $totals['client_plan'][$clid] = 0;
+          }
           $totals['client_plan'][$clid] += $data->hours;
         }
       }
@@ -131,6 +134,9 @@ function support_pm_admin_reports() {
       // Add up totals
       if (is_array($user_day)) {
         foreach ($user_day as $uid => $data) {
+          if (!isset($totals['user_plan'][$uid])) {
+            $totals['user_plan'][$uid] = 0;
+          }
           $totals['user_plan'][$uid] += $data->hours;
         }
       }

@@ -1,6 +1,8 @@
 September 13th, 2011
  - support.module
     o bug #1276776: declare $tickets before trying to access it
+ - support.module
+    o bug #1271038: minimize alerts when no support clients are enabled
 
 September 12th, 2011
  - support.install

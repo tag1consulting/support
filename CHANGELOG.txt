@@ -35,6 +35,8 @@ September 13th, 2011
     o bug #1271038: minimize alerts when no support clients are enabled
  - support.module
     o Updating a missed plan_reports -> plan_report that was breaking plan reports.
+ - support.module
+    o Backport whitespace changes from D7.
 
 September 12th, 2011
  - support.install

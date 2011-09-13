@@ -920,6 +920,9 @@ function support_pm_chartapi_render($chart, $attributes = array()) {
  */
 function support_pm_timer_to_hours($time) {
   $time = explode(':', $time);
+  if (!isset($time[1])) {
+    $time[1] = 0;
+  }
   $hours = (int)$time[0];
   $minutes = round((int)$time[1] / 60, 2);
   return $hours + $minutes;

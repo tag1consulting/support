@@ -224,12 +224,17 @@ function support_pm_node_update($node) {
   if ($node->type != 'support_ticket') {
     return;
   }
-  db_merge('support_project_ticket')
-    ->key(array('nid' => $node->nid))
-    ->fields(array(
-      'projid' => $node->project,
-  ))
-    ->execute();
+  if (!isset($node->project)) {
+    db_delete('support_project_ticket')->condition('nid', $node->nid)->execute();
+  }
+  else {
+    db_merge('support_project_ticket')
+      ->key(array('nid' => $node->nid))
+      ->fields(array(
+        'projid' => $node->project,
+    ))
+      ->execute();
+  }
 }
 
 /**

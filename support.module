@@ -3104,6 +3104,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   $result = $query->execute();
 
   $rows = array();
+  $tickets = array();
   foreach ($result as $ticket) {
     drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load($ticket->uid);
@@ -3198,7 +3199,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   }
   $form['tickets'] = array(
     '#type' => 'checkboxes',
-    '#options' => isset($tickets) && (user_access('edit multiple tickets') || user_access('administer support')) ? $tickets : array(),
+    '#options' => count($tickets) && (user_access('edit multiple tickets') || user_access('administer support')) ? $tickets : array(),
   );
   if (count($tickets) && (user_access('edit multiple tickets') || user_access('administer support'))) {
     $form['update'] = array(

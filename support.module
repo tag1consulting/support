@@ -2699,6 +2699,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   $sql_count = db_rewrite_sql($sql_count);
   $result = pager_query($sql, 50, 0, $sql_count);
   $rows = array();
+  $tickets = array();
   while ($ticket = db_fetch_object($result)) {
     drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load(array('uid' => $ticket->uid));
@@ -2793,7 +2794,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   }
   $form['tickets'] = array(
     '#type' => 'checkboxes',
-    '#options' => isset($tickets) && (user_access('edit multiple tickets') || user_access('administer support')) ? $tickets : array(),
+    '#options' => count($tickets) && (user_access('edit multiple tickets') || user_access('administer support')) ? $tickets : array(),
   );
   if (count($tickets) && (user_access('edit multiple tickets') || user_access('administer support'))) {
     $form['update'] = array(

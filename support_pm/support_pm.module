@@ -319,15 +319,13 @@ function support_pm_query_support_timer_comment_alter($query) {
  * Allow projects to be selected.
  */
 function support_pm_support_timer_client_report_alter(&$report) {
-  $report->filters .= drupal_get_form('support_pm_invoice_ui_form');
+  $report->filters .= drupal_render(drupal_get_form('support_pm_invoice_ui_form'));
 }
 
 /**
  * Provide form for selecting projects.
  */
-function support_pm_invoice_ui_form() {
-  $form = array();
-
+function support_pm_invoice_ui_form($form, &$form_state) {
   if (user_access('administer support projects')) {
     drupal_add_js('jQuery(document).ready(function() { jQuery("form#support-pm-invoice-ui-form select").change(function() { jQuery("form#support-pm-invoice-ui-form").submit(); }); });', 'inline');
 
@@ -382,7 +380,7 @@ function support_pm_invoice_ui_form_submit($form, &$form_state) {
   if (is_object($project)) {
     $query['project'] = $project->path;
   }
-  drupal_goto($path, $query);
+  drupal_goto($path, array('query' => $query));
 }
 
 /**

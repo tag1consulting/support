@@ -228,7 +228,7 @@ function support_pm_admin_reports() {
     );
     $form['client']['client_data'] = array(
       '#type' => 'markup',
-      '#value' => theme('table', array('header' => $header_client, 'rows' => $rows_client, 'attributes' => array('id' => 'support_pm_summary'))),
+      '#markup' => theme('table', array('header' => $header_client, 'rows' => $rows_client, 'attributes' => array('id' => 'support_pm_summary'))),
     );
 
     $form['user'] = array(
@@ -237,7 +237,7 @@ function support_pm_admin_reports() {
     );
     $form['user']['user_data'] = array(
       '#type' => 'markup',
-      '#value' => theme('table', array('header' => $header_user, 'rows' => $rows_user, 'attributes' => array('id' => 'support_pm_summary'))),
+      '#markup' => theme('table', array('header' => $header_user, 'rows' => $rows_user, 'attributes' => array('id' => 'support_pm_summary'))),
     );
 
     $form['detail'] = array(
@@ -246,7 +246,7 @@ function support_pm_admin_reports() {
     );
     $form['detail']['detail_data'] = array(
       '#type' => 'markup',
-      '#value' => theme('table', array('header' => $header_details, 'rows' => $rows_details, 'attributes' => array('id' => 'support_pm_week'))),
+      '#markup' => theme('table', array('header' => $header_details, 'rows' => $rows_details, 'attributes' => array('id' => 'support_pm_week'))),
     );
   }
 
@@ -316,7 +316,7 @@ function support_pm_admin_reports_submit($form, &$form_state) {
   if (!empty($form_state['values']['report_client'])) {
     $args['rc'] = implode(',', $form_state['values']['report_client']);
   }
-  drupal_goto('admin/config/support/plan_report', $args);
+  drupal_goto('admin/config/support/plan_report', array('query' => $args));
 }
 
 function _support_pm_first_day_month($time) {

@@ -2248,10 +2248,8 @@ function support_search_available_clients() {
   if (!is_array($clids)) {
     $clids = array();
     $clients = _support_available_clients();
-    if (is_array($clients)) {
-      foreach ($clients as $clid => $client) {
-        $clids[] = $clid;
-      }
+    foreach ($clients as $clid => $client) {
+      $clids[] = $clid;
     }
   }
   return $clids;
@@ -2467,14 +2465,14 @@ function support_status_form(&$form_state, $edit, $title) {
       }
     }
   }
-  $default = array('- select client -');
-  if (empty($clients)) {
-    $clients = $default;
+  $available = count($clients);
+  if (!$available) {
+    drupal_set_message(t('A site administrator must !create a client before you can create support tickets.', array('!create' => l(t('create and enable'), 'admin/config/support/clients/add'))), 'error');
   }
-  else {
-    $clients = $default + $clients;
-  }
-  if ((sizeof($clients) == 1) || (!user_access('can select client') && !user_access('administer support'))) {
+  $clients = array('- select client -') + $clients;
+  if ($available == 1 ||
+      (!user_access('can select client') &&
+       !user_access('administer support'))) {
     $form['support']['client'] = array(
       '#type' => 'hidden',
       '#value' => $client,
@@ -2909,10 +2907,10 @@ function _support_available_clients($account = NULL) {
       }
     }
     else {
-      drupal_set_message(t('There are no support clients configured/enabled.'), 'error', FALSE);
+      watchdog('support', t('There are no support clients configured/enabled.'), NULL, WATCHDOG_WARNING, l(t('add client'), 'admin/config/support/clients/add'));
     }
   }
-  return isset($valid[$account->uid]) ? $valid[$account->uid] : NULL;
+  return isset($valid[$account->uid]) ? $valid[$account->uid] : array();
 }
 
 /**
@@ -2970,7 +2968,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
       }
     }
     $clients = _support_available_clients();
-    if (sizeof($clients)) {
+    if (count($clients)) {
       foreach ($clients as $key => $name) {
         $client = support_client_load($key);
         if (!empty($client->parent)) {

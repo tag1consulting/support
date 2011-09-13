@@ -264,11 +264,15 @@ function support_pm_admin_reports() {
     '#description' => t('Optionally limit your report to one or more roles.'),
   );
 
+  $available_clients = _support_available_clients();
+  if (empty($available_clients)) {
+    drupal_set_message(t('You must !create a client before you can generate reports.', array('!create' => l(t('create and enable'), 'admin/config/support/clients/add'))), 'error');
+  }
   $form['optional']['report_client'] = array(
     '#type' => 'select',
     '#title' => t('Client(s)'),
     '#multiple' => TRUE,
-    '#options' => _support_available_clients(),
+    '#options' => $available_clients,
     '#description' => t('Optionally limit your report to one or more clients.'),
   );
 
@@ -342,7 +346,7 @@ function support_pm_admin_settings() {
 
   $color_values = variable_get('support_pm_color_values', array());
   if (empty($color_values)) {
-    drupal_set_message(t('You must !url before you can edit colors here.', array('!url' => l(t('run a plan report'), 'admin/config/support/plan_reports'))));
+    drupal_set_message(t('You must !url before you can edit colors here.', array('!url' => l(t('run a plan report'), 'admin/config/support/plan_report'))));
   }
   foreach ($color_values as $type => $values) {
     arsort($values);

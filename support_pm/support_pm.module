@@ -133,6 +133,7 @@ function support_pm_menu() {
       $clients = array($client);
     }
     else {
+      $clients = array();
       $result2 = db_query('SELECT clid FROM {support_client} WHERE status = 1 AND parent = 0');
       foreach ($result2 as $client) {
         $clients[] = support_client_load($client->clid);

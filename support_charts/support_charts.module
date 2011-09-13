@@ -57,19 +57,19 @@ function support_charts_menu() {
   return $items;
 }
 
-/**     
-* Page callback.
-*/
+/**
+ * Page callback.
+ */
 function support_charts($page = 'global', $object = NULL) {
   return '<div id="support-charts">' . support_charts_display($page, $object) . '</div>';
 }
 
 /**
-* Display charts and content in context to the current page.
-* 
-* @return string
-*   markup, chart images.
-*/
+ * Display charts and content in context to the current page.
+ *
+ * @return string
+ *   markup, chart images.
+ */
 function support_charts_display($page = 'global', $object) {
   $output = '';
 
@@ -234,12 +234,12 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
 
 /**
  * Gather data and build a chart API structure.
- * 
+ *
  * @return array
  *   chart API structure.
  */
 function support_charts_build_graph($id, $type = 'global', $object = NULL) {
-  $chart = array();                                      
+  $chart = array();
   $chart['#type'] = CHART_TYPE_LINE;
   $chart['#size'] = chart_size(620, 250);
   $chart['#grid_lines'] = chart_grid_lines(25, 9.5, 1, 3);

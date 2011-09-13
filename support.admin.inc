@@ -21,14 +21,15 @@ function support_admin_client_overview() {
   while ($client = db_fetch_object($result)) {
     $options = l(t('edit'), "admin/support/clients/$client->clid/edit");
     if ($client->integrate_email) {
-      $options .= ' | '. l(t('fetch'), "admin/support/clients/$client->clid/fetch");
+      $options .= ' | ' . l(t('fetch'), "admin/support/clients/$client->clid/fetch");
     }
     $rows[] = array(
       check_plain($client->name),
       $client->status == 1 ? t('enabled') : t('disabled'),
       $client->integrate_email ? t('integrated') : t('not integrated'),
-      $client->integrate_email ? check_plain($client->mailfrom) : '<em>'. t('using default') .'</em>: '. l(_support_admin_default_mail(), 'admin/support/settings'),
-      $options);
+      $client->integrate_email ? check_plain($client->mailfrom) : '<em>' . t('using default') . '</em>: ' . l(_support_admin_default_mail(), 'admin/support/settings'),
+      $options,
+    );
   }
   if (empty($rows)) {
     drupal_set_message(t('There are currently no clients defined.'));
@@ -68,7 +69,10 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['status'] = array(
     '#title' => t('Status'),
     '#type' => 'radios',
-    '#options' => array(1 => t('Enabled'), 2 => t('Disabled')),
+    '#options' => array(
+      1 => t('Enabled'),
+      2 => t('Disabled'),
+    ),
     '#default_value' => isset($client->status) ? $client->status : 1,
     '#description' => t('Tickets will only be displayed for enabled clients.'),
   );
@@ -94,7 +98,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#title' => t('Integrate inbound email'),
     '#type' => 'checkbox',
     '#default_value' => isset($client->integrate_email) && $client->integrate_email == TRUE ? 1 : 0,
-    '#description' => t('Check this box if you would like to fully integrate this client with an email server.  This will allow users to create and update tickets by email, but it requires a more complex configuration as you need to create a unique mailbox for each integrated client.  If you do not check this box, email notifications will still be mailed out as tickets are created and updated, but replies to these tickets will be ignored.') .' <em>'. t('Inbound email integration requires that your version of PHP was !compiled.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))) .'</em>',
+    '#description' => t('Check this box if you would like to fully integrate this client with an email server.  This will allow users to create and update tickets by email, but it requires a more complex configuration as you need to create a unique mailbox for each integrated client.  If you do not check this box, email notifications will still be mailed out as tickets are created and updated, but replies to these tickets will be ignored.') . ' <em>' . t('Inbound email integration requires that your version of PHP was !compiled.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))) . '</em>',
   );
   $form['mail']['server_name'] = array(
     '#title' => t('Server name'),
@@ -169,7 +173,7 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#default_value' => isset($client->user_creation) ? $client->user_creation : 0,
   );
   $id = isset($client->clid) ? $client->clid : 0;
-  $path = 'support/autocomplete/autosubscribe/'. $id;
+  $path = 'support/autocomplete/autosubscribe/' . $id;
   $form['autosubscribe'] = array(
     '#type' => 'textfield',
     '#title' => t('Auto-subscribe'),
@@ -224,7 +228,7 @@ function support_admin_client_validate($form, &$form_state) {
       if (!is_object($account) || !$account->uid) {
         form_set_error('autosubscribe', t('User %username does not exist.', array('%username' => $name)));
       }
-      else if (!user_access('access '. $form_state['values']['name'] .' tickets', $account) && !user_access('administer support')) {
+      else if (!user_access('access ' . $form_state['values']['name'] . ' tickets', $account) && !user_access('administer support')) {
         form_set_error('autosubscribe', t('User %username does not have permission to access %client tickets.', array('%username' => $name, '%client' => $form_state['values']['name'])));
       }
     }
@@ -317,7 +321,7 @@ function support_admin_settings() {
     '#type' => 'textfield',
     '#autocomplete_path' => 'support/autocomplete/assigned',
     '#title' => t('Auto-assign new tickets to'),
-    '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') .'>', '%nobody' => '<' . t('nobody') .'>')),
+    '#description' => t('Enter a username to autoassign new tickets to a specific user (the user must have %admin permissions). Enter %creator to autoassign new tickets to the user creating the ticket. Leave blank or enter %nobody to leave new tickets unassigned. This value can be overridden on a per-client basis.', array('%admin' => t('administer support'), '%creator' => '<' . t('creator') . '>', '%nobody' => '<' . t('nobody') . '>')),
     '#default_value' => variable_get('support_autoassign_ticket', '<nobody>'),
   );
   $form['general']['support_default_sort_tickets'] = array(
@@ -371,7 +375,11 @@ function support_admin_settings() {
     '#type' => 'select',
     '#title' => t('Visual feedback'),
     '#description' => t('Provide visual feedback about to whom notifications are being sent.  Feedback can be provided just to users with %perm permissions, or to all users. %warn', array('%perm' => t('administer support'), '%warn' => t('Visual feedback will reveal the email address of all users that receive notifications by displaying a message at the top of the page after a ticket is created or updated.'))),
-    '#options' => array(FALSE => t('Disabled'), 1 => t('To users with "!perm" permissions', array('!perm' => t('administer support'))), 2 => t('To all users')),
+    '#options' => array(
+      FALSE => t('Disabled'),
+      1 => t('To users with "!perm" permissions', array('!perm' => t('administer support'))),
+      2 => t('To all users'),
+    ),
     '#default_value' => variable_get('support_admin_notify', FALSE),
   );
   $form['notification']['support_autosubscribe_creator'] = array(
@@ -470,7 +478,12 @@ function support_admin_settings() {
   $form['mail']['support_thread_by_subject'] = array(
     '#type' => 'select',
     '#title' => t('Thread emails using subject'),
-    '#options' => array(1 => 'Disabled', 2 => 'Match against new tickets', 3 => 'Match against open tickets', 4 => 'Match against all tickets'),
+    '#options' => array(
+      1 => 'Disabled',
+      2 => 'Match against new tickets',
+      3 => 'Match against open tickets',
+      4 => 'Match against all tickets',
+    ),
     '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the subject will only be matched against other open tickets.'),
     '#default_value' => variable_get('support_thread_by_subject', 3),
   );
@@ -532,7 +545,7 @@ function support_admin_mail_settings() {
   $default_texts = _support_mail_text_default(NULL);
   $textgroups = array(
     'new' => t('ticket created'),
-    'comment_new'  => t('ticket commented'),
+    'comment_new' => t('ticket commented'),
     'deny' => t('ticket creation denied'),
   );
 

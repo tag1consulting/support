@@ -130,7 +130,10 @@ function support_schema() {
       ),
     ),
     'primary key' => array('clid'),
-    'indexes' => array('status' => array('status'), 'autoassign' => array('autoassign')),
+    'indexes' => array(
+      'status' => array('status'),
+      'autoassign' => array('autoassign'),
+    ),
     'unique keys' => array('name' => array('name')),
   );
 

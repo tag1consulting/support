@@ -3,7 +3,6 @@
 /**
  * @file support.module
  */
-
 define('SUPPORT_STATE_CLOSED', -3);
 
 define('SUPPORT_SORT_NONE', 0);
@@ -291,7 +290,7 @@ function support_init() {
 
   if (module_exists('i18n')) {
     // Make all mail text variables translatable.
-    foreach(_support_mail_text_default(NULL) as $key => $text) {
+    foreach (_support_mail_text_default(NULL) as $key => $text) {
       $conf['i18n_variables'][] = 'support_mail_' . $key;
     }
   }
@@ -402,7 +401,7 @@ function support_help($path, $arg) {
       $output .= '<p>'. t('If you would like users to be able to create and update tickets via email, you will require a dedicated email address for each client.  This email address is used to send and receive update notifications.  A cronjob automatically downloads emails sent to this address and converts them into tickets and ticket updates.  The message_id of each email is tracked, allowing support to properly associate replies with existing tickets.') .'</p>';
       break;
     case 'admin/support/settings':
-      $output = '<p>'. t('Global settings for the support module.') .'</p>';
+      $output = '<p>' . t('Global settings for the support module.') . '</p>';
       break;
     default:
       $output = '';
@@ -509,8 +508,7 @@ function support_ticket_load($nid) {
  */
 function support_access_user_tickets($account = array()) {
   global $user;
-  if (user_access('administer support') || user_access('edit any ticket') ||
-      (user_access('create tickets') && $account->uid == $user->uid)) {
+  if (user_access('administer support') || user_access('edit any ticket') || (user_access('create tickets') && $account->uid == $user->uid)) {
     return TRUE;
   }
   return FALSE;
@@ -541,8 +539,7 @@ function support_account_load($from, $ticket, $subject, $client) {
   if ($uid) {
     return user_load($uid);
   }
-  else if ($client->user_creation == 2 ||
-           ($client->user_creation == 0 && variable_get('support_autocreate_users', TRUE) == FALSE)) {
+  else if ($client->user_creation == 2 || ($client->user_creation == 0 && variable_get('support_autocreate_users', TRUE) == FALSE)) {
     // User does not exist and the setting to allow automatic creation is
     // disabled.  Send notification to user.
     watchdog('support', 'An autocreation of a user from the e-mail address: !from was denied. The client recieving the request was: !client', array('!from' => utf8_encode($from), '!client' => $client->name));
@@ -1063,7 +1060,7 @@ function _support_node_move($node, $destination) {
   node_delete($node->nid);
 
   drupal_set_message(t('Successfully moved support ticket.'));
-  watchdog('content', 'support_ticket: moved ticket %title from node/%old to node/%new.', array('%title' => $node->title, '%old' => $node->nid, '%new' => $destination->nid), WATCHDOG_NOTICE, l(t('view'), 'node/'. $node->nid, array('fragment' => 'comment-'. $comment['cid'])));
+  watchdog('content', 'support_ticket: moved ticket %title from node/%old to node/%new.', array('%title' => $node->title, '%old' => $node->nid, '%new' => $destination->nid), WATCHDOG_NOTICE, l(t('view'), 'node/' . $node->nid, array('fragment' => 'comment-' . $comment['cid'])));
 
   cache_clear_all();
   drupal_goto("node/$destination->nid", NULL, 'comment-'. $comment['cid']);
@@ -1099,7 +1096,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!username' => $account->name,
     '!client_name' => $client->name,
     '!client_path' => $client->path,
-    '!key' => '['. variable_get('support_key', 'tkt') .":$nid]",
+    '!key' => '[' . variable_get('support_key', 'tkt') . ":$nid]",
     '!update_username' => isset($update_account->name) ? $update_account->name : '',
     '!update_realname' => theme('username', $user, array('plain' => TRUE)),
     '!site' => variable_get('site_name', 'Drupal'),
@@ -1333,7 +1330,7 @@ function _support_save_attachments($attachments, $account) {
       }
       if ($attachment->type != TYPETEXT && is_array($attachment->dparameters)) {
         foreach ($attachment->dparameters as $parm) {
-          switch(strtoupper($parm->attribute)) {
+          switch (strtoupper($parm->attribute)) {
             case 'NAME':
             case 'FILENAME':
               $attachment->filename = mb_decode_mimeheader($parm->value);
@@ -1376,15 +1373,14 @@ function _support_save_attachments($attachments, $account) {
   return $files;
 }
 
-
 /**
  * Retrieve MIME type of the message structure.
  */
 function _support_get_filemime(&$structure) {
   static $primary_mime_type = array('TEXT', 'MULTIPART', 'MESSAGE', 'APPLICATION', 'AUDIO', 'IMAGE', 'VIDEO', 'OTHER');
-  $type_id = (int)$structure->type;
+  $type_id = (int) $structure->type;
   if (isset($primary_mime_type[$type_id]) && !empty($structure->subtype)) {
-    return $primary_mime_type[$type_id] .'/'. $structure->subtype;
+    return $primary_mime_type[$type_id] . '/' . $structure->subtype;
   }
   return 'application/octet-stream';
 }
@@ -1425,9 +1421,9 @@ function _support_get_message_body_part($stream, $message, $mime_type, $structur
     }
     if ($structure->type == TYPEMULTIPART) {
       $prefix = '';
-      while (list($index, $sub_structure) = each ($structure->parts)) {
+      while (list($index, $sub_structure) = each($structure->parts)) {
         if ($part) {
-          $prefix = $part .'.';
+          $prefix = $part . '.';
         }
         $mime_type = _support_get_filemime($sub_structure);
         $data = _support_get_message_body_part($stream, $message, $mime_type, $sub_structure, $prefix . ($index + 1));
@@ -1494,7 +1490,7 @@ function _support_get_message_body($stream, $message, $mime_type, $structure = F
     // The ticket has been stripped of previous ticket text, rebuild it.
     $body = '';
     foreach ($array as $line) {
-      $body .= $line ."\n";
+      $body .= $line . "\n";
     }
   }
 
@@ -1580,7 +1576,7 @@ function _support_mail_deny($to) {
  * Use drupal_mail to send email.
  */
 function _support_mail_notify($op, $account, $comment = array(), $nid = NULL, $suppress = FALSE, $language = NULL) {
-  $notify = variable_get('support_mail_'. $op .'_notify', TRUE);
+  $notify = variable_get('support_mail_' . $op . '_notify', TRUE);
   if ($notify) {
     $node = node_load($nid);
     $params['account'] = $account;
@@ -2033,7 +2029,8 @@ function support_status_form(&$form_state, $edit, $title) {
       user_access('can select client') ||
       user_access('can assign tickets to self') ||
       user_access('can assign tickets to any user') ||
-      user_access('administer support') || user_access('can administer state')) {
+      user_access('administer support') ||
+      user_access('can administer state')) {
     $form['support'] = array(
       '#type' => 'fieldset',
       '#prefix' => '<div class="container-inline">',
@@ -2049,7 +2046,7 @@ function support_status_form(&$form_state, $edit, $title) {
   }
   if (!user_access('can select state') &&
       !user_access('administer support') &&
-       !user_access('can administer state')) {
+      !user_access('can administer state')) {
     $form['support']['state'] = array(
       '#type' => 'hidden',
       '#value' => $default,
@@ -2226,7 +2223,9 @@ function _support_assigned($assigned, $node, $limit = 9999) {
         }
         // we've already retrieved all active users, no need to search
         // additional roles
-        if ($all) break;
+        if ($all) {
+          break;
+        }
       }
       // load users and allow them to be assigned
       foreach ($accounts as $uid) {
@@ -2241,7 +2240,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
     // (always put this at the top of the array)
     if (!$assigned || $assigned == $user->uid ||
         user_access('can assign tickets to any user') || user_access('administer support')) {
-      $available["$assigned-$node->nid"] = array(0 => ' - '. t('not assigned') .' -') + $available["$assigned-$node->nid"];
+      $available["$assigned-$node->nid"] = array(0 => ' - ' . t('not assigned') . ' -') + $available["$assigned-$node->nid"];
     }
   }
 
@@ -2318,7 +2317,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
         }
         $form['subscribe']['subscribed']['subscribed-users'] = array(
           '#type' => 'textfield',
-          '#autocomplete_path' => 'support/autocomplete/autosubscribe/'. $node->client,
+          '#autocomplete_path' => 'support/autocomplete/autosubscribe/' . $node->client,
           '#default_value' => $default,
           '#description' => t('Enter a comma separated list of users that should receive notifications when this ticket is updated.'),
         );
@@ -2326,7 +2325,9 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       else {
         $notifications = array();
         foreach ($available as $uid => $name) {
-          if (!$uid) continue;
+          if (!$uid) {
+            continue;
+          }
           if (isset($node->nid) && $node->nid) {
             $enabled = db_result(db_query('SELECT 1 FROM {support_assigned} WHERE nid = %d AND uid = %d', $node->nid, $uid));
             if (!isset($enabled)) {
@@ -2443,7 +2444,7 @@ function _support_state_default() {
 /**
  * Return secondary sid.
  */
- function _support_state_secondary() {
+function _support_state_secondary() {
   static $secondary = NULL;
   if (!$secondary) {
     $secondary = db_result(db_query_range('SELECT sid FROM {support_states} WHERE phase2 = 1 ORDER BY weight ASC', 0, 1));
@@ -2703,7 +2704,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     $comments = l($ticket->comment_count, "node/$ticket->nid", array('fragment' => 'comments'));
     if ($new = comment_num_new($ticket->nid)) {
       $node = node_load($ticket->nid);
-      $comments .= '&nbsp;('. l(format_plural($new, '1 new', '@count new'), "node/$ticket->nid", array('query' => comment_new_page_count($node->comment_count, $new, $node), 'fragment' => 'new')) .')';
+      $comments .= '&nbsp;(' . l(format_plural($new, '1 new', '@count new'), "node/$ticket->nid", array('query' => comment_new_page_count($node->comment_count, $new, $node), 'fragment' => 'new')) . ')';
     }
     $tickets[$ticket->nid] = '';
     $form['id'][$ticket->nid] = array('#value' => l($ticket->nid, "node/$ticket->nid", array('attributes' => array('class' => 'ticket-id'))));
@@ -2729,7 +2730,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
         }
         $form['assigned']["assigned-$ticket->nid"] = array(
           '#type' => 'textfield',
-          '#autocomplete_path' => 'support/autocomplete/assigned/'. $ticket->client,
+          '#autocomplete_path' => 'support/autocomplete/assigned/' . $ticket->client,
           '#default_value' => $assigned,
           '#size' => '15',
           '#attributes' => array('class' => 'ticket-assigned'),
@@ -2922,22 +2923,22 @@ function support_client_fetch($client, $manual = TRUE) {
     drupal_set_message(t('Fetching mail for !client...', array('!client' => $client->name)));
   }
 
-  $connect = '{'. $client->server_name .':'. $client->port;
+  $connect = '{' . $client->server_name . ':' . $client->port;
   $username = $client->server_username;
   $password = $client->server_password;
   $extra = $client->extra;
   switch ($client->protocol) {
     case 0: // POP3
-      $connect .= "/pop3$extra}". $client->mailbox;
+      $connect .= "/pop3$extra}" . $client->mailbox;
       break;
     case 1: // POP3S
-      $connect .= "/pop3/ssl$extra}". $client->mailbox;
+      $connect .= "/pop3/ssl$extra}" . $client->mailbox;
       break;
     case 2: // IMAP
-      $connect .= "$extra}". $client->mailbox;
+      $connect .= "$extra}" . $client->mailbox;
       break;
     case 3: // IMAPS
-      $connect .= "/imap/ssl$extra}". $client->mailbox;
+      $connect .= "/imap/ssl$extra}" . $client->mailbox;
       break;
     case 4: // Local file
       $connect = $client->mailbox;
@@ -3003,7 +3004,7 @@ function support_client_fetch($client, $manual = TRUE) {
     $message['headers'] = imap_headerinfo($stream, $number);
 
     if (is_array($message['headers']->from)) {
-      $message['from'] = $message['headers']->from[0]->mailbox .'@'. $message['headers']->from[0]->host;
+      $message['from'] = $message['headers']->from[0]->mailbox . '@' . $message['headers']->from[0]->host;
     }
     $strings = imap_mime_header_decode($message['headers']->subject);
     $message['subject'] = '';

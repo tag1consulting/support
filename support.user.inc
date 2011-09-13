@@ -4,7 +4,7 @@
  *
  */
 function support_page_user($user, $assigned = FALSE, $state = NULL) {
-  drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
+  drupal_add_css(drupal_get_path('module', 'support') . '/support-tickets.css');
   if ($assigned) {
     drupal_set_title(t("@username's assigned tickets", array('@username' => $user->name)));
   }

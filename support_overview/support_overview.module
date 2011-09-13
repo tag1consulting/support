@@ -70,7 +70,7 @@ function support_overview_menu() {
  * older than a configurable age limit.
  */
 function support_overview_summary() {
-  drupal_add_css(drupal_get_path('module', 'support_overview') .'/support-overview.css');
+  drupal_add_css(drupal_get_path('module', 'support_overview') . '/support-overview.css');
   // Determine which clients to display
   $enabled_clients = variable_get('support_overview_clients', array());
   if (!is_array($enabled_clients) || empty($enabled_clients)) {
@@ -220,10 +220,10 @@ function support_overview_summary() {
       }
 
       if (empty($account->name)) {
-        $rows[$current_row][] = "<div class='support-overview-name $alerts'>". t('not assigned') .'</div>';
+        $rows[$current_row][] = "<div class='support-overview-name $alerts'>" . t('not assigned') . '</div>';
       }
       else {
-        $rows[$current_row][] = "<div class='support-overview-name $alerts'>". l($account->name, "support/$account->uid/assigned") .'</div>';
+        $rows[$current_row][] = "<div class='support-overview-name $alerts'>" . l($account->name, "support/$account->uid/assigned") . '</div>';
       }
 
       $rows[$current_row][] = t('!total !latest !oldest', array('!total' => "<span class='support-overview-total $state'>$total</span>", '!latest' => "<div class='support-overview-latest $state$latest_alert'>$latest_update</div>", '!oldest' => "<div class='support-overview-oldest $state$oldest_alert'>$oldest_update</div>"));
@@ -241,7 +241,7 @@ function support_overview_summary() {
           $priority = _support_priorities($pid);
         }
         else {
-          $priority = 'not-'. _support_priorities($pid);
+          $priority = 'not-' . _support_priorities($pid);
         }
         $rows[$current_row][] = "<div class='$priority'>$total</div>";
       }
@@ -414,7 +414,7 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
   global $user;
 
   if ($page) {
-    drupal_add_css(drupal_get_path('module', 'support_overview') .'/support-overview.css');
+    drupal_add_css(drupal_get_path('module', 'support_overview') . '/support-overview.css');
     $output = '<div class="support-overview">';
 
     if ($user->uid == $account->uid) {
@@ -494,14 +494,14 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
   }
   $output .= theme('table', $header, $rows);
   if ($page) {
-    $output .= '<div class="support-overview-link">'. l($all ? t('selected clients') : t('all clients'), $all ? "support/overview/user/$account->uid" : "support/overview/user/$account->uid/all") .'</div>';
+    $output .= '<div class="support-overview-link">' . l($all ? t('selected clients') : t('all clients'), $all ? "support/overview/user/$account->uid" : "support/overview/user/$account->uid/all") . '</div>';
     $output .= '</div>';
   }
   return $output;
 }
 
 function support_overview_page_users($all = FALSE) {
-  drupal_add_css(drupal_get_path('module', 'support_overview') .'/support-overview.css');
+  drupal_add_css(drupal_get_path('module', 'support_overview') . '/support-overview.css');
   $output = '<div class="support-overview">';
   $enabled_clients = variable_get('support_overview_clients', array());
   $all_clients = _support_available_clients();
@@ -539,7 +539,7 @@ function support_overview_page_users($all = FALSE) {
     $output .= "<a href='". url("support/overview/user/$uid") ."'><h3>$account->name</h3></a>";
     $output .= support_overview_page_user($account, $all, FALSE);
   }
-  $output .= '<div class="support-overview-link">'. l($all ? t('selected clients') : t('all clients'), $all ? "support/overview/user" : "support/overview/user/all") .'</div>';
+  $output .= '<div class="support-overview-link">' . l($all ? t('selected clients') : t('all clients'), $all ? "support/overview/user" : "support/overview/user/all") . '</div>';
   $output .= '</div>';
   return $output;
 }

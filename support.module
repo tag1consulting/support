@@ -3504,7 +3504,7 @@ function _support_identify_ticket(&$client, &$message) {
         // Reply was directly to node.
         if (!$cid) {
           // Check message id against our records.
-          if (db_query('SELECT 1 FROM {support_ticket} t WHERE t.nid = :t.nid AND t.client = :t.client', array(':t.nid' => $nid, ':t.client' => $client->clid))->fetchField()) {
+          if (db_query('SELECT 1 FROM {support_ticket} t WHERE t.nid = :nid AND t.client = :client', array(':nid' => $nid, ':client' => $client->clid))->fetchField()) {
             $message['nid'] = $nid;
             return TRUE;
           }
@@ -3512,7 +3512,7 @@ function _support_identify_ticket(&$client, &$message) {
         // Reply was to followup.
         else {
           // Check message id against our records.
-          if (db_query('SELECT 1 FROM {comment} c INNER JOIN {support_ticket_comment} t ON c.cid = t.cid WHERE c.cid = :c.cid AND c.nid = :c.nid AND t.client = :t.client', array(':c.cid' => $cid, ':c.nid' => $nid, ':t.client' => $client->clid))->fetchField()) {
+          if (db_query('SELECT 1 FROM {comment} c INNER JOIN {support_ticket_comment} t ON c.cid = t.cid WHERE c.cid = :cid AND c.nid = :nid AND t.client = :client', array(':cid' => $cid, ':nid' => $nid, ':client' => $client->clid))->fetchField()) {
             $message['nid'] = $nid;
             return TRUE;
           }
@@ -3527,7 +3527,7 @@ function _support_identify_ticket(&$client, &$message) {
       }
 
       // D) Check for reply to an incoming message that created a followup.
-      $nid = db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comment} c ON j.cid = c.cid WHERE j.message_id = :j.message_id", array(':j.message_id' => $message_id))->fetchField();
+      $nid = db_query("SELECT c.nid FROM {support_ticket_comment} j INNER JOIN {comment} c ON j.cid = c.cid WHERE j.message_id = :message_id", array(':message_id' => $message_id))->fetchField();
       if (isset($nid) && is_numeric($nid)) {
         $message['nid'] = $nid;
         return TRUE;
@@ -3543,13 +3543,13 @@ function _support_identify_ticket(&$client, &$message) {
     case 1: // No subject matching.
       break;
     case 2: // Match against new tickets.
-      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :t.client AND n.title = :n.title AND s.isdefault = :isdefault ORDER BY t.nid DESC", 0, 1, array(':t.client' => $client->clid, ':n.title' => $message['subject'], ':isdefault' => 1))->fetchField();
+      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :client AND n.title = :title AND s.isdefault = :isdefault ORDER BY t.nid DESC", 0, 1, array(':client' => $client->clid, ':title' => $message['subject'], ':isdefault' => 1))->fetchField();
       break;
     case 3: // Match against open tickets.
-      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :t.client AND n.title = :n.title AND s.isclosed = :isclosed ORDER BY t.nid DESC", 0, 1, array(':t.client' => $client->clid, ':n.title' => $message['subject'], ':isclosed' => 0))->fetchField();
+      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid LEFT JOIN {support_states} s ON t.state = s.sid WHERE t.client = :client AND n.title = :title AND s.isclosed = :isclosed ORDER BY t.nid DESC", 0, 1, array(':client' => $client->clid, ':title' => $message['subject'], ':isclosed' => 0))->fetchField();
       break;
     case 4: // Match against any tickets.
-      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = :t.client AND n.title = :n.title ORDER BY t.nid DESC", 0, 1, array(':t.client' => $client->clid, ':n.title' => $message['subject']))->fetchField();
+      $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = :client AND n.title = :title ORDER BY t.nid DESC", 0, 1, array(':client' => $client->clid, ':title' => $message['subject']))->fetchField();
       break;
   }
   return (boolean) $message['nid'];

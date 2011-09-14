@@ -2,6 +2,10 @@
 -------------
 September 14th, 2011
  - support.module
+    o bug #1153854: Rename query placeholders to hopefully prevent query errors on some sites.
+
+September 14th, 2011
+ - support.module
     o Pushing a huge 7.x update.
  - support_pm.module
     o feature #1190320: rename support_plan to support_pm and add it to the

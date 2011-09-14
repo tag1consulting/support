@@ -24,13 +24,13 @@ function support_charts_permission() {
 function support_charts_menu() {
   $items = array();
 
-  $items['admin/config/support/charts'] = array(
+  $items['admin/support/charts'] = array(
     'title' => 'Charts',
     'page callback' => 'support_charts',
     'page arguments' => array('global'),
     'access arguments' => array('access support charts'),
   );
-  $items['admin/config/support/charts/global'] = array(
+  $items['admin/support/charts/global'] = array(
     'title' => 'Global',
     'page callback' => 'support_charts',
     'page arguments' => array('global'),

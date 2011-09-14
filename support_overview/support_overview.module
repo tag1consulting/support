@@ -62,7 +62,7 @@ function support_overview_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/config/support/overview'] = array(
+  $items['admin/support/overview'] = array(
     'title' => 'Overview settings',
     'description' => 'Support client overview',
     'page callback' => 'drupal_get_form',

@@ -99,7 +99,7 @@ function support_menu() {
     'page arguments' => array('support_page_form'),
     'access callback' => 'support_access_clients',
   );
-  $items['admin/config/support'] = array(
+  $items['admin/support'] = array(
     'title' => 'Support ticketing system',
     'description' => 'Configure the support ticketing system.',
     'position' => 'right',
@@ -109,26 +109,26 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  $items['admin/config/support/clients'] = array(
+  $items['admin/support/clients'] = array(
     'title' => 'Clients',
     'description' => 'Manage clients.',
     'page callback' => 'support_admin_client_overview',
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  $items['admin/config/support/clients/list'] = array(
+  $items['admin/support/clients/list'] = array(
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/config/support/clients/%support_client/edit'] = array(
+  $items['admin/support/clients/%support_client/edit'] = array(
     'title' => 'Edit',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('support_admin_client', 4),
+    'page arguments' => array('support_admin_client', 3),
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  $items['admin/config/support/clients/add'] = array(
+  $items['admin/support/clients/add'] = array(
     'title' => 'Add client',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
@@ -137,7 +137,7 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  $items['admin/config/support/settings'] = array(
+  $items['admin/support/settings'] = array(
     'title' => 'Settings',
     'description' => 'Configure the support ticketing system.',
     'page callback' => 'drupal_get_form',
@@ -145,11 +145,11 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  $items['admin/config/support/settings/general'] = array(
+  $items['admin/support/settings/general'] = array(
     'title' => 'General settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/config/support/settings/mail'] = array(
+  $items['admin/support/settings/mail'] = array(
     'title' => 'Mail text settings',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
@@ -269,11 +269,11 @@ function support_menu() {
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
-  $items['admin/config/support/clients/%support_client/fetch'] = array(
+  $items['admin/support/clients/%support_client/fetch'] = array(
     'title' => 'Fetch mail',
     'type' => MENU_CALLBACK,
     'page callback' => 'support_client_fetch',
-    'page arguments' => array(4),
+    'page arguments' => array(3),
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
@@ -436,15 +436,15 @@ function support_fetch_client_mail() {
  */
 function support_help($path, $arg) {
   switch ($path) {
-    case 'admin/config/support/clients':
-      $output = '<p>' . t('Each support ticket can only be assigned to one client.!create one or more clients, then!assign allowing users to access these tickets. Users can only create tickets for clients they have permission to access. If working with multiple clients you will need to!define for each to prevent one client from viewing the tickets of another client.', array('!create' => l(t('Create'), 'admin/config/support/clients/add'), '!assign' => l(t('assign permissions'), 'admin/people/permissions', array('fragment' => 'module-support')), '!define' => l(t('define roles'), 'admin/people/permissions/roles'))) . '</p>';
+    case 'admin/support/clients':
+      $output = '<p>' . t('Each support ticket can only be assigned to one client.!create one or more clients, then!assign allowing users to access these tickets. Users can only create tickets for clients they have permission to access. If working with multiple clients you will need to!define for each to prevent one client from viewing the tickets of another client.', array('!create' => l(t('Create'), 'admin/support/clients/add'), '!assign' => l(t('assign permissions'), 'admin/people/permissions', array('fragment' => 'module-support')), '!define' => l(t('define roles'), 'admin/people/permissions/roles'))) . '</p>';
       break;
-    case 'admin/config/support/clients/add':
-    case 'admin/config/support/clients/%/edit':
+    case 'admin/support/clients/add':
+    case 'admin/support/clients/%/edit':
       $output = '<p>' . t("Each support ticket must be assigned to one client.  Support can be configured so one client can't view another client's tickets.") . '</p>';
       $output .= '<p>' . t('If you would like users to be able to create and update tickets via email, you will require a dedicated email address for each client. This email address is used to send and receive update notifications. A cronjob automatically downloads emails sent to this address and converts them into tickets and ticket updates. The message_id of each email is tracked, allowing support to properly associate replies with existing tickets.') . '</p>';
       break;
-    case 'admin/config/support/settings':
+    case 'admin/support/settings':
       $output = '<p>' . t('Global settings for the support module.') . '</p>';
       break;
     default:
@@ -2469,7 +2469,7 @@ function support_status_form(&$form_state, $edit, $title) {
   }
   $available = count($clients);
   if (!$available) {
-    drupal_set_message(t('A site administrator must !create a client before you can create support tickets.', array('!create' => l(t('create and enable'), 'admin/config/support/clients/add'))), 'error');
+    drupal_set_message(t('A site administrator must !create a client before you can create support tickets.', array('!create' => l(t('create and enable'), 'admin/support/clients/add'))), 'error');
   }
   $clients = array('- select client -') + $clients;
   $client = isset($node->client) && is_numeric($node->client) ? $node->client : 0;
@@ -2910,7 +2910,7 @@ function _support_available_clients($account = NULL) {
       }
     }
     else {
-      watchdog('support', t('There are no support clients configured/enabled.'), NULL, WATCHDOG_WARNING, l(t('add client'), 'admin/config/support/clients/add'));
+      watchdog('support', t('There are no support clients configured/enabled.'), NULL, WATCHDOG_WARNING, l(t('add client'), 'admin/support/clients/add'));
     }
   }
   return isset($valid[$account->uid]) ? $valid[$account->uid] : array();
@@ -3327,7 +3327,7 @@ function support_client_fetch($client, $manual = TRUE) {
   if (!isset($client->integrate_email) || $client->integrate_email != TRUE) {
     if ($manual) {
       drupal_set_message(t('Client not integrated with email, unable to fetch mail for !client.', array('!client' => $client->name)));
-      drupal_goto('admin/config/support/clients');
+      drupal_goto('admin/support/clients');
     }
     return;
   }
@@ -3396,7 +3396,7 @@ function support_client_fetch($client, $manual = TRUE) {
       }
     }
     if ($manual) {
-      drupal_goto('admin/config/support/clients');
+      drupal_goto('admin/support/clients');
     }
     else {
       return (-1);
@@ -3455,7 +3455,7 @@ function support_client_fetch($client, $manual = TRUE) {
 
   if ($manual) {
     drupal_set_message(t('Downloaded !count', array('!count' => format_plural($messages_downloaded, '1 message', '@count messages'))));
-    drupal_goto('admin/config/support/clients');
+    drupal_goto('admin/support/clients');
   }
 }
 

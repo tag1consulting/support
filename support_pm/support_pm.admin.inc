@@ -288,7 +288,7 @@ function support_pm_admin_reports() {
 
   $available_clients = _support_available_clients();
   if (empty($available_clients)) {
-    drupal_set_message(t('You must !create a client before you can generate reports.', array('!create' => l(t('create and enable'), 'admin/config/support/clients/add'))), 'error');
+    drupal_set_message(t('You must !create a client before you can generate reports.', array('!create' => l(t('create and enable'), 'admin/support/clients/add'))), 'error');
   }
   $form['optional']['report_client'] = array(
     '#type' => 'select',
@@ -316,7 +316,7 @@ function support_pm_admin_reports_submit($form, &$form_state) {
   if (!empty($form_state['values']['report_client'])) {
     $args['rc'] = implode(',', $form_state['values']['report_client']);
   }
-  drupal_goto('admin/config/support/plan_report', array('query' => $args));
+  drupal_goto('admin/support/plan_report', array('query' => $args));
 }
 
 function _support_pm_first_day_month($time) {
@@ -368,7 +368,7 @@ function support_pm_admin_settings() {
 
   $color_values = variable_get('support_pm_color_values', array());
   if (empty($color_values)) {
-    drupal_set_message(t('You must !url before you can edit colors here.', array('!url' => l(t('run a plan report'), 'admin/config/support/plan_report'))));
+    drupal_set_message(t('You must !url before you can edit colors here.', array('!url' => l(t('run a plan report'), 'admin/support/plan_report'))));
   }
   foreach ($color_values as $type => $values) {
     arsort($values);
@@ -478,7 +478,7 @@ function support_pm_admin_project_overview() {
   $query->limit(50);
   $result = $query->execute();
   foreach ($result as $project) {
-    $options = l(t('edit'), "admin/config/support/project/$project->projid/edit");
+    $options = l(t('edit'), "admin/support/project/$project->projid/edit");
 
     $clients = array();
     $result2 = db_query('SELECT spc.clid, sc.name FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = :project AND spc.clid <> 0', array(':project' => $project->projid));
@@ -568,7 +568,7 @@ function support_pm_admin_project_form($form, &$form_state, $project = array()) 
       '#submit' => array('support_pm_admin_project_form_delete_submit'),
     );
     $form['actions']['cancel'] = array(
-      '#markup' => l(t('Cancel'), 'admin/config/support/project'),
+      '#markup' => l(t('Cancel'), 'admin/support/project'),
     );
   }
 
@@ -632,7 +632,7 @@ function support_pm_admin_project_form_submit($form, &$form_state) {
   }
 
   menu_rebuild();
-  drupal_goto('admin/config/support/project');
+  drupal_goto('admin/support/project');
 }
 
 /**
@@ -645,12 +645,12 @@ function support_pm_admin_project_form_delete_submit($form, &$form_state) {
     unset($_GET['destination']);
   }
   $project = $form['#project'];
-  $form_state['redirect'] = array('admin/config/support/project/' . $project->projid . '/delete', array('query' => $destination));
+  $form_state['redirect'] = array('admin/support/project/' . $project->projid . '/delete', array('query' => $destination));
 }
 
 function support_pm_admin_project_delete_form($form, &$form_state, $project) {
   $form['#project'] = $project;
-  return confirm_form($form, t('Are you sure you want to delete %project?', array('%project' => $project->project)), 'admin/config/support/project', t('This action cannot be undone.'), t('Delete'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you want to delete %project?', array('%project' => $project->project)), 'admin/support/project', t('This action cannot be undone.'), t('Delete'), t('Cancel'));
 }
 
 function support_pm_admin_project_delete_form_submit($form, &$form_state) {
@@ -659,5 +659,5 @@ function support_pm_admin_project_delete_form_submit($form, &$form_state) {
   db_delete('support_project')->condition('projid', $project->projid)->execute();
   db_delete('support_project_client')->condition('projid', $project->projid)->execute();
   db_delete('support_project_ticket')->condition('projid', $project->projid)->execute();
-  $form_state['redirect'] = 'admin/config/support/project';
+  $form_state['redirect'] = 'admin/support/project';
 }

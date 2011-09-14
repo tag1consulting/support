@@ -1,5 +1,11 @@
 7.x changelog
 -------------
+September 14th, 2011
+ - support.module
+    o Pushing a huge 7.x update.
+ - support_pm.module
+    o feature #1190320: rename support_plan to support_pm and add it to the
+      main support project, as a place to add project management functionality.
 
 August 9th, 2011
  - support.module

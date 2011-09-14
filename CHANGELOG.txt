@@ -3,6 +3,7 @@
 September 14th, 2011
  - support.module
     o bug #1153854: Rename query placeholders to hopefully prevent query errors on some sites.
+    o bug #1275806: Fix warning in support_client_load().
 
 September 14th, 2011
  - support.module

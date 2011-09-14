@@ -538,7 +538,7 @@ function support_client_load($id, $integer = TRUE) {
       $clients[$id] = $client;
     }
   }
-  return $clients[$id];
+  return isset($clients[$id]) ? $clients[$id] : FALSE;
 }
 
 /**

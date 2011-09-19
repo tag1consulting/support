@@ -4,54 +4,6 @@
  * @file support.admin.inc
  */
 
-/**
- * Administrative listing of all clients.
- */
-function support_admin_client_overview() {
-  $rows = array();
-  $header = array(
-    array(
-      'data' => t('Client name'),
-      'field' => 'sc.name',
-    ),
-    array(
-      'data' => t('Status'),
-      'field' => 'sc.status',
-    ),
-    array(
-      'data' => t('Inbound email'),
-      'field' => 'sc.integrate_email',
-    ),
-    array(
-      'data' => t('From address'),
-      'field' => 'sc.mailfrom',
-    ),
-    array('data' => t('Options')),
-  );
-  $select = db_select('support_client', 'sc')->extend('TableSort')->extend('PagerDefault');
-  $select->limit(50);
-  $results = $select->fields('sc', array('clid', 'name', 'status', 'integrate_email', 'mailfrom'))->orderByHeader($header)->execute();
-  foreach ($results as $client) {
-    $options = l(t('edit'), "admin/support/clients/$client->clid/edit");
-    if ($client->integrate_email) {
-      $options .= ' | ' . l(t('fetch'), "admin/support/clients/$client->clid/fetch");
-    }
-    $rows[] = array(
-      check_plain($client->name),
-      $client->status == 1 ? t('enabled') : t('disabled'),
-      $client->integrate_email ? t('integrated') : t('not integrated'),
-      $client->integrate_email ? check_plain($client->mailfrom) : '<em>' . t('using default') . '</em>: ' . l(_support_admin_default_mail(), 'admin/support/settings'),
-      $options,
-    );
-  }
-  if (empty($rows)) {
-    drupal_set_message(t('There are currently no clients defined.'));
-  }
-  $output = theme('table', array('header' => $header, 'rows' => $rows));
-  $output .= theme('pager');
-  return $output;
-}
-
 function _support_admin_default_mail() {
   $mail = variable_get('support_global_mailfrom', '');
   if (empty($mail)) {
@@ -63,19 +15,55 @@ function _support_admin_default_mail() {
 /**
  * Administratively add/update a client.
  */
-function support_admin_client($form, &$form_state, $client = NULL) {
+function support_client_form($form, &$form_state, $client, $op = 'edit') {
+  // During initial form build, add the entity to the form state for use
+  // during form building and processing. During a rebuild, use what is in the
+  // form state.
+  $client = $form_state['support_client'];
+  // @@@ These defaults should go in a custom entity class...
+  $defaults = array(
+    'name' => '',
+    'path' => '',
+    'status' => 1,
+    'parent' => 0,
+    'integrate_email' => 0, // correct default?
+    'server_name' => '',
+    'server_username' => '',
+    'server_password' => '',
+    'mailbox' => 'INBOX',
+    'mailfrom' => '',
+    'port' => '',
+    'protocol' => 0,
+    'extra' => '/novalidate-cert',
+    'thread_subject' => 0,
+    'domains' => '*',
+    'user_creation' => 0,
+    'autosubscribe' => '',
+    'autoassign' => '',
+    'notes' => '',
+  );
+  foreach ($defaults as $key => $value) {
+    if (!isset($client->$key)) {
+      $client->$key = $value;
+    }
+  }
+  $form_state['support_client'] = $client;
+
+  // Only enable if we end up needing this due to an api limitation...
+  // $form['#client'] = $form_state['client'];
+
   $form['name'] = array(
     '#title' => t('Client name'),
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#default_value' => isset($client->name) ? check_plain($client->name) : '',
+    '#default_value' => $client->name,
     '#description' => t('The full name of your client.  This name will be used when building menus, sending emails, and anywhere else the name of your client is visibly displayed.'),
   );
   $form['path'] = array(
     '#title' => t('Path'),
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#default_value' => isset($client->path) ? check_plain($client->path) : '',
+    '#default_value' => $client->path,
     '#description' => t("Used to build the path to this client's tickets.  The path should only be comprised of alphanumeric characters, dashes, and underscores."),
   );
   $form['status'] = array(
@@ -85,68 +73,80 @@ function support_admin_client($form, &$form_state, $client = NULL) {
       1 => t('Enabled'),
       2 => t('Disabled'),
     ),
-    '#default_value' => isset($client->status) ? $client->status : 1,
+    '#default_value' => $client->status,
     '#description' => t('Tickets will only be displayed for enabled clients.'),
   );
-  $result = db_query('SELECT clid, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
+  $query = new EntityFieldQuery;
+  $query
+    ->entityCondition('entity_type', 'support_client')
+    ->entityCondition('status', 1)
+    ->entityCondition('parent', 0);
+  // Don't let us be our own parent.
+  if (!empty($client->clid)) {
+    $query->entityCondition('entity_id', $client->clid, '!=');
+  }
+  $result = $query->execute();
   $clients = array('0' => t('<no parent>'));
-  foreach ($result as $cl) {
-    $clients[$cl->clid] = $cl->name;
+  if (!empty($result['support_client'])) {
+    $entities = entity_load('support_client', array_keys($result['support_client']));
+    foreach ($entities as $key => $entity) {
+      $clients[$entity->clid] = $entity->name;
+    }
   }
   $form['parent'] = array(
     '#title' => t('Parent'),
     '#type' => 'select',
     '#options' => $clients,
-    '#default_value' => isset($client->parent) ? $client->parent : 0,
+    '#default_value' => $client->parent,
     '#description' => t('Optionally nest a client under another client.'),
   );
   $form['mail'] = array(
     '#title' => t('Inbound email integration'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => isset($client->integrate_email) && $client->integrate_email == TRUE ? FALSE : TRUE,
+    '#collapsed' => !$client->integrate_email,
   );
   $form['mail']['integrate_email'] = array(
     '#title' => t('Integrate inbound email'),
     '#type' => 'checkbox',
-    '#default_value' => isset($client->integrate_email) && $client->integrate_email == TRUE ? 1 : 0,
+    '#default_value' => $client->integrate_email,
     '#description' => t('Check this box if you would like to fully integrate this client with an email server.  This will allow users to create and update tickets by email, but it requires a more complex configuration as you need to create a unique mailbox for each integrated client.  If you do not check this box, email notifications will still be mailed out as tickets are created and updated, but replies to these tickets will be ignored.') . ' <em>' . t('Inbound email integration requires that your version of PHP was !compiled.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))) . '</em>',
   );
   $form['mail']['server_name'] = array(
     '#title' => t('Server name'),
     '#type' => 'textfield',
     '#description' => t('Hostname or IP address.'),
-    '#default_value' => isset($client->server_name) ? check_plain($client->server_name) : '',
+    '#default_value' => $client->server_name,
     '#description' => t("The hostname or IP address of the mail server where your client's dedicated email address is hosted.  For example, client %foo may receive email at %email, and so the server name may be %hostname.  The server name may also be an IP address, such as %ip.", array('%foo' => 'foo', '%email' => 'foo@support.sample.com', '%hostname' => 'support.sample.com', '%ip' => '192.168.1.1')),
   );
   $form['mail']['server_username'] = array(
     '#title' => t('Server username'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->server_username) ? check_plain($client->server_username) : '',
+    '#default_value' => $client->server_username,
     '#description' => t("The client's email username.  If a client receives email at %email, the server username is often simply %user.  The support module uses this username to log into the mail server to download messages.", array('%email' => 'foo@support.sample.com', '%user' => 'foo')),
   );
   $form['mail']['server_password'] = array(
     '#title' => t('Server password'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->server_password) ? check_plain($client->server_password) : '',
+    '#default_value' => $client->server_password,
     '#description' => t("The client's email password.  The support module uses this password to log into the mail server to download messages. %notice", array('%notice' => t('Note: this is not a password you request from your client.  This is a password you configure on your mail server for managing support tickets for a client.'))),
   );
   $form['mail']['mailbox'] = array(
     '#title' => t('Mailbox'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->mailbox) ? check_plain($client->mailbox) : 'INBOX',
+    '#default_value' => $client->mailbox,
     '#description' => t("The mailbox path on your mail server.  You generally do not need to modify this setting."),
   );
   $form['mail']['mailfrom'] = array(
     '#title' => t('From address'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->mailfrom) ? check_plain($client->mailfrom) : '',
+    '#default_value' => $client->mailfrom,
     '#description' => t('The email address support should use when sending notification emails.  This must be the same client-specific email address users will send messages to when creating and updating tickets via email.  This will often be comprised of your server username and your server name, such as %email.', array('%email' => 'foo@support.sample.com')),
   );
   $form['mail']['port'] = array(
     '#title' => t('Port'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->port) ? check_plain($client->port) : '',
+    '#default_value' => $client->port,
     '#description' => t('Specify the TCP port to connect to when downloading email messages.  If using pop3, this port is normally 110.  If using secure pop3, this port is normally 995.  If using imap, this port is normally 143.  If using secure imap this port is normally 993.'),
   );
   $form['mail']['protocol'] = array(
@@ -155,12 +155,12 @@ function support_admin_client($form, &$form_state, $client = NULL) {
     '#default_value' => 0,
     '#options' => array('pop3', 'secure pop3', 'imap', 'secure imap', 'local file'),
     '#description' => t('Select the protocol used to obtain messages from your mail server.'),
-    '#default_value' => isset($client->protocol) ? $client->protocol : 0,
+    '#default_value' => $client->protocol,
   );
   $form['mail']['extra'] = array(
     '#title' => t('Optional extra flags'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->extra) ? check_plain($client->extra) : '/novalidate-cert',
+    '#default_value' => $client->extra,
     '#description' => t('The %pop3, %imap and %ssl flags will be automatically set for you depending on your configuration above.  Additional flags can be manually specified here.  If you are having trouble downloading messages, you may need to change these extra flags as !defined.  These flags are ignored when using the %local protocol.', array('!defined' => l(t('defined here'), 'http://php.net/imap_open#function.imap-open.parameters'), '%local' => t('local file'), '%pop3' => t('/pop3'), '%imap' => t('/imap'), '%ssl' => t('/ssl'))),
   );
 
@@ -169,12 +169,12 @@ function support_admin_client($form, &$form_state, $client = NULL) {
     '#title' => t('Thread emails using subject'),
     '#options' => array(0 => 'Use global setting', 1 => 'Disabled', 2 => 'Match against new tickets', 3 => 'Match against open tickets', 4 => 'Match against all tickets'),
     '#description' => t('When enabled, the entire message subject will be used to match replies with the original tickets.  By default the !settings configuration will be used, however, you can override this global configuration here.', array('!settings' => l(t('general support settings'), 'admin/support/settings'))),
-    '#default_value' => isset($client->thread_subject) ? $client->thread_subject : 0,
+    '#default_value' => $client->thread_subject,
   );
   $form['mail']['domains'] = array(
     '#type' => 'textfield',
     '#title' => t('Valid email domains'),
-    '#default_value' => isset($client->domains) ? check_plain($client->domains) : '*',
+    '#default_value' => $client->domains,
     '#description' => t('Enter one or more comma-seperated domains which are allowed to automatically generate new tickets.  If you enter "*" tickets will be allowed from all domains.'),
   );
   $form['mail']['user_creation'] = array(
@@ -182,7 +182,7 @@ function support_admin_client($form, &$form_state, $client = NULL) {
     '#title' => t('Automatic creation of user'),
     '#options' => array('Use global setting', 'Enable', 'Disable'),
     '#description' => t('You can override the global setting for autocreating users by selecting an option in this list.  If enabled, new user accounts will be automatically created if emails are received from unnknown email addresses.  If disabled, notification emails will be sent when emails are discarded notifying the sender that they have to register to be able to create or update support tickets via email.'),
-    '#default_value' => isset($client->user_creation) ? $client->user_creation : 0,
+    '#default_value' => $client->user_creation,
   );
   $id = isset($client->clid) ? $client->clid : 0;
   $path = 'support/autocomplete/autosubscribe/' . $id;
@@ -191,44 +191,34 @@ function support_admin_client($form, &$form_state, $client = NULL) {
     '#title' => t('Auto-subscribe'),
     '#autocomplete_path' => $path,
     '#maxlength' => 2048,
-    '#default_value' => !empty($client->autosubscribe) ? $client->autosubscribe : '',
+    '#default_value' => $client->autosubscribe,
     '#description' => t('Enter one or more comma-seperated usernames to auto-subscribe to !client issues.  These users will receive email notifications for all new tickets and ticket updates for this client.', array('!client' => isset($client->name) ? $client->name : 'client')),
   );
   $form['autoassign'] = array(
     '#type' => 'textfield',
     '#title' => t('Auto-assign'),
     '#autocomplete_path' => 'support/autocomplete/assigned/' . $id,
-    '#default_value' => !empty($client->autoassign) ? $client->autoassign : '',
+    '#default_value' => $client->autoassign,
     '#description' => t('Optionally enter a username to auto-assign all new tickets for this client to. If left blank, new tickets will be assigned based on your !settings. Enter %nobody to cause new tickets for this client to be assigned to nobody. Enter %creator to cause new tickets for this client to be assigned to the person creating the ticket.', array('!settings' => l(t('general support settings'), 'admin/support/settings'), '%nobody' => '<nobody>', '%creator' => '<creator>')),
   );
   $form['notes'] = array(
     '#title' => t('Notes'),
     '#type' => 'textarea',
-    '#default_value' => isset($client->notes) ? check_plain($client->notes) : '',
+    '#default_value' => $client->notes,
     '#description' => t('Notes are only displayed on this page when editing clients.  They are optional and are provided for administrative purposes.'),
   );
-  $form['clid'] = array(
-    '#type' => 'hidden',
-    '#value' => isset($client->clid) ? $client->clid : 0,
-  );
-  $form['submit'] = array(
-    '#value' => isset($client->clid) ? t('Update client') : t('Add client'),
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => 40,
   );
-  if (isset($client->clid)) {
-    $form['delete'] = array(
-      '#value' => t('Delete client'),
-      '#type' => 'submit',
-    );
-    $form['cancel'] = array(
-      '#value' => l(t('Cancel'), 'admin/support/clients'),
-    );
-  }
-
+  field_attach_form('support_client', $client, $form, $form_state);
   return $form;
 }
 
-function support_admin_client_validate($form, &$form_state) {
+function support_client_form_validate($form, &$form_state) {
+  $client = $form_state['support_client'];
   if (preg_match('/[&*(),<>?\[\]]/', $form_state['values']['name'])) {
     form_set_error('name', t('You have entered an unsupported character.  The following characters can not be used in the client name: &*(),<>?[]'));
   }
@@ -270,55 +260,41 @@ function support_admin_client_validate($form, &$form_state) {
   if ($form_state['values']['integrate_email'] && !function_exists('imap_open')) {
     form_set_error('integrate_email', t('PHP must be !compiled in order to enable inbound email integration.  The IMAP functions are required to support the IMAP, POP3, and local mailbox access methods.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))));
   }
+  field_attach_form_validate('support_client', $client, $form, $form_state);
 }
 
 /**
  * Add/update client information.
  */
-function support_admin_client_submit($form, &$form_state) {
-  if ($form_state['clicked_button']['#value'] == t('Delete client')) {
-    drupal_set_message(t('Client %client deleted.', array('%client' => $form_state['values']['name'])));
-    db_delete('support_client')
-      ->condition('clid', $form_state['values']['clid'])
-      ->execute();
+function support_client_form_submit($form, &$form_state) {
+  if ($form_state['triggering_element']['#value'] == t('Delete')) {
+    // Rebuild the form to confirm support client deletion.
+    $form_state['rebuild'] = TRUE;
+    $form_state['confirm_delete'] = TRUE;
+    return;
   }
-  else {
-    db_merge('support_client')
-      ->key(array('clid' => $form_state['values']['clid']))
-      ->fields(array(
-        'name' => check_plain($form_state['values']['name']) ? check_plain($form_state['values']['name']) : '',
-        'path' => check_plain($form_state['values']['path']) ? check_plain($form_state['values']['path']) : '',
-        'status' => !empty($form_state['values']['status']) ? $form_state['values']['status'] : 0,
-        'parent' => !empty($form_state['values']['parent']) ? $form_state['values']['parent'] : 0,
-        'integrate_email' => !empty($form_state['values']['integrate_email']) ? $form_state['values']['integrate_email'] : 0,
-        'server_name' => check_plain($form_state['values']['server_name']) ? check_plain($form_state['values']['server_name']) : '',
-        'server_username' => check_plain($form_state['values']['server_username']) ? check_plain($form_state['values']['server_username']) : '',
-        'server_password' => check_plain($form_state['values']['server_password']) ? check_plain($form_state['values']['server_password']) : '',
-        'mailbox' => check_plain($form_state['values']['mailbox']) ? check_plain($form_state['values']['mailbox']) : '',
-        'mailfrom' => check_plain($form_state['values']['mailfrom']) ? check_plain($form_state['values']['mailfrom']) : '',
-        'protocol' => !empty($form_state['values']['protocol']) ? $form_state['values']['protocol'] : 0,
-        'extra' => check_plain($form_state['values']['extra']) ? check_plain($form_state['values']['extra']) : '',
-        'port' => !empty($form_state['values']['port']) ? $form_state['values']['port'] : 0,
-        'autoassign' => check_plain($form_state['values']['autoassign']) ? check_plain($form_state['values']['autoassign']) : '',
-        'autosubscribe' => check_plain($form_state['values']['autosubscribe']) ? check_plain($form_state['values']['autosubscribe']) : '',
-        'thread_subject' => !empty($form_state['values']['thread_subject']) ? $form_state['values']['thread_subject'] : 0,
-        'domains' => check_plain($form_state['values']['domains']) ? check_plain($form_state['values']['domains']) : '',
-        'user_creation' => !empty($form_state['values']['user_creation']) ? $form_state['values']['user_creation'] : 0,
-        'notes' => check_plain($form_state['values']['notes']) ? check_plain($form_state['values']['notes']) : '',
-      ))
-      ->execute();
-    if ($form_state['clicked_button']['#value'] == t('Update client')) {
-      drupal_set_message(t('Client %client updated.', array('%client' => $form_state['values']['name'])));
-    }
-    else {
-      drupal_set_message(t('Client %client created.', array('%client' => $form_state['values']['name'])));
-    }
+
+  $client = entity_ui_form_submit_build_entity($form, $form_state);
+
+
+  switch ($client->save()) {
+    case SAVED_NEW:
+      drupal_set_message(t('Client %client created.', array('%client' => $client->name)));
+      break;
+    case SAVED_UPDATED:
+      drupal_set_message(t('Client %client updated.', array('%client' => $client->name)));
+      break;
+    case SAVED_DELETED:
+      drupal_set_message(t('Client %client deleted.', array('%client' => $client->name)));
+      break;
   }
+
   // clean page cache and block cache
   cache_clear_all();
   // rebuild the menu
   menu_rebuild();
-  drupal_goto('admin/support/clients');
+
+  $form_state['redirect'] = 'admin/support/clients';
 }
 
 /**

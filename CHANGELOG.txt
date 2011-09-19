@@ -3,6 +3,8 @@
 September 23, 2011
  - support.module
     o bug #1287772 reported by jlevinson: Fix undefined variable $user in support_query_alter().
+    o feature #1267346 requested by ergonlogic: CRUD support. Actually, on D7, this is better done as entity support.
+      Support.module now depends on entity.module.
 
 September 20th, 2011
  - support.module

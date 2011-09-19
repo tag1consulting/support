@@ -3,4 +3,6 @@ package = Support
 description = A simple helpdesk and support ticketing system.
 dependencies[] = comment
 dependencies[] = file
+dependencies[] = entity
+files[] = includes/support.ui.inc
 core = 7.x

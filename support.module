@@ -15,6 +15,88 @@ define('SUPPORT_SORT_ASC', 0);
 define('SUPPORT_SORT_DESC', 1);
 
 /**
+ * Implements hook_entity_info().
+ */
+function support_entity_info() {
+  return array(
+    'support_client' => array(
+      'label' => t('Support Client'),
+      'entity class' => 'Entity',
+      'controller class' => 'EntityAPIController',
+      'base table' => 'support_client',
+      'entity keys' => array(
+        'id' => 'clid',
+      ),
+      'label callback' => 'support_client_label_callback',
+      'uri callback' => '', // No view screen, no uri.
+      'access callback' => 'support_client_access_callback',
+      'module' => 'support',
+      'fieldable' => TRUE,
+      'bundles' => array(
+        'support_client' => array(
+          'label' => t('Support Client'),
+          'admin' => array(
+            'path' => 'admin/support/clients',
+            'access arguments' => array('administer support'),
+          ),
+        ),
+      ),
+      'admin ui' => array(
+        'path' => 'admin/support/clients',
+        'file' => 'support.admin.inc',
+        'controller class' => 'SupportClientUIController',
+      ),
+    ),
+  );
+}
+
+/**
+ * Entity label callback for support clients.
+ */
+function support_client_label_callback($client) {
+  if (!empty($client->name)) {
+    return check_plain($client->name);
+  }
+}
+
+/**
+ * Entity access callback for support clients.
+ */
+function support_client_access_callback($op, $type = NULL, $account = NULL) {
+  if (user_access('administer support', $account)) {
+    return TRUE;
+  }
+  switch($op) {
+    case 'create':
+      // Administrator only
+      return FALSE;
+    case 'update':
+      // Administrator only
+      return FALSE;
+    case 'delete':
+      // Administrator only
+      return FALSE;
+    case 'view':
+      return user_access('can select client', $account);
+    default:
+      return FALSE;
+  }
+}
+
+/**
+ * Implements ENTITY_TYPE_build_modes().
+ */
+function support_client_build_modes($obj_type) {
+  $modes = array();
+  if ($obj_type == 'support_client') {
+    $modes = array(
+      'normal' => t('Normal'),
+    );
+  }
+  return $modes;
+}
+
+/**
  * Implementation of hook_node_info().
  */
 function support_node_info() {
@@ -109,34 +191,12 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
-  $items['admin/support/clients'] = array(
-    'title' => 'Clients',
-    'description' => 'Manage clients.',
-    'page callback' => 'support_admin_client_overview',
-    'access arguments' => array('administer support'),
-    'file' => 'support.admin.inc',
-  );
+
   $items['admin/support/clients/list'] = array(
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/support/clients/%support_client/edit'] = array(
-    'title' => 'Edit',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('support_admin_client', 3),
-    'access arguments' => array('administer support'),
-    'file' => 'support.admin.inc',
-  );
-  $items['admin/support/clients/add'] = array(
-    'title' => 'Add client',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 2,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('support_admin_client'),
-    'access arguments' => array('administer support'),
-    'file' => 'support.admin.inc',
-  );
+
   $items['admin/support/settings'] = array(
     'title' => 'Settings',
     'description' => 'Configure the support ticketing system.',
@@ -524,16 +584,18 @@ function support_access_clients($client = NULL, $account = NULL) {
  * Menu callback, load a client.
  */
 function support_client_load($id, $integer = TRUE) {
+  // @@@ Migrate all users to entity_load()?
   static $clients = array();
-
   if (!isset($clients[$id])) {
     if ($integer) {
-      $results = db_query('SELECT clid, name, path, status, parent, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE clid = :clid', array(':clid' => $id));
+      $results = array($id);
     }
     else {
-      $results = db_query("SELECT clid, name, path, status, integrate_email, server_name, server_username, server_password, mailfrom, mailbox, protocol, extra, port, notes, autoassign, autosubscribe, thread_subject, domains, user_creation FROM {support_client} WHERE path = :path", array(':path' => $id));
+      $results = db_query("SELECT clid FROM {support_client} WHERE path = :path", array(':path' => $id))->fetchCol();
     }
+    $results = entity_load('support_client', $results);
     foreach ($results as $client) {
+      // @@@ Deprecate this. Entity does it better.
       drupal_alter('support_client_load', $client);
       $clients[$id] = $client;
     }

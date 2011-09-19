@@ -2,7 +2,7 @@
 -------------
 September 19th, 2011
  - support.module
-    o bug #128418: Fix undefined variable: $autocomplete
+    o bug #128418: Fix undefined variable: $autocomplete. Reported by rolandk.
 
 September 14th, 2011
  - support.module

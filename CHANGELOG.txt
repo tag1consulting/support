@@ -5,6 +5,8 @@ September 19th, 2011
     o bug #128418: Fix undefined variable: $autocomplete. Reported by rolandk.
  - support.user.inc
     o bug #1282010 reported by rolandk: Fix undefined variable warning.
+ - support_charts.module
+    o bug #1282726 reported by eduardo barros: Fix warnings on admin/support/charts.
 
 September 14th, 2011
  - support.module

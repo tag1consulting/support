@@ -323,7 +323,13 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
   foreach ($result as $data) {
     $day = ltrim(date('d', $data->timestamp), '0');
     $types[$type] = $type;
+    if (!isset($counts[$day][$type])) {
+      $counts[$day][$type] = 0;
+    }
     $counts[$day][$type]++;
+    if (!isset($max[$type])) {
+      $max[$type] = 0;
+    }
     $max[$type]++;
   }
 
@@ -333,7 +339,7 @@ function support_charts_build_graph($id, $type = 'global', $object = NULL) {
       $chart['#labels'][] = $i;
 
       foreach ($types as $type) {
-        if ($counts[$i][$type]) {
+        if (!empty($counts[$i][$type])) {
           $chart['#data'][$type][] = $counts[$i][$type];
         }
         else {

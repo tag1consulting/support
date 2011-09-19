@@ -826,6 +826,7 @@ function support_node_load($nodes, $types) {
  */
 function support_node_validate($node, $form, &$form_state) {
   if ($node->type == 'support_ticket') {
+    $autocomplete = 'subscribed-users';
     $client = db_query('SELECT name FROM {support_client} WHERE clid = :clid', array(':clid' => $node->client))->fetchField();
     if (!isset($node->client) || $node->client == 0) {
       form_set_error('client', t('You must select a client'));

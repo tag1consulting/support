@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+September 19th, 2011
+ - support.module
+    o bug #128418: Fix undefined variable: $autocomplete
+
 September 14th, 2011
  - support.module
     o bug #1153854: Rename query placeholders to hopefully prevent query errors on some sites.

@@ -1208,7 +1208,7 @@ function support_comment_view($comment, $view_mode, $langcode) {
  */
 function support_mail($key, &$message, $params) {
   $language = $message['language'];
-  $variables = support_mail_tokens($params['account'], $language, $params['nid'], (isset($params['comment']) ? $params['comment'] : array()), $params['suppress']);
+  $variables = support_mail_tokens($params['account'], $language, $params['nid'], (isset($params['comment']) ? $params['comment'] : new stdClass()), $params['suppress']);
   $message['subject'] .= _support_mail_text($key . '_subject', $language, $variables, $params['integrate_email']);
   $message['body'] = array(_support_mail_text($key . '_body', $language, $variables, $params['integrate_email']));
   $node = node_load($params['nid']);
@@ -1442,7 +1442,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') . "<br />\n" : check_markup($node->body[$node->language][0]['value']) . _support_mail_list_attachments($node, $comment),
     '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
     '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
-    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') . "<br />\n" : check_markup(isset($comment->comment_body[$comment->language][0]) ? $comment->comment_body[$comment->language][0]['value'] : '') . _support_mail_list_attachments($node, $comment),
+    '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') . "<br />\n" : check_markup((isset($comment->language) && isset($comment->comment_body[$comment->language][0])) ? $comment->comment_body[$comment->language][0]['value'] : '') . _support_mail_list_attachments($node, $comment),
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) . ' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) . ' -> ' : '') . _support_priorities($node->priority),
     '!assigned_username' => !empty($assigned) ? $assigned->name : '',

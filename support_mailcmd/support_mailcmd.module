@@ -13,7 +13,7 @@ function support_mailcmd_support_fetch_message_alter(&$message, $client) {
     $account = user_load($message['uid']);
   }
   else {
-    $account = support_account_load($message['from'], $message['nid'], $message['subject'], $client);
+    $account = support_account_load($message['from'], isset($message['nid']) ? $message['nid'] : 0, $message['subject'], $client);
   }
   $ticket = support_ticket_load($message['nid']);
 

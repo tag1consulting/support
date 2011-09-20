@@ -1664,7 +1664,9 @@ function support_save_message($message, $client) {
     $node->notification = TRUE;
     $node->support_email = TRUE;
     if ($upload_field = _support_upload_field_name('node')) {
-      $node->{$upload_field} = _support_save_attachments($message['attachments'], $account, 'node');
+      if (!empty($message['attachments'])) {
+        $node->{$upload_field} = _support_save_attachments($message['attachments'], $account, 'node');
+      }
     }
     $node->created_by_email = TRUE;
     if (isset($message['_support_extra_fields'])) {
@@ -3553,7 +3555,7 @@ function _support_identify_ticket(&$client, &$message) {
       $message['nid'] = db_query_range("SELECT t.nid FROM {support_ticket} t LEFT JOIN {node} n ON t.nid = n.nid WHERE t.client = :client AND n.title = :title ORDER BY t.nid DESC", 0, 1, array(':client' => $client->clid, ':title' => $message['subject']))->fetchField();
       break;
   }
-  return (boolean) $message['nid'];
+  return isset($message['nid']);
 }
 
 /**

@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+September 20th, 2011
+ - support.module
+    o Fixing some minor warnings on D7.
+
 September 19th, 2011
  - support.module
     o bug #128418: Fix undefined variable: $autocomplete. Reported by rolandk.

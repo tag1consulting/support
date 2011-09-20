@@ -5,10 +5,11 @@ September 20th, 2011
     o Fixing some minor warnings on D7.
     o Don't load the ticket in support_account_load() unless we actually need it.
     o bug #1285676: Fixing access control bugs.
+    o bug #1282418 reported by rolandk: (followup) Fix a second instance where $autocomplete was missing.
 
 September 19th, 2011
  - support.module
-    o bug #128418: Fix undefined variable: $autocomplete. Reported by rolandk.
+    o bug #1282418 reported by rolandk: Fix undefined variable: $autocomplete. Reported by rolandk.
  - support.user.inc
     o bug #1282010 reported by rolandk: Fix undefined variable warning.
  - support_charts.module

@@ -877,6 +877,7 @@ function support_node_validate($node, $form, &$form_state) {
  *  Common code for inserting or updating a support ticket
  */
 function _support_node_insert_update($node) {
+  $autocomplete = 'subscribed-users';
   if (isset($node->move) && is_numeric($node->move) && $node->move) {
     $destination = node_load($node->move);
     _support_node_move($node, $destination);

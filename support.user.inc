@@ -44,7 +44,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     array('data' => t('Ticket'), 'field' => 'n.title'),
     $headers[SUPPORT_SORT_UPDATE],
     array('data' => t('Reported by'), 'field' => 'n.uid'),
-    array('data' => t('Assigned to'), 'field' => 'n.uid'),
+    array('data' => t('Assigned to'), 'field' => 't.assigned'),
     $headers[SUPPORT_SORT_STATE],
     $headers[SUPPORT_SORT_PRIORITY],
     array('data' => t('Updates'), 'field' => 'l.comment_count'),

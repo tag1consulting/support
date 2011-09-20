@@ -2907,7 +2907,7 @@ function _support_available_clients($account = NULL) {
     $clients = _support_clients_load();
     if (is_array($clients) && !empty($clients)) {
       foreach ($clients as $clid => $name) {
-        if (user_access('administer support', $account) || user_access("access $name tickets", $account) || user_access('create tickets', $account)) {
+        if (user_access('administer support', $account) || user_access("access $name tickets", $account)) {
           $valid[$account->uid][$clid] = $name;
         }
       }

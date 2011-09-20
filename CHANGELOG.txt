@@ -3,6 +3,7 @@
 September 20th, 2011
  - support.module
     o Fixing some minor warnings on D7.
+    o bug #1285676: Fixing access control bugs.
 
 September 19th, 2011
  - support.module

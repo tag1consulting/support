@@ -609,7 +609,6 @@ function support_account_load($from, $ticket, $subject, $client) {
     $matches = array();
     preg_match('~[\w-]+\.\w+(?=/|$)~', $from, $matches);
     $domain = $matches[0];
-    $ticket = support_ticket_load($ticket);
     $domains = _support_domains($client->domains, variable_get('support_global_domains', ''));
     $valid = TRUE;
     if (!empty($domains)) {
@@ -629,6 +628,7 @@ function support_account_load($from, $ticket, $subject, $client) {
       return user_save(NULL, array('mail' => $from, 'init' => $from, 'name' => $from, 'status' => 1));
     }
     else {
+      $ticket = support_ticket_load($ticket);
       $node = node_load($ticket->nid);
       watchdog('support', 'Email update from !from denied for ticket "!title", subject "!subject."', array('!from' => $from, '!title' => check_plain($node->title), '!subject' => $subject), WATCHDOG_NOTICE);
       return FALSE;

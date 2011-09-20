@@ -1,3 +1,7 @@
+September 20th, 2011
+ - support_pm.module
+    o bug #1285482: Fix exception when editing a ticket that has a project set.
+
 September 13th, 2011
  - support.module
     o bug #1276776: declare $tickets before trying to access it

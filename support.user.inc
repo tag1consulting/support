@@ -60,7 +60,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
   $clients = support_search_available_clients();
 
   if (sizeof($clients)) {
-    $query = db_select('node', 'n')->extend('PagerDefault');
+    $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort');
     $query->leftjoin('support_ticket', 't', 't.nid = n.nid');
     $query->join('node_comment_statistics', 's', 's.nid = n.nid');
     $query->join('users', 'u', 'u.uid = n.uid');
@@ -109,6 +109,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       ->fields('u', array('name'))
       ->fields('s', array('comment_count'))
       ->fields('t', array('client', 'state', 'priority', 'assigned'))
+      ->orderByHeader($header)
       ->distinct()
       ->addExpression('GREATEST(n.changed, s.last_comment_timestamp)', 'last_updated');
 

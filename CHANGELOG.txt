@@ -1,3 +1,7 @@
+September 20th, 2011
+ - support.user.inc
+    o bug #1285498: display ticket assignment on latest ticket listing
+
 September 13th, 2011
  - support.module
     o bug #1276776: declare $tickets before trying to access it

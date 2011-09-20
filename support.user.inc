@@ -43,6 +43,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     array('data' => t('Ticket'), 'field' => 'n.title'),
     $headers[SUPPORT_SORT_UPDATE],
     array('data' => t('Reported by'), 'field' => 'n.uid'),
+    array('data' => t('Assigned to'), 'field' => 'n.uid'),
     $headers[SUPPORT_SORT_STATE],
     $headers[SUPPORT_SORT_PRIORITY],
     array('data' => t('Updates'), 'field' => 'l.comment_count'),
@@ -61,7 +62,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
 
   $clients = support_search_available_clients();
   if (sizeof($clients)) {
-    $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.client FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND client IN (". implode(', ', $clients) .") $state";
+    $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.client, t.assigned FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid LEFT JOIN {comments} c ON n.nid = c.nid WHERE (c.status = ". COMMENT_PUBLISHED ." OR c.status IS NULL) AND n.status = 1 AND n.type = 'support_ticket' AND client IN (". implode(', ', $clients) .") $state";
     if ($assigned) {
       $sql .= " AND t.assigned = $user->uid";
     }
@@ -93,6 +94,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
   while ($ticket = db_fetch_object($result)) {
     drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load(array('uid' => $ticket->uid));
+    $assigned = user_load(array('uid' => $ticket->assigned));
     $comments = l($ticket->comment_count, "node/$ticket->nid", array('fragment' => 'comments'));
     if ($new = comment_num_new($ticket->nid)) {
       $node = node_load($ticket->nid);
@@ -104,6 +106,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       array('data' => l(_support_truncate($ticket->title), "node/$ticket->nid"), 'class' => 'ticket-title'),
       array('data' => format_date($ticket->last_updated, 'small'), 'class' => 'ticket-updated'),
       array('data' => l(_support_truncate($account->name, 24), "user/$account->uid"), 'class' => 'ticket-reported'),
+      array('data' => l(_support_truncate($assigned->name, 24), "user/$assigned->uid"), 'class' => 'ticket-assigned'),
       array('data' => _support_state($ticket->state), 'class' => 'ticket-state'),
       array('data' => _support_priorities($ticket->priority), 'class' => 'ticket-priority'),
       array('data' => $comments, 'class' => 'ticket-updates'),

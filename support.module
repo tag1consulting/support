@@ -1560,6 +1560,10 @@ function _support_mail_text_default($key) {
  * Save the message.
  */
 function support_save_message($message, $client) {
+  $ticket = FALSE;
+  if (!isset($message['nid'])) {
+    $message['nid'] = 0;
+  }
   if (isset($message['uid'])) {
     // TODO Convert "user_load" to "user_load_multiple" if "$message['uid']" is other than a uid.
     // To return a single user object, wrap "user_load_multiple" with "array_shift" or equivalent.

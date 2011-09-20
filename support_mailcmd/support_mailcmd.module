@@ -15,7 +15,9 @@ function support_mailcmd_support_fetch_message_alter(&$message, $client) {
   else {
     $account = support_account_load($message['from'], isset($message['nid']) ? $message['nid'] : 0, $message['subject'], $client);
   }
-  $ticket = support_ticket_load($message['nid']);
+  if (isset($message['nid'])) {
+    $ticket = support_ticket_load($message['nid']);
+  }
 
   $commands = array();
   $body = explode("\n", $message['body']);
@@ -61,7 +63,7 @@ function support_mailcmd_support_fetch_message_alter(&$message, $client) {
         if (user_access('can select state', $account) ||
             user_access('administer support', $account) ||
             user_access('can administer state', $account)) {
-          $states = _support_states(FALSE, $ticket->state, $account);
+          $states = _support_states(FALSE, isset($ticket->state) ? $ticket->state : NULL, $account);
           foreach ($states as $k => $v) {
             if (strtolower($v) == $tvalue) {
               $message['state'] = $k;

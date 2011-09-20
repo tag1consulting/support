@@ -2208,37 +2208,90 @@ function support_search_form_submit($form, &$form_state) {
 function support_query_alter(QueryAlterableInterface $query) {
   if ($query->hasTag('node_access') && !$query->hasTag('support_search')) {
     $tables = $query->getTables();
-    $nodeAlias = FALSE;
-    $ticketAlias = FALSE;
-    foreach ($tables as $alias => $tableinfo) {
-      if ($tableinfo['table'] == 'node') {
-        $nodeAlias = $alias;
-        global $user;
-        if (variable_get('support_remove_tickets', TRUE)) {
-          $query->condition("$alias.type", 'support_ticket', '<>');
+    // Copied from _node_query_node_access_alter() in modules/node.module.
+    // -------------------------------------------------------------------
+    $base_table = $query->getMetaData('base_table');
+    // If no base table is specified explicitly, search for one.
+    if (!$base_table) {
+      $fallback = '';
+      foreach ($tables as $alias => $table_info) {
+        if (!($table_info instanceof SelectQueryInterface)) {
+          $table = $table_info['table'];
+          // If the node table is in the query, it wins immediately.
+          if ($table == 'node') {
+            $base_table = $table;
+            break;
+          }
+          // Check whether the table has a foreign key to node.nid. If it does,
+          // do not run this check again as we found a base table and only node
+          // can triumph that.
+          if (!$base_table) {
+            // The schema is cached.
+            $schema = drupal_get_schema($table);
+            if (isset($schema['fields']['nid'])) {
+              if (isset($schema['foreign keys'])) {
+                foreach ($schema['foreign keys'] as $relation) {
+                  if ($relation['table'] === 'node' && $relation['columns'] === array('nid' => 'nid')) {
+                    $base_table = $table;
+                  }
+                }
+              }
+              else {
+                // At least it's a nid. A table with a field called nid is very
+                // very likely to be a node.nid in a node access query.
+                $fallback = $table;
+              }
+            }
+          }
         }
       }
-      if ($tableinfo['table'] == 'support_ticket') {
-        $ticketAlias = $alias;
-      }
-    }
-
-    if ($nodeAlias && $ticketAlias === FALSE) {
-      $clients = support_search_available_clients();
-      if (!empty($clients)) {
-        if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
-          $query->leftJoin('support_ticket', 'st', "st.nid = $nodeAlias.nid");
-          $query->condition(db_or()
-            ->condition("st.client", $clients)
-            ->condition("st.client", null));
+      // If there is nothing else, use the fallback.
+      if (!$base_table) {
+        if ($fallback) {
+          watchdog('security', 'Your node listing query is using @fallback as a base table in a query tagged for node access. This might not be secure and might not even work. Specify foreign keys in your schema to node.nid ', array('@fallback' => $fallback), WATCHDOG_WARNING);
+          $base_table = $fallback;
         }
         else {
-          $query->leftJoin('support_ticket', 'st', "st.nid = $nodeAlias.nid");
-          $query->condition(db_or()
-            ->condition(db_and()
-              ->condition("st.client", $clients)
-              ->condition("$nodeAlias.uid", $user->uid))
-            ->condition("st.client", null));
+          throw new Exception(t('Query tagged for node access but there is no nid. Add foreign keys to node.nid in schema to fix.'));
+        }
+      }
+    }
+    // -------------------------------------------------------------------
+
+    foreach ($tables as $nalias => $tableinfo) {
+      $table = $tableinfo['table'];
+      if (!($table instanceof SelectQueryInterface) && $table == $base_table) {
+        /*
+        // If we're removing the tickets outright, join to {support_ticket}.
+        // We can't join to {node} like we did in D6, because some core queries aren't qualified properly.
+        if (variable_get('support_remove_tickets', TRUE)) {
+          $remove_alias = $query->leftJoin('support_ticket', 'support_ticket_remove', '%alias.nid = '. $nalias . '.nid');
+          $query->isNull($remove_alias . '.nid');
+          //$remove_alias = $query->innerJoin('node', 'support_ticket_remove', '%alias.nid = ' . $nalias . '.nid');
+          //$query->condition($remove_alias . '.type', 'support_ticket', '<>');
+        }
+        */
+        $clients = support_search_available_clients();
+        if (!empty($clients)) {
+          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
+            $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
+            $query->condition(db_or()
+              // Must be on the allowed clients list
+              ->condition($ticket_alias . '.client', $clients)
+              // or must be something other than a support ticket
+              ->condition($ticket_alias . '.client', null));
+          }
+          else {
+            $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
+            $query->condition(db_or()
+              ->condition(db_and()
+                // Must be on the allowed clients list
+                ->condition($ticket_alias . '.client', $clients)
+                // and must be owned by the user
+                ->condition($nalias . '.uid', $user->uid))
+              // or must be something other than a support ticket
+              ->condition($ticket_alias . '.client', null));
+          }
         }
       }
     }
@@ -2874,6 +2927,7 @@ function _support_ticket_exists($account) {
     ->condition('status', 1)
     ->condition('uid', $account->uid)
     ->addTag('node_access')
+    ->addTag('support_search') // Disable support query altering because we're doing our own filtering.
     ->execute()
     ->fetchField();
   return (bool) $result;

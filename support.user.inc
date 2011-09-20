@@ -44,6 +44,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     array('data' => t('Ticket'), 'field' => 'n.title'),
     $headers[SUPPORT_SORT_UPDATE],
     array('data' => t('Reported by'), 'field' => 'n.uid'),
+    array('data' => t('Assigned to'), 'field' => 'n.uid'),
     $headers[SUPPORT_SORT_STATE],
     $headers[SUPPORT_SORT_PRIORITY],
     array('data' => t('Updates'), 'field' => 'l.comment_count'),
@@ -118,6 +119,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
   foreach ($result as $ticket) {
     drupal_alter('support_page_list_ticket', $ticket);
     $account = user_load($ticket->uid);
+    $assigned = user_load($ticket->assigned);
     $comments = l($ticket->comment_count, "node/$ticket->nid", array('fragment' => 'comments'));
     if ($new = comment_num_new($ticket->nid)) {
       $node = node_load($ticket->nid);
@@ -141,6 +143,10 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
         array(
           'data' => l(_support_truncate($account->name, 24), "user/$account->uid"),
           'class' => array('ticket-reported'),
+        ),
+        array(
+          'data' => l(_support_truncate($assigned->name, 24), "user/$assigned->uid"),
+          'class' => array('ticket-assigned'),
         ),
         array(
           'data' => _support_state($ticket->state),

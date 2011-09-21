@@ -6,6 +6,7 @@ September 20th, 2011
     o Don't load the ticket in support_account_load() unless we actually need it.
     o bug #1285676: Fixing access control bugs.
     o bug #1282418 reported by rolandk: (followup) Fix a second instance where $autocomplete was missing.
+    o tagged 7.x-1.0-beta1
 
 September 19th, 2011
  - support.module

@@ -3253,3 +3253,69 @@ function _support_autosubscribe_access() {
   return (user_access('administer support') ||
     user_access('can subscribe other users to notifications'));
 }
+
+/**
+ * Delete a client
+ * 
+ * @param $client
+ *   Client object, needs only to define ->clid.
+ */
+function support_client_delete($client) {
+  drupal_alter('support_client_delete', $client);
+  if (!empty($client->clid)) {
+    $name = db_result(db_query('SELECT name FROM {support_client} WHERE clid = %d', $client->clid));
+    db_query('DELETE FROM {support_client} WHERE clid = %d', $client->clid);
+    drupal_set_message(t('Client %client deleted.', array('%client' => $name)));
+    module_invoke_all('support_client_deleted', $client);
+  }
+}
+
+/**
+ * Update a client
+ *
+ * @param $client
+ *   Client object.
+ */
+function support_client_update($client) {
+  drupal_alter('support_client_update', $client);
+  if (isset($client->name)) {
+    $client->name = check_plain($client->name);
+  }
+  if (empty($client->name)) {
+    drupal_set_message(t('Valid client name required.'), 'error');
+    return -1;
+  }
+  $rc = drupal_write_record('support_client', $client, 'clid');
+  if ($rc == SAVED_UPDATED) {
+    drupal_set_message(t('Client %client updated successfully.', array('%client' => $client->name)));
+    module_invoke_all('support_client_updated', $client);
+  }
+  else {
+    drupal_set_message(t('Client %client update failed.', array('%client' => $client->name)), 'error');
+  }
+}
+
+/**
+ * Create a client
+ *
+ * @param $client
+ *   Client object.
+ */
+function support_client_create($client) {
+  drupal_alter('support_client_create', $client);
+  if (isset($client->name)) {
+    $client->name = check_plain($client->name);
+  }
+  if (empty($client->name)) {
+    drupal_set_message(t('Valid client name required.'), 'error');
+    return -1;
+  }
+  $rc = drupal_write_record('support_client', $client);
+  if ($rc == SAVED_NEW) {
+    drupal_set_message(t('Client %client created successfully.', array('%client' => $client->name)));
+    module_invoke_all('support_client_created', $client);
+  }
+  else {
+    drupal_set_message(t('Client %client creation failed.', array('%client' => $client->name)), 'error');
+  }
+}

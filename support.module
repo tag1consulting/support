@@ -1241,7 +1241,7 @@ function support_save_message($message, $client) {
 
     // Tell the other modules a new comment has been submitted.
     $comment['cid'] = db_last_insert_id('comments', 'cid');
-    $comment['subject'] = $message['subject'];
+    $comment['subject'] = truncate_utf8(trim($message['subject']), 64, TRUE, TRUE);
     $comment['comment'] = $message['body'];
     $comment['nid'] = $ticket->nid;
     $comment['uid'] = $account->uid;

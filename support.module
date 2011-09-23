@@ -2287,6 +2287,7 @@ function support_query_alter(QueryAlterableInterface $query) {
               ->condition($ticket_alias . '.client', null));
           }
           else {
+            global $user;
             $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
             $query->condition(db_or()
               ->condition(db_and()

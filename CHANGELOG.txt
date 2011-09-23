@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+September 23, 2011
+ - support.module
+    o bug #1287772 reported by jlevinson: Fix undefined variable $user in support_query_alter().
+
 September 20th, 2011
  - support.module
     o Fixing some minor warnings on D7.

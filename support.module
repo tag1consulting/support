@@ -240,12 +240,7 @@ function support_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $states = array(
-    0 => 'all',
-    1 => 'all open',
-    2 => 'my open',
-  ) + _support_states();
-
+  $states = array(-3 => 'all', -2 => 'all open', -1 => 'my open') + _support_states();
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => 0));
   foreach ($result as $client) {
     $items["support/$client->path"] = array(
@@ -263,7 +258,8 @@ function support_menu() {
         'access callback' => 'support_access_clients',
         'access arguments' => array($client),
         'weight' => $sid,
-        'type' => $sid == 1 ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+        // -2 is 'all open'
+        'type' => $sid == -2 ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
       );
     }
     $result2 = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status AND parent = :parent', array(':status' => 1, ':parent' => $client->clid));

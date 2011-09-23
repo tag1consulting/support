@@ -126,7 +126,7 @@ function support_pm_menu() {
   );
 
   // Add project sub-menu
-  $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
+  $states = array(-3 => 'all', -2 => 'all open', -1 => 'my open') + _support_states();
   $result = db_query('SELECT sp.projid, sp.project, sp.path, sp.weight, spc.clid FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE disabled = 0 ORDER BY spc.clid, sp.weight ASC, sp.project');
   foreach ($result as $project) {
     if ($client = support_client_load($project->clid)) {

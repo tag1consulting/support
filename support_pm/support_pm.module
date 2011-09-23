@@ -286,7 +286,7 @@ function support_pm_form_alter(&$form, $form_state, $form_id) {
 function support_pm_query_support_pager_alter($query) {
   $client = $query->getMetaData('support_client');
   if ($project = arg(3)) {
-    $project = db_query('SELECT p.projid FROM {support_project} p LEFT JOIN {support_project_client} c ON p.projid = c.projid WHERE (c.clid = :clid OR c.clid IS NULL) AND p.path = :path', array(':clid' => $client->clid, ':path' => $project))->fetchField();
+    $project = db_query('SELECT p.projid FROM {support_project} p LEFT JOIN {support_project_client} c ON p.projid = c.projid WHERE (c.clid = :clid OR c.clid = 0) AND p.path = :path', array(':clid' => $client->clid, ':path' => $project))->fetchField();
     if ($project) {
       $query->leftJoin('support_project_ticket', 'spt', 'n.nid = spt.nid');
       $query->condition('spt.projid', $project);

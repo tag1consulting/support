@@ -61,6 +61,14 @@ April 28, 2011
 
 6.x changelog
 -------------
+September 22nd, 2011
+ - support.module
+    o feature #1267346 Implement CrUD for support clients; introduces
+      support_client_delete_alter, support_client_update_alter, and
+      support_client_create_alter, as well as hook_support_client_deleted,
+      hook_support_client_updated and hook_support_client_created.
+      -- Note: On Drupal 7, Entity API is used instead.
+
 September 20th, 2011
  - support_pm.module
     o bug #1285482: Fix exception when editing a ticket that has a project set.

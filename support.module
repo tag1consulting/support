@@ -1659,12 +1659,11 @@ function support_save_message($message, $client) {
     $comment->nid = $ticket->nid;
     $comment->status = COMMENT_PUBLISHED;
     $comment->thread = $thread;
-    $comment->subject = $message['subject'];
     $comment->hostname = ip_address();
     $comment->language = LANGUAGE_NONE;
     $comment->name = $account->name;
     $comment->mail = $account->mail;
-    $comment->subject = $message['subject'];
+    $comment->subject = truncate_utf8(trim($message['subject']), 64, TRUE, TRUE);
     $comment->timestamp = REQUEST_TIME;
     $comment->comment_body[LANGUAGE_NONE][] = array(
       //'summary' => '',

@@ -68,6 +68,7 @@ September 22nd, 2011
       support_client_create_alter, as well as hook_support_client_deleted,
       hook_support_client_updated and hook_support_client_created.
       -- Note: On Drupal 7, Entity API is used instead.
+    o bug #1275512 reported by nzcodarnoc: Truncate the comment subject to 64 characters.
 
 September 20th, 2011
  - support_pm.module

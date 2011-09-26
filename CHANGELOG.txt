@@ -2,7 +2,8 @@
 -------------
 September 26, 2011
  - support.module
-    o bug #1289244 addendum: Fix subprojects not having a default local task.
+    o bug #1289244 addendum: Fix subclients not having a default local task.
+    o bug #1291290: Fix projects on subclients.
 
 September 23, 2011
  - support.module

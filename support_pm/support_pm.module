@@ -134,22 +134,36 @@ function support_pm_menu() {
     }
     else {
       $clients = array();
-      $result2 = db_query('SELECT clid FROM {support_client} WHERE status = 1 AND parent = 0');
+      $result2 = db_query('SELECT clid FROM {support_client} WHERE status = 1');
       foreach ($result2 as $client) {
         $clients[] = support_client_load($client->clid);
       }
     }
     foreach ($clients as $client) {
       foreach ($states as $sid => $state) {
-        $items["support/$client->path/$state/$project->path"] = array(
-          'title' => check_plain($project->project),
-          'page callback' => 'drupal_get_form',
-          'page arguments' => array('support_page_form', $client->clid, $state),
-          'access callback' => 'support_access_clients',
-          'access arguments' => array($client),
-          'weight' => $project->weight,
-          'type' => MENU_LOCAL_TASK,
-        );
+        if ($client->parent == 0) {
+          $items["support/$client->path/$state/$project->path"] = array(
+            'title' => check_plain($project->project),
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('support_page_form', $client->clid, $state),
+            'access callback' => 'support_access_clients',
+            'access arguments' => array($client),
+            'weight' => $project->weight,
+            'type' => MENU_LOCAL_TASK,
+          );
+        }
+        else {
+          $parent = support_client_load($client->parent);
+          $items["support/$parent->path/$client->path/$state/$project->path"] = array(
+            'title' => check_plain($project->project),
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('support_page_form', $client->clid, $state),
+            'access callback' => 'support_access_clients',
+            'access arguments' => array($client),
+            'weight' => $project->weight,
+            'type' => MENU_LOCAL_TASK,
+          );
+        }
       }
     }
   }
@@ -285,7 +299,7 @@ function support_pm_form_alter(&$form, $form_state, $form_id) {
  */
 function support_pm_query_support_pager_alter($query) {
   $client = $query->getMetaData('support_client');
-  if ($project = arg(3)) {
+  if ($project = ($client->parent == 0) ? arg(3) : arg(4)) {
     $project = db_query('SELECT p.projid FROM {support_project} p LEFT JOIN {support_project_client} c ON p.projid = c.projid WHERE (c.clid = :clid OR c.clid = 0) AND p.path = :path', array(':clid' => $client->clid, ':path' => $project))->fetchField();
     if ($project) {
       $query->leftJoin('support_project_ticket', 'spt', 'n.nid = spt.nid');

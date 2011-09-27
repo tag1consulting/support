@@ -2744,8 +2744,7 @@ function _support_assigned($assigned, $node, $limit = 9999) {
       $roles = array();
       $client = db_query('SELECT name FROM {support_client} WHERE clid = :clid', array(':clid' => $node->client))->fetchField();
       // retrieve all roles giving permission to access current tickets
-      // TODO Please convert this statement to the D7 database API syntax.
-      $result = db_query("SELECT rid FROM {role_permission} WHERE permission LIKE :clike OR permission LIKE :plike", array(':clike' => '%' . $client . '%', ':plike' => '%administer support%'));
+      $result = db_query('SELECT rid FROM {role_permission} WHERE module = :module AND permission = :access OR permission = :admin', array(':module' => 'support', ':access' => 'access ' . $client . ' tickets', ':admin' => 'administer support'));
       foreach ($result as $role) {
         $roles[$role->rid] = $role->rid;
       }

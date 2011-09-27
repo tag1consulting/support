@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+September 27, 2011
+ - support.module
+    o bug #436726 reported by paddy_mul: Ajax support for client changing.
+
 September 26, 2011
  - support.module
     o bug #1289244 addendum: Fix subclients not having a default local task.

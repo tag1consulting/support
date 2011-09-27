@@ -282,9 +282,19 @@ function support_pm_comment_view($comment, $view_mode, $langcode) {
 function support_pm_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'support_ticket_node_form') {
     $node = $form['#node'];
+    $client = FALSE;
+    if (!empty($node->client)) {
+      $client = $node->client;
+    }
+    if (!empty($form_state['values']['client'])) {
+      $client = $form_state['values']['client'];
+    }
+    if (!$client) {
+      $client = _support_current_client();
+    }
     // @todo: include disabled project if already set to it
-    $options = support_pm_load_projects(_support_current_client());
-    $form['support']['project'] = array(
+    $options = support_pm_load_projects($client);
+    $form['support']['client_dependencies']['project'] = array(
       '#type' => 'select',
       '#title' => t('Project'),
       '#prefix' => '&nbsp;&nbsp;',

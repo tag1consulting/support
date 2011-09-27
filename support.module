@@ -805,13 +805,12 @@ function support_user_view($account, $view_mode, $langcode) {
 /**
  * Implementation of hook_form().
  */
-function support_form($node, $form_state) {
+function support_form($node, &$form_state) {
   $type = node_type_get_type($node);
 
   $form = node_content_form($node, $form_state);
 
-  $reference = array();
-  $form = array_merge($form, support_status_form($reference, $node, ''));
+  _support_status_form_attach($form, $form_state, $node);
 
   if (isset($node->nid) && $node->nid) {
     $form['ticket'] = array(
@@ -831,7 +830,7 @@ function support_form($node, $form_state) {
     );
   }
 
-  $form = array_merge($form, support_subscribe_form($reference, $node, ''));
+  _support_subscribe_form_attach($form, $form_state, $node);
 
   return $form;
 }
@@ -889,6 +888,7 @@ function support_node_validate($node, $form, &$form_state) {
     if (!isset($node->client) || $node->client == 0) {
       form_set_error('client', t('You must select a client'));
     }
+    // Autocomplete version
     if (isset($node->assigned) && !is_numeric($node->assigned)) {
       $assigned = db_query("SELECT uid FROM {users} WHERE name = :name", array(':name' => $node->assigned))->fetchField();
       if ($node->assigned && !$assigned) {
@@ -899,6 +899,12 @@ function support_node_validate($node, $form, &$form_state) {
         if (!$valid) {
           form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
         }
+      }
+    }
+    // Dropdown version. (Still need to validate in case the ticket moved between clients.)
+    if (isset($node->assigned) && is_numeric($node->assigned)) {
+      if (!_support_validate_assigned_user($node->assigned, $client)) {
+        form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
       }
     }
     if (isset($node->move) && is_numeric($node->move) && $node->move) {
@@ -2128,8 +2134,8 @@ function support_form_alter(&$form, &$form_state, $form_id) {
     if (isset($node) && is_object($node) && isset($node->type) &&
         $node->type == 'support_ticket') {
       $reference = array();
-      $form = array_merge(support_status_form($form_state, $form, ''), $form);
-      $form = array_merge($form, support_subscribe_form($reference, $form, ''));
+      _support_status_form_attach($form, $form_state, $node);
+      _support_subscribe_form_attach($form, $form_state, $node);
       $form['comment_filter']['comment']['#title'] = t('Update');
       unset($form['_author']);
     }
@@ -2482,30 +2488,62 @@ function support_search_info() {
  * Generate form for adding update to ticket.  Enhances comment_form adding
  * a ticket status bar.
  */
-function support_status_form(&$form_state, $edit, $title) {
+function _support_status_form_attach(&$form, &$form_state, $node) {
   global $user;
-  $cid = 0;
-  if (is_array($edit)) {
-    if (is_array($edit['nid'])) {
-      $node = node_load($edit['nid']['#value']);
-      $cid = $edit['cid']['#value'];
+
+  // Copy some dynamic values into the node object because we use them later.
+  // @@@ Fix the usage instead, messing with $node in the form builder seems like
+  // a bad idea.
+  if (isset($form_state['values']['assigned'])) {
+    $node->assigned = $form_state['values']['assigned'];
+  }
+  if (!isset($node->client)) {
+    $node->client = _support_current_client();
+  }
+  if (isset($form_state['values']['client'])) {
+    $node->client = $form_state['values']['client'];
+  }
+
+  // Make sure that assigned is always sane.
+  if (!isset($node->assigned) || !empty($form_state['triggering_element']['#support_client_change'])) {
+    // Discard the user input to force the dropdown to recognize our new default.
+    if (isset($form_state['input']['assigned'])) {
+      unset($form_state['input']['assigned']);
+    }
+    $autoassign = _support_autoassign($node->client, $user->uid);
+    if ($autoassign) {
+      // This ticket is being created or the client just changed, and this
+      // module is configured to auto-assign new tickets.
+      $node->assigned = $autoassign;
     }
     else {
-      $node = node_load($edit['nid']);
+      // If we are starting out or the client has just changed to one that doesn't have an autoassign...
+      if ((isset($node->assigned) && !_support_validate_assigned_user($node->assigned, $node->client)) || !isset($node->assigned)) {
+        // Does user have any ability to change assignment?
+        if (!user_access('can assign tickets to self') && !user_access('can assign tickets to any user') && !user_access('administer support')) {
+          // If not, force unassign.
+          // @@@ Is there a better choice here?
+          $node->assigned = 0;
+        }
+        else {
+          // No ability to change assignment. We need to do it for them....
+          // Is the user allowed to be assigned the ticket?
+          if (_support_validate_assigned_user($user->uid, $node->client)) {
+            // Assign the ticket to the user.
+            $node->assigned = $user->uid;
+          }
+          else {
+            // User isn't allowed to be assigned and there was no default,
+            // fall back to unassigned.
+            $node->assigned = 0;
+          }
+        }
+      }
     }
   }
-  // Form preview, $edit is object.
-  else {
-    $node = $edit;
-  }
-  $autoassign = _support_autoassign(_support_current_client(), $user->uid);
-  if ($autoassign && !isset($node->assigned) && (!isset($node->nid) || !$node->nid)) {
-    // This ticket is being created, and this module is configured to
-    // auto-assign new tickets.
-    $node->assigned = $autoassign;
-  }
-  if ($cid) {
-    $comment = db_select('support_ticket_comment', 'c')->condition('c.cid', $cid)->fields('c')->execute()->fetchObject();
+  // If we are editing a comment, use the state and priority from the comment.
+  if (!empty($form['cid']['#value'])) {
+    $comment = db_select('support_ticket_comment', 'c')->condition('c.cid', $form['cid']['#value'])->fields('c')->execute()->fetchObject();
     if ($comment->state && $comment->priority) {
       $node->state = $comment->state;
       $node->priority = $comment->priority;
@@ -2608,12 +2646,23 @@ function support_status_form(&$form_state, $edit, $title) {
       '#title' => t('Client'),
       '#options' => $clients,
       '#default_value' => $client,
+      '#support_client_change' => TRUE,
+      '#ajax' => array(
+        'callback' => '_support_ajax_update_assigned_callback',
+        'wrapper' => 'replace_support_client_dependencies',
+      ),
     );
   }
 
+  // Create wrapper group for elements dependent on client change.
+  $form['support']['client_dependencies'] = array(
+    '#prefix' => '<div id="replace_support_client_dependencies">',
+    '#suffix' => '</div>',
+  );
+
   if (!user_access('can assign tickets to self') && !user_access('can assign tickets to any user') && !user_access('administer support')) {
     $assigned = isset($node->assigned) ? $node->assigned : 0;
-    $form['support']['assigned'] = array(
+    $form['support']['client_dependencies']['assigned'] = array(
       '#type' => 'hidden',
       '#value' => $assigned,
     );
@@ -2633,7 +2682,7 @@ function support_status_form(&$form_state, $edit, $title) {
       else {
         $assigned = '';
       }
-      $form['support']['assigned'] = array(
+      $form['support']['client_dependencies']['assigned'] = array(
         '#type' => 'textfield',
         '#prefix' => '&nbsp;&nbsp;',
         '#title' => t('Assigned'),
@@ -2644,7 +2693,7 @@ function support_status_form(&$form_state, $edit, $title) {
     }
     else {
       $assigned = isset($node->assigned) ? $node->assigned : 0;
-      $form['support']['assigned'] = array(
+      $form['support']['client_dependencies']['assigned'] = array(
         '#type' => 'select',
         '#prefix' => '&nbsp;&nbsp;',
         '#title' => t('Assigned'),
@@ -2653,13 +2702,17 @@ function support_status_form(&$form_state, $edit, $title) {
       );
     }
   }
-  return $form;
+}
+
+function _support_ajax_update_assigned_callback($form, &$form_state) {
+  return $form['support']['client_dependencies'];
 }
 
 /**
  * Get list of available users to assign ticket to.
  */
 function _support_assigned($assigned, $node, $limit = 9999) {
+  $node = clone($node);
   global $user;
 
   static $available = array();
@@ -2743,15 +2796,8 @@ function _support_assigned($assigned, $node, $limit = 9999) {
 /**
  * Provide option to subscribe/unsubscribe from ticket notification emails.
  */
-function support_subscribe_form(&$form_state, $edit, $title) {
+function _support_subscribe_form_attach(&$form, &$form_state, $node) {
   global $user;
-  $form = array();
-  if (is_array($edit)) {
-    $node = node_load($edit['nid']['#value']);
-  }
-  else {
-    $node = $edit;
-  }
   if (variable_get('support_notifications', TRUE)) {
     $form['subscribe'] = array(
       '#type' => 'fieldset',
@@ -2762,11 +2808,8 @@ function support_subscribe_form(&$form_state, $edit, $title) {
     if (variable_get('support_autosubscribe_creator', FALSE)) {
       $notification = TRUE;
     }
-    else if (is_array($edit) && isset($edit['nid']) && $edit['nid']) {
-      $notification = db_query('SELECT 1 FROM {support_assigned} WHERE nid = :nid AND uid = :uid', array(':nid' => $edit['nid']['#value'], ':uid' => $user->uid))->fetchField();
-    }
-    else if (is_object($edit) && isset($edit->notification)) {
-      $notification = $edit->notification;
+    else if (!empty($node->nid)) {
+      $notification = db_query('SELECT 1 FROM {support_assigned} WHERE nid = :nid AND uid = :uid', array(':nid' => $node->nid, ':uid' => $user->uid))->fetchField();
     }
     else {
       $notification = TRUE;
@@ -2775,7 +2818,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       '#type' => 'checkbox',
       '#title' => t('Subscribe'),
       '#description' => t('Receive email notifications when this ticket is updated.'),
-      '#default_value' => isset($notification) ? $notification : TRUE,
+      '#default_value' => $notification,
       '#disabled' => variable_get('support_autosubscribe_creator', FALSE) || (variable_get('support_autosubscribe_assigned', FALSE) && isset($node->assigned) && ($node->assigned == $user->uid)),
     );
     if (user_access('can suppress notification')) {
@@ -2783,10 +2826,10 @@ function support_subscribe_form(&$form_state, $edit, $title) {
         '#type' => 'checkbox',
         '#title' => t('Suppress notification'),
         '#description' => t('By checking this box you will prevent notification emails from being sent for this ticket update.  It is recommended that you check this box if you are adding sensitive information such as passwords which should not be mailed out in plain text.%admin', array('%admin' => user_access('administer support') ? t(' Users with "administer support" permission will still receive email notifications telling them the ticket was updated but with the body text suppressed; no notifications will be sent to users without "administer support" permissions.') : '')),
-        '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
+        '#default_value' => 0,
       );
     }
-    if (isset($edit) && (user_access('administer support') || user_access('can subscribe other users to notifications'))) {
+    if (user_access('administer support') || user_access('can subscribe other users to notifications')) {
       $form['subscribe']['subscribed'] = array(
         '#type' => 'fieldset',
         '#title' => t('Subscribed'),
@@ -2867,7 +2910,6 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       }
     }
   }
-  return $form;
 }
 
 /**
@@ -3334,7 +3376,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
         '#type' => 'checkbox',
         '#title' => t('Suppress notification'),
         '#description' => t('By checking this box you will prevent notification emails from being sent for this update.'),
-        '#default_value' => isset($edit->suppress) ? $edit->suppress : 0,
+        '#default_value' => 0,
       );
     }
     $form['submit'] = array(

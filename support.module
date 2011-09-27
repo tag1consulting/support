@@ -110,6 +110,51 @@ function support_node_info() {
 }
 
 /**
+ * Implements hook_action_info().
+ */
+function support_action_info() {
+  return array(
+    'support_client_fetch_all_action' => array(
+      'label' => t('Support Ticketing System: Fetch all client mail'),
+      'type' => 'system',
+      'configurable' => FALSE,
+      'triggers' => array('any'),
+    ),
+    'support_client_fetch_one_action' => array(
+      'label' => t('Support Ticketing System: Fetch one client'),
+      'type' => 'system',
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    ),
+  );
+}
+
+function support_client_fetch_all_action(&$entity, $context = array()) {
+  support_fetch_client_mail();
+}
+
+function support_client_fetch_one_action(&$entity, $context = array()) {
+  $client = support_client_load($context['support_client']);
+  if ($client->status && $client->integrate_email) {
+    support_client_fetch($client);
+  }
+}
+
+function support_client_fetch_one_action_form($context) {
+  $form['client'] = array(
+    '#type' => 'select',
+    '#title' => t('Client'),
+    '#options' => _support_available_clients(),
+    '#default_value' => isset($context['support_client']) ? $context['support_client'] : 0,
+  );
+  return $form;
+}
+
+function support_client_fetch_one_action_submit($form, &$form_state) {
+  return array('support_client' => $form_state['values']['client']);
+}
+
+/**
  * Implementation of hook_node_access().
  */
 function support_node_access($node, $op, $account) {

@@ -26,6 +26,7 @@ function support_charts_menu() {
 
   $items['admin/support/charts'] = array(
     'title' => 'Charts',
+    'description' => 'View support ticketing charts.',
     'page callback' => 'support_charts',
     'page arguments' => array('global'),
     'access arguments' => array('access support charts'),

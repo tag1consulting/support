@@ -118,22 +118,36 @@ function support_pm_menu() {
     }
     else {
       $clients = array();
-      $result2 = db_query('SELECT clid FROM {support_client} WHERE status = 1 AND parent = 0');
+      $result2 = db_query('SELECT clid FROM {support_client} WHERE status = 1');
       while ($client = db_fetch_object($result2)) {
         $clients[] = support_client_load($client->clid);
       }
     }
     foreach ($clients as $client) {
       foreach ($states as $sid => $state) {
-        $items["support/$client->path/$state/$project->path"] = array(
-          'title' => check_plain($project->project),
-          'page callback' => 'drupal_get_form',
-          'page arguments' => array('support_page_form', $client->clid, $state),
-          'access callback' => 'support_access_clients',
-          'access arguments' => array($client),
-          'weight' => $project->weight,
-          'type' => MENU_LOCAL_TASK,
-        );
+        if ($client->parent == 0) {
+          $items["support/$client->path/$state/$project->path"] = array(
+            'title' => check_plain($project->project),
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('support_page_form', $client->clid, $state),
+            'access callback' => 'support_access_clients',
+            'access arguments' => array($client),
+            'weight' => $project->weight,
+            'type' => MENU_LOCAL_TASK,
+          );
+        }
+        else {
+          $parent = support_client_load($client->parent);
+          $items["support/$parent->path/$client->path/$state/$project->path"] = array(
+            'title' => check_plain($project->project),
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('support_page_form', $client->clid, $state),
+            'access callback' => 'support_access_clients',
+            'access arguments' => array($client),
+            'weight' => $project->weight,
+            'type' => MENU_LOCAL_TASK,
+          );
+        }
       }
     }
   }
@@ -232,8 +246,19 @@ function support_pm_form_alter(&$form, $form_state, $form_id) {
 }
 
 function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
-  if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'ELECT DISTINCT') && strpos($query, 'support_ticket') && strpos($query, 'client =') && arg(3)) {
+  // We need to ensure that we don't mistake a state for a project.
+  $path = FALSE;
+  if (arg(3)) {
     $path = arg(3);
+    $states = array('all' => 'all', 'all open' => 'all open', 'my open' => 'my open') + _support_states();
+    $states = array_values($states);
+    if (in_array($path, $states)) {
+      // Hmm, arg(3) was a state, we must be on a subclient.
+      $path = arg(4);
+    }
+  }
+
+  if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'ELECT DISTINCT') && strpos($query, 'support_ticket') && strpos($query, 'client =') && $path) {
     if ($path == preg_replace('/[^0-9a-zA-Z_-]/', '', $path)) {
       return array(
         'join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid',

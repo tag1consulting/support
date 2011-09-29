@@ -3,6 +3,8 @@ September 29th, 2011
     o bug #913582: autocomplete assigned to field on ticket overview page
  - support_charts.module
     o bug #1001210: properly scale pie charts
+ - support_pm.module
+    o bug #1291290: Fix subclient support for projects.
 
 September 22nd, 2011
  - support.module

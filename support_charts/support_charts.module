@@ -240,6 +240,7 @@ function support_charts_build_pie($id, $type = 'global', $object = NULL) {
     $chart['#data'][] = $data->count;
     $chart['#labels'][] = "$label: $data->count";
     $chart['#data_colors'][] = chart_unique_color($label);
+    $chart['#adjust_resolution'] = TRUE;
   }
 
   return theme('chart', array('chart' => $chart));

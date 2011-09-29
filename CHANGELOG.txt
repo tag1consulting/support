@@ -76,6 +76,10 @@ April 28, 2011
 
 6.x changelog
 -------------
+September 29th, 2011
+ - support.module
+    o bug #913582: autocomplete assigned to field on ticket overview page
+
 September 22nd, 2011
  - support.module
     o feature #1267346 Implement CrUD for support clients; introduces

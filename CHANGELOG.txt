@@ -1,5 +1,10 @@
 7.x changelog
 -------------
+October 5, 2011
+ - support.module
+    o bug #1299964 reported by LeeHarveyOswald: Brown paper bag fix: Add missing else block that handles filtering out tickets
+      when the user has access to 0 clients. Fixes issue where anonymous can see everything on the frontpage.
+
 September 27, 2011
  - support.module
     o bug #436726 reported by paddy_mul: Ajax support for client changing.

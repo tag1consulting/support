@@ -2407,6 +2407,11 @@ function support_query_alter(QueryAlterableInterface $query) {
               ->condition($ticket_alias . '.client', null));
           }
         }
+        else {
+          // No clients are available, therefore, the user is not allowed to see support tickets.
+          $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
+          $query->condition($ticket_alias . '.nid', null);
+        }
       }
     }
   }

@@ -250,7 +250,10 @@ function support_schema() {
         'default' => 0,
       ),
     ),
-    'primary key' => array('uid', 'nid'),
+    'primary key' => array('nid', 'uid'),
+    'indexes' => array(
+      'support_assigned_uid' => array('uid'),
+    ),
   );
 
   $schema['support_states'] = array(
@@ -526,5 +529,17 @@ function support_update_6009() {
   if (db_column_exists('support_assigned', 'active')) {
     $ret = support_update_6008();
   }
+  return $ret;
+}
+
+/**
+ * Fix a performance issue with the primary key on {support_assigned}.
+ * Add an index on uid to {support_assigned}.
+ */
+function support_update_6010() {
+  $ret = array();
+  db_drop_primary_key($ret, 'support_assigned');
+  db_add_primary_key($ret, 'support_assigned', array('nid', 'uid'));
+  db_add_index($ret, 'support_assigned', 'support_assigned_uid', array('uid'));
   return $ret;
 }

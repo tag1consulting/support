@@ -1230,9 +1230,7 @@ function support_comment_validate($comment) {
   }
   if ($node->type == 'support_ticket') {
     if (isset($comment->assigned) && !is_numeric($comment->assigned)) {
-      $assigned = db_query("SELECT uid FROM {
-        users
-      } WHERE name = :name", array(':name' => $comment->assigned))->fetchField();
+      $assigned = db_query("SELECT uid FROM {users} WHERE name = :name", array(':name' => $comment->assigned))->fetchField();
       if ($node->assigned && !$assigned) {
         form_set_error('assigned', t('You must specify a valid user.'));
       }

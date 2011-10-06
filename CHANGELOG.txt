@@ -9,6 +9,7 @@ October 6, 2011
     o bug #1301408: Implement Drupal 7 style loading to reduce the number of queries and speed things up.
  - support.module
     o bug #1300520 reported by LinuxETC: Fix undefined index: und in support_mail_tokens(). Also, render the node body properly instead of using the fallback filter.
+    o Fix mangled db_query() call.
 
 October 5, 2011
  - support.module

@@ -202,9 +202,9 @@ function support_pm_node_view($node, $view_mode, $langcode) {
     return;
   }
   if (user_access('administer support projects')) {
-    if ($project = support_pm_project_load_nid($node->nid)) {
+    if (isset($node->project->project)) {
       $node->content['support-project'] = array(
-        '#markup' => "<div class='support-priority'>Project: $project->project</div>",
+        '#markup' => "<div class='support-priority'>Project: " . check_plain($node->project->project) . '</div>',
         '#weight' => -1,
       );
     }
@@ -218,9 +218,11 @@ function support_pm_node_load($nodes, $types) {
   if (!in_array('support_ticket', $types)) {
     return;
   }
-  foreach (array_keys($nodes) as $nid) {
-    // @@@ This seems silly.
-    $nodes[$nid]->project = support_pm_project_load_nid($nid);
+  $result = db_query('SELECT * FROM {support_project_ticket} spt LEFT JOIN {support_project} sp ON spt.projid = sp.projid WHERE spt.nid IN (:nids)', array(':nids' => array_keys($nodes)));
+  foreach ($result as $additions) {
+    $nodes[$additions->nid]->project = $additions;
+    // @@@ Deprecate.
+    drupal_alter('support_pm_project_load_nid', $nodes[$additions->nid]->project);
   }
 }
 

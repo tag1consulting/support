@@ -5,6 +5,8 @@ October 6, 2011
     o bug #1301390: Fix double escaping on autocomplete results.
  - support.install
     o bug #1301424: Change order of {support_assigned} primary key.
+ - support.module, support_pm.module
+    o bug #1301408: Implement Drupal 7 style loading to reduce the number of queries and speed things up.
 
 October 5, 2011
  - support.module

@@ -1266,6 +1266,16 @@ function support_comment_presave($comment) {
 }
 
 /**
+ * Implements hook_comment_load().
+ */
+function support_comment_load($comments) {
+  $result = db_query('SELECT * FROM {support_ticket_comment} WHERE cid IN (:cids)', array(':cids' => array_keys($comments)));
+  foreach ($result as $additions) {
+    $comments[$additions->cid]->support_ticket = $additions;
+  }
+}
+
+/**
  * Implementation of hook_comment_view().
  */
 function support_comment_view($comment, $view_mode, $langcode) {
@@ -1277,11 +1287,10 @@ function support_comment_view($comment, $view_mode, $langcode) {
 
     drupal_add_css(drupal_get_path('module', 'support') . '/support-tickets.css');
 
-    $query = db_select('support_ticket_comment', 't')
-      ->fields('t')
-      ->condition('t.cid', $comment->cid);
+    if (isset($comment->support_ticket)) {
+      $current = $comment->support_ticket;
+    }
 
-    $current = $query->execute()->fetchObject();
     if (!empty($current) && $assigned != $current->assigned) {
       $previous_account = user_load($assigned);
       $current_account = user_load($current->assigned);
@@ -2909,13 +2918,18 @@ function _support_subscribe_form_attach(&$form, &$form_state, $node) {
       }
       else {
         $notifications = array();
+        if (!empty($node->nid)) {
+          $assigned = array_flip(db_query('SELECT uid FROM {support_assigned} WHERE nid = :nid', array(':nid' => $node->nid))->fetchCol());
+        }
         foreach ($available as $uid => $name) {
           if (!$uid) {
             continue;
           }
           if (isset($node->nid) && $node->nid) {
-            $enabled = db_query('SELECT 1 FROM {support_assigned} WHERE nid = :nid AND uid = :uid', array(':nid' => $node->nid, ':uid' => $uid))->fetchField();
-            if (!isset($enabled)) {
+            if (isset($assigned[$uid])) {
+              $enabled = TRUE;
+            }
+            else {
               $enabled = _support_enabled($node->client, $uid);
             }
           }

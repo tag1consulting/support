@@ -1248,7 +1248,7 @@ function support_comment_validate($comment) {
 }
 
 /**
- * Implementation of hook_comment_load().
+ * Implements hook_comment_presave().
  */
 function support_comment_presave($comment) {
   $result = db_select('support_ticket_comment', 'c')

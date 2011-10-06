@@ -167,10 +167,10 @@ function support_reference_autocomplete($client = NULL, $skipnid = 0) {
       // we can't afford to load the nodes.
       if (!empty($ticket->rnid)) {
         // If rnid is non null, there's a reference already, so indicate that choosing it will cause removal.
-        $matches[] = t('[#!nid]: !title (remove)', array('!nid' => $ticket->nid, '!title' => check_plain($ticket->title)));
+        $matches[] = t('[#!nid]: !title (remove)', array('!nid' => $ticket->nid, '!title' => $ticket->title));
       }
       else {
-        $matches[] = t('[#!nid]: !title', array('!nid' => $ticket->nid, '!title' => check_plain($ticket->title)));
+        $matches[] = t('[#!nid]: !title', array('!nid' => $ticket->nid, '!title' => $ticket->title));
       }
     }
   }

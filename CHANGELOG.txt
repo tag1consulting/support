@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+October 6, 2011
+ - support_reference.module
+    o bug #1301390: Fix double escaping on autocomplete results.
+
 October 5, 2011
  - support.module
     o bug #1299964 reported by LeeHarveyOswald: Brown paper bag fix: Add missing else block that handles filtering out tickets

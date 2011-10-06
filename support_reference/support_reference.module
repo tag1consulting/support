@@ -66,10 +66,10 @@ function support_reference_block_view($delta = '') {
       if ($node->type == 'support_ticket') {
         $view = $edit = '';
         if (user_access('view support ticket references')) {
-          $result = db_query('SELECT rnid FROM {support_reference} WHERE nid = :nid ORDER BY rnid DESC', array(':nid' => $node->nid));
+          $result = db_query('SELECT rnid FROM {support_reference} WHERE nid = :nid ORDER BY rnid DESC', array(':nid' => $node->nid))->fetchCol();
+          $nodes = node_load_multiple($result);
           $references = array();
-          foreach ($result as $reference) {
-            $reference = node_load($reference->rnid);
+          foreach ($nodes as $reference) {
             // Only list reference if user viewing page has access.
             $client = support_client_load($reference->client);
             if (support_access_clients($client, $user)) {

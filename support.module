@@ -1543,6 +1543,12 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
   if ($previous_comment) {
     $previous = db_query('SELECT * FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $previous_comment))->fetchObject();
   }
+
+  $body = '';
+  $elements = node_view($node, 'full');
+  if (isset($elements['body'])) {
+    $body = drupal_render($elements['body']);
+  }
   // TODO Please change this theme call to use an associative array for the $variables parameter.
   $tokens = array(
     '!username' => $account->name,
@@ -1558,7 +1564,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!mailto' => $account->mail,
     '!date' => format_date(REQUEST_TIME, 'medium', '', NULL, $language->language),
     '!ticket_subject' => check_plain($node->title),
-    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') . "<br />\n" : check_markup($node->body[$node->language][0]['value']) . _support_mail_list_attachments($node, $comment),
+    '!ticket_body' => $suppress ? t('The text of this ticket was manually suppressed.  You must view the ticket online to see it.') . "<br />\n" : $body . _support_mail_list_attachments($node, $comment),
     '!ticket_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-$cid", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
     '!update_url' => url("node/$nid", array('absolute' => TRUE, 'language' => $language, 'fragment' => "comment-form", 'alias' => variable_get('support_use_aliased_urls', TRUE))),
     '!update' => $suppress ? t('The text of this ticket update was manually suppressed.  You must view the ticket online to see the update.') . "<br />\n" : check_markup((isset($comment->language) && isset($comment->comment_body[$comment->language][0])) ? $comment->comment_body[$comment->language][0]['value'] : '') . _support_mail_list_attachments($node, $comment),

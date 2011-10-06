@@ -3,6 +3,8 @@
 October 6, 2011
  - support_reference.module
     o bug #1301390: Fix double escaping on autocomplete results.
+ - support.install
+    o bug #1301424: Change order of {support_assigned} primary key.
 
 October 5, 2011
  - support.module

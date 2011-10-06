@@ -255,7 +255,7 @@ function support_schema() {
         'default' => 0,
       ),
     ),
-    'primary key' => array('uid', 'nid'),
+    'primary key' => array('nid', 'uid'),
   );
 
   $schema['support_states'] = array(
@@ -731,4 +731,12 @@ function support_update_7003() {
   if (db_field_exists('support_assigned', 'active')) {
     support_update_6008();
   }
+}
+
+/**
+ * Fix a performance issue with the primary key on {support_assigned}.
+ */
+function support_update_7004() {
+  db_drop_primary_key('support_assigned');
+  db_add_primary_key('support_assigned', array('nid', 'uid'));
 }

@@ -167,9 +167,11 @@ function support_reference_autocomplete($client = NULL, $skipnid = 0) {
       // we can't afford to load the nodes.
       if (!empty($ticket->rnid)) {
         // If rnid is non null, there's a reference already, so indicate that choosing it will cause removal.
+        // NOTE: check_plain() here causes double escaping on Drupal 7. (But not Drupal 6!)
         $matches[] = t('[#!nid]: !title (remove)', array('!nid' => $ticket->nid, '!title' => $ticket->title));
       }
       else {
+        // NOTE: check_plain() here causes double escaping on Drupal 7. (But not Drupal 6!)
         $matches[] = t('[#!nid]: !title', array('!nid' => $ticket->nid, '!title' => $ticket->title));
       }
     }

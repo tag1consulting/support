@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+October 7, 2011
+ - support.module
+    o task #1302622: Unify queue url code to reduce bugginess when working with subclients.
+
 October 6, 2011
  - support_reference.module
     o bug #1301390: Fix double escaping on autocomplete results.

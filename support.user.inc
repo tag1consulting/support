@@ -165,7 +165,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       'class' => array("state-$ticket->state priority-$ticket->priority"),
     );
     if (_support_access_tickets() > 1) {
-      $rows[$row]['data'][] = l($client->name, "support/$client->path");
+      $rows[$row]['data'][] = l($client->name, support_queue_url($client));
     }
     $row++;
   }

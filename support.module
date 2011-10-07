@@ -3191,25 +3191,13 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
   if (empty($client)) {
     if (isset($_SESSION['support_client']) && $client = support_client_load($_SESSION['support_client'])) {
       unset($_SESSION['support_client']);
-      if ($client->parent) {
-        $parent = support_client_load($client->parent);
-        drupal_goto("support/$parent->path/$client->path");
-      }
-      else {
-        drupal_goto("support/$client->path");
-      }
+      drupal_goto(support_queue_url($client));
     }
     $clients = _support_available_clients();
     if (count($clients)) {
       foreach ($clients as $key => $name) {
         $client = support_client_load($key);
-        if (!empty($client->parent)) {
-          $parent = support_client_load($client->parent);
-          drupal_goto("support/$parent->path/$client->path");
-        }
-        else {
-          drupal_goto("support/$client->path");
-        }
+        drupal_goto(support_queue_url($client));
       }
     }
   }
@@ -3898,3 +3886,16 @@ function _support_autosubscribe_access() {
   user_access('can subscribe other users to notifications'));
 }
 
+/**
+ * Get the correct url for a support queue, given a client.
+ */
+function support_queue_url($client) {
+  if ($client->parent == 0) {
+    return "support/$client->path";
+  }
+  else {
+    // subclient support.
+    $parent = support_client_load($client->parent);
+    return "support/$parent->path/$client->path";
+  }
+}

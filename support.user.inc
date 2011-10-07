@@ -90,6 +90,14 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
         ->condition('t.assigned', $user->uid));
     }
 
+    $query->fields('n', array('nid', 'title', 'type', 'changed', 'uid'))
+      ->fields('u', array('name'))
+      ->fields('s', array('comment_count'))
+      ->fields('t', array('client', 'state', 'priority', 'assigned'))
+      ->orderByHeader($header)
+      ->distinct()
+      ->addExpression('GREATEST(n.changed, s.last_comment_timestamp)', 'last_updated');
+
     switch (variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE)) {
       case SUPPORT_SORT_UPDATE:
         $query->orderBy('last_updated', $order);
@@ -104,14 +112,6 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
         $query->orderBy('t.priority', $order);
         break;
     }
-
-    $query->fields('n', array('nid', 'title', 'type', 'changed', 'uid'))
-      ->fields('u', array('name'))
-      ->fields('s', array('comment_count'))
-      ->fields('t', array('client', 'state', 'priority', 'assigned'))
-      ->orderByHeader($header)
-      ->distinct()
-      ->addExpression('GREATEST(n.changed, s.last_comment_timestamp)', 'last_updated');
 
     $result = $query->execute();
   }

@@ -268,7 +268,7 @@ function support_admin_client_submit($form, &$form_state) {
   $client->clid = isset($form_state['values']['clid']) ? $form_state['values']['clid'] : 0;
   if ($form_state['clicked_button']['#value'] == t('Delete client')) {
     if (!empty($client->clid)) {
-      support_client_delete($client);
+      drupal_goto("admin/support/clients/$client->clid/delete");
     }
   }
   else {
@@ -302,6 +302,28 @@ function support_admin_client_submit($form, &$form_state) {
   cache_clear_all();
   // rebuild the menu
   menu_rebuild();
+  drupal_goto('admin/support/clients');
+}
+
+/**
+ * Confirm before deleting client.
+ */
+function support_admin_client_delete(&$form_state, $client) {
+  $form = array();
+  $form['clid'] = array(
+    '#type' => 'value',
+    '#value' => $client->clid,
+  );
+  return confirm_form($form, t('Are you sure you want to delete the %client client?', array('%client' => check_plain($client->name))), "admin/support/clients/$client->clid/edit", t('This action cannot be undone.'), t('Delete client'));
+}
+
+/**
+ * Delete client.
+ */
+function support_admin_client_delete_submit($form, &$form_state) {
+  $client = new stdClass();
+  $client->clid = $form_state['values']['clid'];
+  support_client_delete($client);
   drupal_goto('admin/support/clients');
 }
 

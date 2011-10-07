@@ -219,6 +219,14 @@ function support_menu() {
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );
+  $items['admin/support/clients/%support_client/delete'] = array(
+    'title' => 'Delete',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_admin_client_delete', 3),
+    'access arguments' => array('administer support'),
+    'file' => 'support.admin.inc',
+  );
   $items['admin/support/clients/%support_client/fetch'] = array(
     'title' => 'Fetch mail',
     'type' => MENU_CALLBACK,

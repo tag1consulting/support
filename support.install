@@ -543,3 +543,12 @@ function support_update_6010() {
   db_add_index($ret, 'support_assigned', 'support_assigned_uid', array('uid'));
   return $ret;
 }
+
+/**
+ * Rebuild menu to register client deletion confirmation.
+ */
+function support_update_6011() {
+  drupal_flush_all_caches();
+  menu_rebuild();
+  return array();
+}

@@ -3,6 +3,7 @@
 October 7, 2011
  - support.module
     o task #1302622: Unify queue url code to reduce bugginess when working with subclients.
+    o Fix a glitch with table sorting on support/user/%.
 
 October 6, 2011
  - support_reference.module

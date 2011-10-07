@@ -47,7 +47,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
     array('data' => t('Assigned to'), 'field' => 't.assigned'),
     $headers[SUPPORT_SORT_STATE],
     $headers[SUPPORT_SORT_PRIORITY],
-    array('data' => t('Updates'), 'field' => 'l.comment_count'),
+    array('data' => t('Updates'), 'field' => 's.comment_count'),
   );
 
   if (_support_access_tickets() > 1) {

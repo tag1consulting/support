@@ -583,6 +583,9 @@ function support_pm_admin_project_form_validate($form, &$form_state) {
   if ($path != preg_replace('/[^0-9a-zA-Z_-]/', '', $path)) {
     form_set_error('path', t('Path %path contains invalid characters.', array('%path' => $path)));
   }
+  if (strtolower($path) == 'null') {
+    form_set_error('path', t('The path %path is reserved by the system, please choose a different path.', array('%path' => strtolower($path))));
+  }
   if ($path && $projid) {
     $projid = db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s' AND projid != %d", $path, $form_state['values']['projid']));
   }

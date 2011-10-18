@@ -1,3 +1,8 @@
+October 18th, 2011
+ - support_pm.module
+    o feature #1313498: invoice filter to display tickets not assigned to any
+      project
+
 October 7th, 2011
  - support.module
     o bug #919536: get confirmation before deleting client

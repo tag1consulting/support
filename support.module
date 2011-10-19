@@ -291,6 +291,36 @@ function support_theme() {
 }
 
 /**
+ * Implementation of hook_theme_registry_alter().
+ */
+function support_theme_registry_alter(&$theme_registry) {
+  if (!empty($theme_registry['comment_wrapper'])) {
+    $theme_registry['comment_wrapper']['function'] = 'support_comment_wrapper';
+  }
+}
+
+/**
+ * Implementation of theme_content_wrapper().
+ *
+ * Remove 'post new comment' heading from support tickets.
+ */
+function support_comment_wrapper($content, $node) {
+  if ($node->type == 'support_ticket' && variable_get('support_disable_post_comment', FALSE)) {
+    $content = str_replace(t('Post new comment'), '', $content);
+  }
+  return $content;
+}
+
+/**
+ * Implementation of hook_link_alter().
+ */
+function support_link_alter(&$links, $node, $comment = NULL) {
+  if ($node->type == 'support_ticket' && variable_get('support_disable_comment_reply', FALSE)) {
+    unset($links['comment_reply']);
+  }
+}
+
+/**
  * Implementation of hook_init().
  */
 function support_init() {

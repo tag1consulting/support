@@ -393,11 +393,30 @@ function support_admin_settings() {
     '#options' => array(t('Ascending'), t('Descending')),
     '#default_value' => variable_get('support_default_sort_order', SUPPORT_SORT_DESC),
   );
-  $form['general']['support_require_comment'] = array(
+
+  $form['comments'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Comments'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  $form['comments']['support_require_comment'] = array(
     '#type' => 'checkbox',
     '#title' => t('Require comment when bulk-updating tickets'),
     '#description' => t('Require a comment when users with %perm1 or %perm2 permissions bulk-update ticket properties on the ticket overview page.', array('%perm1' => t('edit multiple tickets'), '%perm2' => t('administer support'))),
     '#default_value' => variable_get('support_require_comment', TRUE),
+  );
+  $form['comments']['support_disable_post_comment'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable %post header', array('%post' => t('Post new comment'))),
+    '#description' => t('Disable the %post header displayed when viewing support tickets.', array('%post' => t('Post new comment'))),
+    '#default_value' => variable_get('support_disable_post_comment', FALSE),
+  );
+  $form['comments']['support_disable_comment_reply'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable comment reply link'),
+    '#description' => t('Disable the reply link displayed under comments for support tickets. This setting is generally only useful if you plan to display comments as a flat-list with the content submission form displayed inline, !link.', array('!link' => l(t('configured here'), 'admin/content/node-type/support-ticket'))),
+    '#default_value' => variable_get('support_disable_comment_reply', FALSE),
   );
 
   $form['notification'] = array(

@@ -1,10 +1,3 @@
-
-0) Optionally apply the supplied patch to the comment module.  This patch is
-   not necessary, but it streamlines support tickets by removing
-   comment-specific titles and links when used for support tickets.  A more
-   graceful method of streamlining support tickets would be to use CSS in your
-   theme to hide unwanted comment elements.
-
 1) Enable the module.
 
 2) Edit 'Administer >> Content management >> Content types >> Support ticket'

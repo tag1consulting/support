@@ -604,9 +604,9 @@ function _support_validate_domains($field, $domains = array()) {
 function support_admin_mail_settings() {
   $default_texts = _support_mail_text_default(NULL);
   $textgroups = array(
-    'new' => t('ticket created'),
-    'comment_new' => t('ticket commented'),
-    'deny' => t('ticket creation denied'),
+    'new' => t('New ticket'),
+    'comment_new' => t('Updated ticket'),
+    'deny' => t('Ticket creation denied'),
   );
 
   $form = array();
@@ -615,23 +615,38 @@ function support_admin_mail_settings() {
     $var_key = 'support_mail_' . $text_key;
     $form[$text_key] = array(
       '#type' => 'fieldset',
-      '#title' => t("Settings for '!setting' mail", array('!setting' => $description)),
+      '#title' => t('!setting notification', array('!setting' => $description)),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
     );
     $form[$text_key][$var_key . '_subject'] = array(
       '#type' => 'textfield',
       '#title' => t('Subject'),
+      '#description' => t('The email subject for !setting notifications.', array('!setting' => strtolower($description))),
       '#default_value' => variable_get($var_key . '_subject', $default_texts[$text_key . '_subject']),
       '#required' => TRUE,
     );
     $form[$text_key][$var_key . '_body'] = array(
       '#type' => 'textarea',
       '#title' => t('Body'),
+      '#description' => t('The email body for !setting notifications.', array('!setting' => strtolower($description))),
       '#default_value' => variable_get($var_key . '_body', $default_texts[$text_key . '_body']),
       '#rows' => 15,
       '#required' => TRUE,
     );
   }
+  $form['general'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General mail settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  $form['general']['support_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Notification key prefix'),
+    '#description' => t('Used for email threading, appears in notification email subjects as "[!key:12345]"', array('!key' => variable_get('support_key', 'tkt'))),
+    '#default_value' => variable_get('support_key', 'tkt'),
+    '#required' => TRUE,
+  );
   return system_settings_form($form);
 }

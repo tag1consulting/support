@@ -328,7 +328,12 @@ function support_pm_query_support_timer_node_alter($query) {
   if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
     $query->leftJoin('support_project_ticket', 'spt', 'n.nid = spt.nid');
     $query->leftJoin('support_project', 'sp', 'spt.projid = sp.projid');
-    $query->condition('sp.path', $project);
+    if (strtolower($project) == 'null') {
+      $query->isNull('sp.path');
+    }
+    else {
+      $query->condition('sp.path', $project);
+    }
   }
 }
 
@@ -340,7 +345,12 @@ function support_pm_query_support_timer_comment_alter($query) {
   if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
     $query->leftJoin('support_project_ticket', 'spt', 'c.nid = spt.nid');
     $query->leftJoin('support_project', 'sp', 'spt.projid = sp.projid');
-    $query->condition('sp.path', $project);
+    if (strtolower($project) == 'null') {
+      $query->isNull('sp.path');
+    }
+    else {
+      $query->condition('sp.path', $project);
+    }
   }
 }
 
@@ -358,10 +368,15 @@ function support_pm_invoice_ui_form($form, &$form_state) {
   if (user_access('administer support projects')) {
     drupal_add_js('jQuery(document).ready(function() { jQuery("form#support-pm-invoice-ui-form select").change(function() { jQuery("form#support-pm-invoice-ui-form").submit(); }); });', 'inline');
 
-    $projects = array(t('-- all projects --')) + support_pm_load_projects(_support_current_client());
+    $projects = array(-1 => t('-- no project --'), 0 => t('-- all projects --')) + support_pm_load_projects(_support_current_client());
     $project = isset($_GET['project']) ? $_GET['project'] : '';
     if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
-      $selected = (int)db_query('SELECT projid FROM {support_project} WHERE path = :path', array(':path' => $project))->fetchField();
+      if (strtolower($project) == 'null') {
+        $selected = -1;
+      }
+      else {
+        $selected = (int)db_query('SELECT projid FROM {support_project} WHERE path = :path', array(':path' => $project))->fetchField();
+      }
     }
     else {
       $selected = 0;
@@ -397,6 +412,10 @@ function support_pm_invoice_ui_form_submit($form, &$form_state) {
     $projects = support_pm_load_projects(_support_current_client());
     if (isset($projects[$form_state['values']['projects']])) {
       $project = support_pm_project_load($form_state['values']['projects']);
+    }
+    else if ($form_state['values']['projects'] == -1) {
+      $project = new stdClass();
+      $project->path = 'null';
     }
   }
   $path = drupal_get_path_alias(isset($_GET['q']) ? $_GET['q'] : '');

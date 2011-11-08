@@ -98,6 +98,10 @@ April 28, 2011
 
 6.x changelog
 -------------
+October 6th, 2011
+ - support.module
+    o bug #1301424: performance: improve indexes on support_assigned table
+
 September 29th, 2011
  - support.module
     o bug #913582: autocomplete assigned to field on ticket overview page

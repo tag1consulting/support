@@ -1003,7 +1003,7 @@ function support_pm_load_projects($clid) {
   $projects = array();
   $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = %d OR ISNULL(spc.clid)) AND disabled = 0', $clid);
   while ($project = db_fetch_object($result)) {
-    $projects[$project->projid] = check_plain($project->project);
+    $projects[$project->projid] = $project->project;
   }
   return $projects;
 }

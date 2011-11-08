@@ -56,14 +56,14 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#title' => t('Client name'),
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#default_value' => isset($client->name) ? check_plain($client->name) : '',
+    '#default_value' => isset($client->name) ? $client->name : '',
     '#description' => t('The full name of your client.  This name will be used when building menus, sending emails, and anywhere else the name of your client is visibly displayed.'),
   );
   $form['path'] = array(
     '#title' => t('Path'),
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#default_value' => isset($client->path) ? check_plain($client->path) : '',
+    '#default_value' => isset($client->path) ? $client->path : '',
     '#description' => t("Used to build the path to this client's tickets.  The path should only be comprised of alphanumeric characters, dashes, and underscores."),
   );
   $form['status'] = array(
@@ -104,37 +104,37 @@ function support_admin_client(&$form_state, $client = NULL) {
     '#title' => t('Server name'),
     '#type' => 'textfield',
     '#description' => t('Hostname or IP address.'),
-    '#default_value' => isset($client->server_name) ? check_plain($client->server_name) : '',
+    '#default_value' => isset($client->server_name) ? $client->server_name : '',
     '#description' => t("The hostname or IP address of the mail server where your client's dedicated email address is hosted.  For example, client %foo may receive email at %email, and so the server name may be %hostname.  The server name may also be an IP address, such as %ip.", array('%foo' => 'foo', '%email' => 'foo@support.sample.com', '%hostname' => 'support.sample.com', '%ip' => '192.168.1.1')),
   );
   $form['mail']['server_username'] = array(
     '#title' => t('Server username'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->server_username) ? check_plain($client->server_username) : '',
+    '#default_value' => isset($client->server_username) ? $client->server_username : '',
     '#description' => t("The client's email username.  If a client receives email at %email, the server username is often simply %user.  The support module uses this username to log into the mail server to download messages.", array('%email' => 'foo@support.sample.com', '%user' => 'foo')),
   );
   $form['mail']['server_password'] = array(
     '#title' => t('Server password'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->server_password) ? check_plain($client->server_password) : '',
+    '#default_value' => isset($client->server_password) ? $client->server_password : '',
     '#description' => t("The client's email password.  The support module uses this password to log into the mail server to download messages. %notice", array('%notice' => t('Note: this is not a password you request from your client.  This is a password you configure on your mail server for managing support tickets for a client.'))),
   );
   $form['mail']['mailbox'] = array(
     '#title' => t('Mailbox'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->mailbox) ? check_plain($client->mailbox) : 'INBOX',
+    '#default_value' => isset($client->mailbox) ? $client->mailbox : 'INBOX',
     '#description' => t("The mailbox path on your mail server.  You generally do not need to modify this setting."),
   );
   $form['mail']['mailfrom'] = array(
     '#title' => t('From address'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->mailfrom) ? check_plain($client->mailfrom) : '',
+    '#default_value' => isset($client->mailfrom) ? $client->mailfrom : '',
     '#description' => t('The email address support should use when sending notification emails.  This must be the same client-specific email address users will send messages to when creating and updating tickets via email.  This will often be comprised of your server username and your server name, such as %email.', array('%email' => 'foo@support.sample.com')),
   );
   $form['mail']['port'] = array(
     '#title' => t('Port'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->port) ? check_plain($client->port) : '',
+    '#default_value' => isset($client->port) ? $client->port : '',
     '#description' => t('Specify the TCP port to connect to when downloading email messages.  If using pop3, this port is normally 110.  If using secure pop3, this port is normally 995.  If using imap, this port is normally 143.  If using secure imap this port is normally 993.'),
   );
   $form['mail']['protocol'] = array(
@@ -148,7 +148,7 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['mail']['extra'] = array(
     '#title' => t('Optional extra flags'),
     '#type' => 'textfield',
-    '#default_value' => isset($client->extra) ? check_plain($client->extra) : '/novalidate-cert',
+    '#default_value' => isset($client->extra) ? $client->extra : '/novalidate-cert',
     '#description' => t('The %pop3, %imap and %ssl flags will be automatically set for you depending on your configuration above.  Additional flags can be manually specified here.  If you are having trouble downloading messages, you may need to change these extra flags as !defined.  These flags are ignored when using the %local protocol.', array('!defined' => l(t('defined here'), 'http://php.net/imap_open#function.imap-open.parameters'), '%local' => t('local file'), '%pop3' => t('/pop3'), '%imap' => t('/imap'), '%ssl' => t('/ssl'))),
   );
 
@@ -162,7 +162,7 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['mail']['domains'] = array(
     '#type' => 'textfield',
     '#title' => t('Valid email domains'),
-    '#default_value' => isset($client->domains) ? check_plain($client->domains) : '*',
+    '#default_value' => isset($client->domains) ? $client->domains : '*',
     '#description' => t('Enter one or more comma-seperated domains which are allowed to automatically generate new tickets.  If you enter "*" tickets will be allowed from all domains.'),
   );
   $form['mail']['user_creation'] = array(
@@ -192,7 +192,7 @@ function support_admin_client(&$form_state, $client = NULL) {
   $form['notes'] = array(
     '#title' => t('Notes'),
     '#type' => 'textarea',
-    '#default_value' => isset($client->notes) ? check_plain($client->notes) : '',
+    '#default_value' => isset($client->notes) ? $client->notes : '',
     '#description' => t('Notes are only displayed on this page when editing clients.  They are optional and are provided for administrative purposes.'),
   );
   $form['clid'] = array(

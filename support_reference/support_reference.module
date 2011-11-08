@@ -150,15 +150,13 @@ function support_reference_autocomplete($client = NULL, $skipnid = 0) {
   if (is_object($client) && isset($client->clid) && support_access_clients($client)) {
     $result = db_query('SELECT n.nid, n.title, r.rnid FROM {support_ticket} s INNER JOIN {node} n ON s.nid = n.nid LEFT JOIN {support_reference} r ON (r.nid = %d AND r.rnid = s.nid) WHERE s.client = %d AND s.nid <> %d ORDER BY n.nid DESC', $skipnid, $client->clid, $skipnid);
     while ($ticket = db_fetch_object($result)) {
-      // Note that we are using check_plain on title instead of rendering it properly.
-      // This is due to speed concerns. Since we are returning ALL ticket titles for the client,
-      // we can't afford to load the nodes.
+      // We are using the titles directly from the database instead of using node_load() for speed / memory reasons.
       if (!empty($ticket->rnid)) {
         // If rnid is non null, there's a reference already, so indicate that choosing it will cause removal.
-        $matches[] = t('[#!nid]: !title (remove)', array('!nid' => $ticket->nid, '!title' => check_plain($ticket->title)));
+        $matches[] = t('[#@nid]: @title (remove)', array('@nid' => $ticket->nid, '@title' => $ticket->title));
       }
       else {
-        $matches[] = t('[#!nid]: !title', array('!nid' => $ticket->nid, '!title' => check_plain($ticket->title)));
+        $matches[] = t('[#@nid]: @title', array('@nid' => $ticket->nid, '@title' => $ticket->title));
       }
     }
   }

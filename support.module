@@ -2247,10 +2247,10 @@ function _support_assigned($assigned, $node, $limit = 9999) {
       foreach ($roles as $rid) {
         if ($rid == DRUPAL_AUTHENTICATED_RID) {
           $all = TRUE;
-          $result = db_query('SELECT uid FROM {users} WHERE status = 1');
+          $result = db_query_range('SELECT uid FROM {users} WHERE status = 1', 0, $limit);
         }
         else {
-          $result = db_query('SELECT r.uid FROM {users_roles} r LEFT JOIN {users} u ON r.uid = u.uid WHERE r.rid = %d AND u.status = 1', $rid);
+          $result = db_query_range('SELECT r.uid FROM {users_roles} r LEFT JOIN {users} u ON r.uid = u.uid WHERE r.rid = %d AND u.status = 1', $rid, 0, $limit);
         }
         while ($account = db_fetch_object($result)) {
           $accounts[$account->uid] = $account->uid;

@@ -1,6 +1,11 @@
+November 12th, 2011
+ - support.module
+    o bug #1339692 by larin, Jeremy: limit user table queries
+
 November 8th, 2011
  - support.admin.inc
-    o Fix escaping problems in support_admin_client() that were causing corruption on edit.
+    o Fix escaping problems in support_admin_client() that were causing
+      corruption on edit.
  - support_reference.module
     o Minor cleanup.
 

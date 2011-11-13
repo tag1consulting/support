@@ -240,7 +240,7 @@ function support_pm_form_alter(&$form, $form_state, $form_id) {
       '#title' => t('Project'),
       '#prefix' => '&nbsp;&nbsp;',
       '#options' => $options,
-      '#default_value' => (isset($node->project) && isset($node->project->project)) ? $node->project->project : support_pm_default_project($options),
+      '#default_value' => (isset($node->project) && isset($node->project->projid)) ? $node->project->projid : support_pm_default_project($options),
     );
   }
 }

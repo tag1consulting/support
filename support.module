@@ -2814,13 +2814,24 @@ function _support_assigned($assigned, $node, $limit = 9999) {
       // retrieve all users in appropriate roles
       $accounts = array();
       $all = FALSE;
+drupal_set_message('0');
       foreach ($roles as $rid) {
         if ($rid == DRUPAL_AUTHENTICATED_RID) {
           $all = TRUE;
-          $result = db_query('SELECT uid FROM {users} WHERE status = :status', array(':status' => 1));
+          $result = db_select('users', 'u')
+            ->fields('u', array('uid'))
+            ->condition('u.status', 1, '=')
+            ->range(0, $limit)
+            ->execute();
         }
         else {
-          $result = db_query('SELECT r.uid FROM {users_roles} r LEFT JOIN {users} u ON r.uid = u.uid WHERE r.rid = :rrid AND u.status = :ustatus', array(':rrid' => $rid, ':ustatus' => 1));
+          $query = db_select('users_roles', 'r');
+          $query->join('users', 'u', 'r.uid = u.uid');
+          $result = $query->fields('r', array('uid'))
+            ->condition('r.rid', $rid, '=')
+            ->condition('u.status', 1, '=')
+            ->range(0, $limit)
+            ->execute();
         }
         foreach ($result as $account) {
           $accounts[$account->uid] = $account->uid;

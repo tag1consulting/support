@@ -3,6 +3,8 @@
 November 13th, 2011
  - support.module
     o bug #1339692 by larin, Jeremy: limit user table queries
+ - support_pm.module
+    o bug #1317436 by JeffSheltren: preserve project when editing ticket
 
 October 7, 2011
  - support.module

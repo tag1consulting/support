@@ -243,13 +243,13 @@ function support_client_form_validate($form, &$form_state) {
         break;
       default:
         $account = array_shift(user_load_multiple(array(), array('name' => trim($form_state['values']['autoassign']))));
-        $client = $form_state['values']['name'];
+        $name = $form_state['values']['name'];
         if (empty($account)) {
           form_set_error('autoassign', t('Invalid %field user, %username does not exist.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']))));
         }
         else if (!user_access('administer support', $account) &&
-                 !user_access("access $client tickets", $account)) {
-          form_set_error('autoassign', t('Invalid %field  user, %username does not have permission to access %client tickets.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']), '%client' => $client)));
+                 !user_access("access $name tickets", $account)) {
+          form_set_error('autoassign', t('Invalid %field  user, %username does not have permission to access %client tickets.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']), '%client' => $name)));
         }
         break;
     }

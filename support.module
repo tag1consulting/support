@@ -2830,7 +2830,6 @@ function _support_assigned($assigned, $node, $limit = 9999) {
       // retrieve all users in appropriate roles
       $accounts = array();
       $all = FALSE;
-drupal_set_message('0');
       foreach ($roles as $rid) {
         if ($rid == DRUPAL_AUTHENTICATED_RID) {
           $all = TRUE;

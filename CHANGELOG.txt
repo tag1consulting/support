@@ -3,6 +3,8 @@
 November 21, 2011
  - includes/support.ui.inc
     o bug #1346294 reported by justineggert: Add missing pager to the support client list.
+ - support.module
+    o bug #1330926 by isilweo: Ensure _support_clients_load() always returns an array to prevent fatal errors.
 
 November 13th, 2011
  - support.module

@@ -2994,6 +2994,7 @@ function _support_subscribe_form_attach(&$form, &$form_state, $node) {
  * Load all active clients.
  */
 function _support_clients_load($path = FALSE) {
+  $clients = array();
   $result = db_query('SELECT clid, path, name FROM {support_client} WHERE status = :status ORDER BY name', array(':status' => 1));
   foreach ($result as $client) {
     if ($path) {
@@ -3142,7 +3143,7 @@ function _support_available_clients($account = NULL) {
 
   if (!isset($valid[$account->uid])) {
     $clients = _support_clients_load();
-    if (is_array($clients) && !empty($clients)) {
+    if (!empty($clients)) {
       foreach ($clients as $clid => $name) {
         if (user_access('administer support', $account) || user_access("access $name tickets", $account)) {
           $valid[$account->uid][$clid] = $name;

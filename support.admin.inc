@@ -59,7 +59,8 @@ function support_client_form($form, &$form_state, $client, $op = 'edit') {
     '#default_value' => $client->name,
     '#description' => t('The full name of your client.  This name will be used when building menus, sending emails, and anywhere else the name of your client is visibly displayed.'),
   );
-  $form['path'] = array(
+  // NOTE: This is actually 'path' but calling it that here confuses pathauto. We fix it up in the submit function.
+  $form['client_path'] = array(
     '#title' => t('Path'),
     '#type' => 'textfield',
     '#required' => TRUE,
@@ -275,7 +276,10 @@ function support_client_form_submit($form, &$form_state) {
   }
 
   $client = entity_ui_form_submit_build_entity($form, $form_state);
-
+  // For the form, we were using 'client_path' as the element for 'path' to prevent
+  // conflict with pathauto. We change it back here so it gets saved properly.
+  $client->path = $client->client_path;
+  unset($client->client_path);
 
   switch ($client->save()) {
     case SAVED_NEW:

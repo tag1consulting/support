@@ -5,6 +5,8 @@ November 21, 2011
     o bug #1346294 reported by justineggert: Add missing pager to the support client list.
  - support.module
     o bug #1330926 by isilweo: Ensure _support_clients_load() always returns an array to prevent fatal errors.
+ - support.admin.inc
+    o bug #1299268 reported by cesar.brod@gmail.com, root cause found by matrobin: Fix support clients incompatibility with pathauto.
 
 November 13th, 2011
  - support.module

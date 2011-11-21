@@ -71,11 +71,17 @@ class SupportClientUIController extends EntityDefaultUIController {
           $rows[] = $this->overviewTableRow($conditions, entity_id($this->entityType, $entity), $entity);
       }
     }
-    $render = array(
+    $render = array();
+    $render[] = array(
       '#theme' => 'table',
       '#header' => $header,
       '#rows' => $rows,
       '#empty' => t('None.'),
+    );
+    $render[] = array(
+      '#theme' => 'pager',
+      '#tags' => array(),
+      '#element' => 0,
     );
     return $render;
   }

@@ -112,6 +112,10 @@ April 28, 2011
 
 6.x changelog
 -------------
+October 20th, 2011
+ - support.module
+    o feature #860714: expose notifications threading key (defaults to 'tkt')
+
 October 19th, 2011
  - support.module
     o feature #396512: provide options for streamlining ticket display without

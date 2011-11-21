@@ -405,6 +405,17 @@ function support_theme() {
 }
 
 /**
+ * Preprocess comment_wrapper.
+ */
+function support_preprocess_comment_wrapper(&$vars) {
+  if ($vars['node']->type == 'support_ticket' && variable_get('support_disable_post_comment', FALSE)) {
+    // Add a css class to the wrapper, which will cause a rule in support-tickets.css to become active
+    // and hide the <h2>.
+    $vars['classes_array'][] = 'support-hide-post-comment';
+  }
+}
+
+/**
  * Implementation of hook_init().
  */
 function support_init() {
@@ -1278,6 +1289,11 @@ function support_comment_load($comments) {
  */
 function support_comment_view($comment, $view_mode, $langcode) {
   if ($comment->node_type == 'comment_node_support_ticket') {
+    // Remove the 'Reply' link if configured to do so.
+    if (variable_get('support_disable_comment_reply', FALSE)) {
+      unset($comment->content['links']['comment']['#links']['comment-reply']);
+    }
+
     static $state = 0;
     static $priority = 0;
     static $client = 0;

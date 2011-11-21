@@ -118,3 +118,8 @@ table.support {
 .support tbody {
   border-top: 1px solid #CCC;
 }
+
+/* Hide "Add New Comment" text if necessary. */
+.support-hide-post-comment h2.comment-form {
+  display: none;
+}

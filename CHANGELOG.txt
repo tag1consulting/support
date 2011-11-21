@@ -112,6 +112,11 @@ April 28, 2011
 
 6.x changelog
 -------------
+October 19th, 2011
+ - support.module
+    o feature #396512: provide options for streamlining ticket display without
+      a core patch
+
 October 18th, 2011
  - support_pm.module
     o feature #1313498: invoice filter to display tickets not assigned to any

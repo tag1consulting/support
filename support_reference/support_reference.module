@@ -69,7 +69,7 @@ function support_reference_block($op = 'list', $delta = 0, $edit = array()) {
                   if ($node->client != $reference->client) {
                     $class .= ' crossclient';
                   }
-                  $references[$reference->nid] = '<span class="' . $class . '">' . l(t('#!nid: !title', array('!nid' => $reference->nid, '!title' => $reference->title)), "node/$reference->nid", array('attributes' => array('title' => t('!state !priority priority ticket.', array('!state' => ucfirst($state), '!priority' => $priority))))) . '</span>';
+                  $references[$reference->nid] = '<span class="' . check_plain($class) . '">' . l(t('#!nid: !title', array('!nid' => $reference->nid, '!title' => $reference->title)), "node/$reference->nid", array('attributes' => array('title' => t('!state !priority priority ticket.', array('!state' => ucfirst($state), '!priority' => $priority))))) . '</span>';
                 }
               }
               $view = theme('item_list', $references);

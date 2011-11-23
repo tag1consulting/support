@@ -107,8 +107,8 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       array('data' => format_date($ticket->last_updated, 'small'), 'class' => 'ticket-updated'),
       array('data' => l(_support_truncate($account->name, 24), "user/$account->uid"), 'class' => 'ticket-reported'),
       array('data' => l(_support_truncate($assigned->name, 24), "user/$assigned->uid"), 'class' => 'ticket-assigned'),
-      array('data' => _support_state($ticket->state), 'class' => 'ticket-state'),
-      array('data' => _support_priorities($ticket->priority), 'class' => 'ticket-priority'),
+      array('data' => check_plain(_support_state($ticket->state)), 'class' => 'ticket-state'),
+      array('data' => check_plain(_support_priorities($ticket->priority)), 'class' => 'ticket-priority'),
       array('data' => $comments, 'class' => 'ticket-updates'),
     ), 'class' => "state-$ticket->state priority-$ticket->priority");
     if (_support_access_tickets() > 1) {

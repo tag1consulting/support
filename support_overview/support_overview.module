@@ -167,7 +167,7 @@ function support_overview_summary() {
         else {
           $priority = 'not-'. _support_priorities($pid);
         }
-        $rows[$current_row][] = "<div class='$priority'>$total</div>";
+        $rows[$current_row][] = "<div class='" . check_plain($priority) . "'>$total</div>";
       }
       $current_row++;
     }
@@ -243,13 +243,13 @@ function support_overview_summary() {
         else {
           $priority = 'not-' . _support_priorities($pid);
         }
-        $rows[$current_row][] = "<div class='$priority'>$total</div>";
+        $rows[$current_row][] = "<div class='" . check_plain($priority) . "'>$total</div>";
       }
 
       $current_row++;
     }
 
-    $output .= "<a href='". url("support/$client->path") ."'><h3 class='support-overview-client-name $alerts'>". $client->name . '</h3></a>';
+    $output .= "<a href='". url("support/$client->path") ."'><h3 class='support-overview-client-name $alerts'>". check_plain($client->name) . '</h3></a>';
     $output .= theme('table', $header, $rows);
   }
   $output .= '</div>';
@@ -458,7 +458,7 @@ function support_overview_page_user($account, $all = FALSE, $page = TRUE) {
       $count = db_result(db_query($total_sql, $total_args));
       if ($count) {
         $client = support_client_load($clid);
-        $rows[$current_row][] = '<a href="'. url("support/$client->path") .'" class="support-overview-title">' . $client->name .'</a>';
+        $rows[$current_row][] = '<a href="'. url("support/$client->path") .'" class="support-overview-title">' . check_plain($client->name) .'</a>';
 
         $latest_sql = $oldest_sql = 'SELECT GREATEST(n.changed, l.last_comment_timestamp) AS last_update, n.nid FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid WHERE t.client = %d AND assigned = %d';
 
@@ -536,7 +536,7 @@ function support_overview_page_users($all = FALSE) {
   $result = db_query($sql, $args);
   while ($uid = db_result($result)) {
     $account = user_load(array('uid' => $uid));
-    $output .= "<a href='". url("support/overview/user/$uid") ."'><h3>$account->name</h3></a>";
+    $output .= "<a href='". url("support/overview/user/$uid") ."'><h3>" . check_plain($account->name) . '</h3></a>';
     $output .= support_overview_page_user($account, $all, FALSE);
   }
   $output .= '<div class="support-overview-link">' . l($all ? t('selected clients') : t('all clients'), $all ? "support/overview/user" : "support/overview/user/all") . '</div>';

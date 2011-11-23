@@ -150,11 +150,11 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
           'class' => array('ticket-assigned'),
         ),
         array(
-          'data' => _support_state($ticket->state),
+          'data' => check_plain(_support_state($ticket->state)),
           'class' => array('ticket-state'),
         ),
         array(
-          'data' => _support_priorities($ticket->priority),
+          'data' => check_plain(_support_priorities($ticket->priority)),
           'class' => array('ticket-priority'),
         ),
         array(

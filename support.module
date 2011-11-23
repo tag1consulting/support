@@ -1309,25 +1309,25 @@ function support_comment_view($comment, $view_mode, $langcode) {
       $previous_account = user_load($assigned);
       $current_account = user_load($current->assigned);
       $comment->content['support']['assigned'] = array(
-        '#markup' => '<div class="support-assigned">' . t('Assigned') . ': ' . ($previous_account->name ? $previous_account->name : '<em>' . t('unassigned') . '</em>') . ' -> ' . ($current_account->name ? $current_account->name : '<em>' . t('unassigned') . '</em>') . '</div>'
+        '#markup' => '<div class="support-assigned">' . t('Assigned') . ': ' . ($previous_account->name ? check_plain($previous_account->name) : '<em>' . t('unassigned') . '</em>') . ' -> ' . ($current_account->name ? check_plain($current_account->name) : '<em>' . t('unassigned') . '</em>') . '</div>'
       );
       $assigned = $current->assigned;
     }
     if (!empty($current) && $client != $current->client) {
       $comment->content['support']['client'] = array(
-        '#markup' => '<div class="support-client">' . t('Client') . ': ' . _support_client($client) . ' -> ' . _support_client($current->client) . '</div>'
+        '#markup' => '<div class="support-client">' . t('Client') . ': ' . check_plain(_support_client($client)) . ' -> ' . check_plain(_support_client($current->client)) . '</div>'
       );
       $client = $current->client;
     }
     if (!empty($current) && $state != $current->state) {
       $comment->content['support']['state'] = array(
-        '#markup' => '<div class="support-state">' . t('State') . ': ' . _support_state($state) . ' -> ' . _support_state($current->state) . '</div>'
+        '#markup' => '<div class="support-state">' . t('State') . ': ' . check_plain(_support_state($state)) . ' -> ' . check_plain(_support_state($current->state)) . '</div>'
       );
       $state = $current->state;
     }
     if (!empty($current) && $priority != $current->priority) {
       $comment->content['support']['priority'] = array(
-        '#markup' => '<div class="support-priority">' . t('Priority') . ': ' . _support_priorities($priority) . ' -> ' . _support_priorities($current->priority) . '</div>'
+        '#markup' => '<div class="support-priority">' . t('Priority') . ': ' . check_plain(_support_priorities($priority)) . ' -> ' . check_plain(_support_priorities($current->priority)) . '</div>'
       );
       $priority = $current->priority;
     }
@@ -2524,7 +2524,7 @@ function support_search_execute($keys = NULL, $conditions = NULL) {
     $uri = entity_uri('node', $node);
 
     if (sizeof($clients) > 1) {
-      $title = _support_client($node->client) . ': ' . $node->title;
+      $title = check_plain(_support_client($node->client)) . ': ' . $node->title;
     }
     else {
       $title = $node->title;
@@ -2534,8 +2534,8 @@ function support_search_execute($keys = NULL, $conditions = NULL) {
       $trans = array(' comments' => ' follow ups');
       $extra[$key] = strtr($value, $trans);
     }
-    $extra[] = _support_state($node->state);
-    $extra[] = _support_priorities($node->priority);
+    $extra[] = check_plain(_support_state($node->state));
+    $extra[] = check_plain(_support_priorities($node->priority));
     $clients = support_search_available_clients();
     $results[] = array(
       'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
@@ -2991,7 +2991,7 @@ function _support_subscribe_form_attach(&$form, &$form_state, $node) {
           $notifications[] = $uid;
           $form['subscribe']['subscribed']["notify-$uid"] = array(
             '#type' => 'checkbox',
-            '#title' => $name,
+            '#title' => check_plain($name),
             '#default_value' => $enabled,
             '#disabled' => (($uid == $user->uid || isset($autosubscribed[$uid]) || $disabled) && $enabled) ? TRUE : FALSE,
           );

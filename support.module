@@ -958,7 +958,7 @@ function support_node_validate($node, $form, &$form_state) {
       }
     }
     // Dropdown version. (Still need to validate in case the ticket moved between clients.)
-    if (isset($node->assigned) && is_numeric($node->assigned)) {
+    if (isset($node->assigned) && is_numeric($node->assigned) && $node->assigned != 0) {
       if (!_support_validate_assigned_user($node->assigned, $client)) {
         form_set_error('assigned', t('You must specify a user that has permission to view this ticket.'));
       }

@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+December 2, 2011
+ - support.module
+    o bug #1359678 reported by javier.alejandro.castro: Don't forbid creating unassigned tickets.
+
 November 21, 2011
  - includes/support.ui.inc
     o bug #1346294 reported by justineggert: Add missing pager to the support client list.

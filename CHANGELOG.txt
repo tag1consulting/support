@@ -1,3 +1,8 @@
+January 1st, 2012
+ - INSTALL.txt
+    o task #1128066: Document support module terminology, including what a
+      'Support Client' is.
+
 November 13th, 2011
  - support_pm.module
     o bug #1317436 by JeffSheltren, Jeremy: preserve project when editing ticket

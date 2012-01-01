@@ -1,5 +1,10 @@
 7.x changelog
 -------------
+January 1, 2012
+ - INSTALL.txt
+    o task #1128066: Document support module terminology, including what a
+      'Support Client' is.
+
 December 2, 2011
  - support.module
     o bug #1359678 reported by javier.alejandro.castro: Don't forbid creating unassigned tickets.

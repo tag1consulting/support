@@ -2716,6 +2716,12 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   }
   $sql = db_rewrite_sql($sql);
   $sql .= tablesort_sql($form['header']['#value']);
+  if (variable_get('support_secondary_sort_order', SUPPORT_SORT_DESC) == SUPPORT_SORT_DESC) {
+    $order = 'desc';
+  }
+  else {
+    $order = 'asc';
+  }
   switch (variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE)) {
     case SUPPORT_SORT_UPDATE:
       $sql .= ", last_updated $order";

@@ -1,4 +1,8 @@
-January 1st, 2012
+April 4th, 2012
+ - support.module
+     o bug #1508708 by andrewfn: sort per configured secondary sort order.
+
+ January 1st, 2012
  - INSTALL.txt
     o task #1128066: Document support module terminology, including what a
       'Support Client' is.

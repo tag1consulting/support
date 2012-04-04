@@ -3323,6 +3323,12 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     $query->condition('t.state', $state);
   }
 
+  if (variable_get('support_secondary_sort_order', SUPPORT_SORT_DESC) == SUPPORT_SORT_DESC) {
+    $order = 'desc';
+  }
+  else {
+    $order = 'asc';
+  }
   switch (variable_get('support_secondary_sort_tickets', SUPPORT_SORT_NONE)) {
     case SUPPORT_SORT_UPDATE:
       $query->orderBy('last_updated', $order);

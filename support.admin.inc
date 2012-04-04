@@ -364,7 +364,7 @@ function support_admin_settings() {
     '#title' => t('Secondary sort order'),
     '#description' => t('If specifying a secondary sort column, you can also specify a secondary sort order..'),
     '#options' => array(t('Ascending'), t('Descending')),
-    '#default_value' => variable_get('support_default_sort_order', SUPPORT_SORT_DESC),
+    '#default_value' => variable_get('support_secondary_sort_order', SUPPORT_SORT_DESC),
   );
 
   $form['comments'] = array(

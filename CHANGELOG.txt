@@ -4,6 +4,7 @@ April 6, 2012
  - support.module
     o bug #1458904: use node_list_permissions() generated support_ticket permissions
     'create tickets' becomes 'create support_ticket content', 'delete any ticket' becomes 'delete any support_ticket content', 'delete own tickets' becomes 'delete own support_ticket content', 'edit any ticket' becomes 'edit any support_ticket content', and 'edit own tickets' becomes 'edit own support_ticket content'.
+    o bug #1446116: cleanup support_comment_view() protect against unloaded user object; protect against $client being FALSE
 
 April 4, 2012
  - support.module

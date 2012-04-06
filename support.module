@@ -1278,35 +1278,35 @@ function support_comment_view($comment, $view_mode, $langcode) {
 
     drupal_add_css(drupal_get_path('module', 'support') . '/support-tickets.css');
 
-    if (isset($comment->support_ticket)) {
+    if (isset($comment->support_ticket) && !empty($comment->support_ticket)) {
       $current = $comment->support_ticket;
-    }
 
-    if (!empty($current) && $assigned != $current->assigned) {
-      $previous_account = user_load($assigned);
-      $current_account = user_load($current->assigned);
-      $comment->content['support']['assigned'] = array(
-        '#markup' => '<div class="support-assigned">' . t('Assigned') . ': ' . ($previous_account->name ? check_plain($previous_account->name) : '<em>' . t('unassigned') . '</em>') . ' -> ' . ($current_account->name ? check_plain($current_account->name) : '<em>' . t('unassigned') . '</em>') . '</div>'
-      );
-      $assigned = $current->assigned;
-    }
-    if (!empty($current) && $client != $current->client) {
-      $comment->content['support']['client'] = array(
-        '#markup' => '<div class="support-client">' . t('Client') . ': ' . check_plain(_support_client($client)) . ' -> ' . check_plain(_support_client($current->client)) . '</div>'
-      );
-      $client = $current->client;
-    }
-    if (!empty($current) && $state != $current->state) {
-      $comment->content['support']['state'] = array(
-        '#markup' => '<div class="support-state">' . t('State') . ': ' . check_plain(_support_state($state)) . ' -> ' . check_plain(_support_state($current->state)) . '</div>'
-      );
-      $state = $current->state;
-    }
-    if (!empty($current) && $priority != $current->priority) {
-      $comment->content['support']['priority'] = array(
-        '#markup' => '<div class="support-priority">' . t('Priority') . ': ' . check_plain(_support_priorities($priority)) . ' -> ' . check_plain(_support_priorities($current->priority)) . '</div>'
-      );
-      $priority = $current->priority;
+      if ($assigned != $current->assigned) {
+        $previous_account = user_load($assigned);
+        $current_account = user_load($current->assigned);
+        $comment->content['support']['assigned'] = array(
+          '#markup' => '<div class="support-assigned">' . t('Assigned') . ': ' . (isset($previous_account->name) && !empty($previous_account->name) ? check_plain($previous_account->name) : '<em>' . t('unassigned') . '</em>') . ' -> ' . (isset($current_account->name) && !empty($current_account->name) ? check_plain($current_account->name) : '<em>' . t('unassigned') . '</em>') . '</div>'
+        );
+        $assigned = $current->assigned;
+      }
+      if ($client != $current->client) {
+        $comment->content['support']['client'] = array(
+          '#markup' => '<div class="support-client">' . t('Client') . ': ' . check_plain(_support_client($client)) . ' -> ' . check_plain(_support_client($current->client)) . '</div>'
+        );
+        $client = $current->client;
+      }
+      if ($state != $current->state) {
+        $comment->content['support']['state'] = array(
+          '#markup' => '<div class="support-state">' . t('State') . ': ' . check_plain(_support_state($state)) . ' -> ' . check_plain(_support_state($current->state)) . '</div>'
+        );
+        $state = $current->state;
+      }
+      if ($priority != $current->priority) {
+        $comment->content['support']['priority'] = array(
+          '#markup' => '<div class="support-priority">' . t('Priority') . ': ' . check_plain(_support_priorities($priority)) . ' -> ' . check_plain(_support_priorities($current->priority)) . '</div>'
+        );
+        $priority = $current->priority;
+      }
     }
     if (array_key_exists('support', $comment->content))
       $comment->content['support']['#weight'] = -1;

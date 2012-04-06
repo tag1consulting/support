@@ -437,7 +437,7 @@ function support_overview_user($type, &$edit, &$account) {
   global $user;
   if (variable_get('support_display_user_links', TRUE)) {
     if ($type == 'view' &&
-       ((user_access('create tickets', $account) && $user->uid == $account->uid)
+       ((user_access('create support_ticket content', $account) && $user->uid == $account->uid)
          || user_access('administer support'))) {
       $items = array(l(t('Overview'), "support/overview/user/$account->uid", array('attributes' => array('title' => t("View overview of @username's tickets.", array('@username' => check_plain($account->name)))))));
       $account->content['summary']['support']['#value'] .= theme('item_list', array('items' => $items));

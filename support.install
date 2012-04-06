@@ -750,3 +750,30 @@ function support_update_7004() {
 function support_update_7005() {
   db_add_index('support_assigned', 'support_assigned_uid', array('uid'));
 }
+
+/**
+ * Convert old built in add, edit, and delete permissions to those provided by Drupal 7 core node module.
+ */
+function support_update_7006() {
+  $permissions = array(
+    'create tickets' => 'create support_ticket content',
+    'delete any ticket' => 'delete any support_ticket content',
+    'delete own tickets' => 'delete own support_ticket content',
+    'edit any ticket' => 'edit any support_ticket content',
+    'edit own tickets' => 'edit own support_ticket content');
+  foreach ($permissions as $old => $new) {
+    $old_permission = db_select('role_permission', 'r')
+      ->fields('r', array('rid'))
+      ->condition('r.permission', $old)
+      ->condition('r.module', 'support')
+      ->execute()
+      ->fetchObject();
+    // Convert old permissions to new permissions.
+    if (is_object($old_permission) && isset($old_permission->rid)) {
+      user_role_grant_permissions($old_permission->rid, array($new));
+      user_role_revoke_permissions($old_permission->rid, array($old));
+      $role = user_role_load($old_permission->rid);
+      drupal_set_message(t('Updated %role role %old permission to %new.', array('%role' => $role->name, '%old' => $old, '%new' => $new)));
+    }
+  }
+}

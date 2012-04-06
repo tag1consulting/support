@@ -84,7 +84,7 @@ function support_page_user($user, $assigned = FALSE, $state = NULL) {
       $query->condition('t.assigned', $user->uid);
     }
 
-    if (!$assigned || (user_access('only view own tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket'))) {
+    if (!$assigned || (user_access('only view own tickets') && !user_access('administer support') && !user_access('edit any support_ticket content') && !user_access('delete any support_ticket content'))) {
       $query->condition(db_or()
         ->condition('n.uid', $user->uid)
         ->condition('t.assigned', $user->uid));

@@ -165,17 +165,17 @@ function support_node_access($node, $op, $account) {
   }
   switch ($op) {
     case 'create':
-      if (user_access('create tickets', $account)) {
+      if (user_access('create support_ticket content', $account)) {
         return NODE_ACCESS_ALLOW;
       }
       return NODE_ACCESS_DENY;
     case 'update':
-      if (user_access('edit any ticket', $account) || (user_access('edit own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account)) {
+      if (user_access('edit any support_ticket content', $account) || (user_access('edit own support_ticket content', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account)) {
         return NODE_ACCESS_ALLOW;
       }
       return NODE_ACCESS_DENY;
     case 'delete':
-      if (user_access('delete any ticket', $account) || (user_access('delete own tickets', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account)) {
+      if (user_access('delete any support_ticket content', $account) || (user_access('delete own support_ticket content', $account) && ($node->uid == $account->uid)) || user_access('administer support', $account)) {
         return NODE_ACCESS_ALLOW;
       }
       return NODE_ACCESS_DENY;
@@ -185,7 +185,7 @@ function support_node_access($node, $op, $account) {
         // User can access at least some of this client's tickets.
         if (support_access_clients($client, $account)) {
           // User can access this ticket.
-          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
+          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any support_ticket content') || user_access('delete any support_ticket content')) {
             $access = NODE_ACCESS_IGNORE;
           }
           else {
@@ -677,7 +677,7 @@ function support_ticket_load($nid) {
  */
 function support_access_user_tickets($account = array()) {
   global $user;
-  if (user_access('administer support') || user_access('edit any ticket') || (user_access('create tickets') && $account->uid == $user->uid)) {
+  if (user_access('administer support') || user_access('edit any support_ticket content') || (user_access('create support_ticket content') && $account->uid == $user->uid)) {
     return TRUE;
   }
   return FALSE;
@@ -760,30 +760,6 @@ function support_permission() {
       'restrict access' => TRUE,
       'description' => t('Grant access to all support module features.'),
     ),
-    'create tickets' => array(
-      'title' => t('Create tickets'),
-      'description' => t('Create support tickets.'),
-    ),
-    'delete any ticket' => array(
-      'title' => t('Delete any ticket'),
-      'description' => t('Delete any support ticket.'),
-    ),
-    'delete own tickets' => array(
-      'title' => t('Delete own tickets'),
-      'description' => t('Delete own support tickets.'),
-    ),
-    'edit any ticket' => array(
-      'title' => t('Edit any ticket'),
-      'description' => t('Edit any support tickets.'),
-    ),
-    'edit own tickets' => array(
-      'title' => t('Edit own tickets'),
-      'description' => t('Edit own support ticket.'),
-    ),
-    'edit multiple tickets' => array(
-      'title' => t('Edit multiple tickets'),
-      'description' => t('Edit ticket properties of multiple tickets on ticket overview pages.'),
-    ),
     'can administer state' => array(
       'title' => t('Can administer state'),
       'description' => t('Can set ticket to any state, ignoring normal ticket workflows.'),
@@ -844,7 +820,7 @@ function support_permission() {
 function support_user_view($account, $view_mode, $langcode) {
   global $user;
   if (variable_get('support_display_user_links', TRUE)) {
-    if ($view_mode == 'full' && ((user_access('create tickets', $account) && $user->uid == $account->uid) || user_access('administer support'))) {
+    if ($view_mode == 'full' && ((user_access('create support_ticket content', $account) && $user->uid == $account->uid) || user_access('administer support'))) {
       $items = array();
       $items[] = l(t('View recent tickets'), "support/user/$account->uid", array('attributes' => array('title' => t("Read @username's latest tickets.", array('@username' => check_plain($account->name))))));
       $items[] = l(t('Create new ticket'), 'node/add/support-ticket');
@@ -2415,7 +2391,7 @@ function support_query_alter(QueryAlterableInterface $query) {
         */
         $clients = support_search_available_clients();
         if (!empty($clients)) {
-          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any ticket') || user_access('delete any ticket')) {
+          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any support_ticket content') || user_access('delete any support_ticket content')) {
             $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
             $query->condition(db_or()
               // Must be on the allowed clients list
@@ -2492,7 +2468,7 @@ function support_search_execute($keys = NULL, $conditions = NULL) {
     // User can not access any tickets
     $query->condition('n.type', 'support_ticket', '<>');
   }
-  if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
+  if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any support_ticket content') && !user_access('delete any support_ticket content')) {
     $query->condition('n.uid', $user->uid);
   }
 
@@ -3027,7 +3003,7 @@ function _support_clients_load($path = FALSE) {
  * Access callback for user support ticket pages.
  */
 function support_page_user_access($account) {
-  return $account->uid && user_access('access content') && (user_access('create tickets', $account) || _support_ticket_exists($account));
+  return $account->uid && user_access('access content') && (user_access('create support_ticket content', $account) || _support_ticket_exists($account));
 }
 
 /**
@@ -3306,7 +3282,7 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
         ->addMetaData('support_client', $client)
         ->addTag('support_pager');
 
-  if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
+  if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any support_ticket content') && !user_access('delete any support_ticket content')) {
     $query->condition(db_or()
       ->condition('n.uid', $user->uid)
       ->condition('t.assigned', $user->uid));

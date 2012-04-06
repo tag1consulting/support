@@ -880,14 +880,15 @@ function support_node_view($node, $view_mode, $langcode) {
     $breadcrumb[] = l(t('Support tickets'), 'support');
     if (isset($node->client) && is_numeric($node->client)) {
       $_SESSION['support_client'] = $node->client;
-      $client = support_client_load($node->client);
-      if (!empty($client->parent)) {
-        $parent = support_client_load($client->parent);
-        $breadcrumb[] = l(check_plain($parent->name), "support/$parent->path");
-        $breadcrumb[] = l(check_plain($client->name), "support/$parent->path/$client->path");
-      }
-      else {
-        $breadcrumb[] = l(check_plain($client->name), "support/$client->path");
+      if ($client = support_client_load($node->client)) {
+        if (!empty($client->parent)) {
+          $parent = support_client_load($client->parent);
+          $breadcrumb[] = l(check_plain($parent->name), "support/$parent->path");
+          $breadcrumb[] = l(check_plain($client->name), "support/$parent->path/$client->path");
+        }
+        else {
+          $breadcrumb[] = l(check_plain($client->name), "support/$client->path");
+        }
       }
     }
     drupal_set_breadcrumb($breadcrumb);
@@ -1321,15 +1322,16 @@ function support_mail($key, &$message, $params) {
   $message['subject'] .= _support_mail_text($key . '_subject', $language, $variables, $params['integrate_email']);
   $message['body'] = array(_support_mail_text($key . '_body', $language, $variables, $params['integrate_email']));
   $node = node_load($params['nid']);
-  $client = support_client_load($node->client);
-  if ($client->integrate_email) {
-    // Add a string allowing the support module to try and strip previously
-    // quoted ticket notifications from emailed replies.
-    // @@@ TODO This is probabaly not sane in D7.
-    $array = explode("\n", $message['body'][0]);
-    $length = sizeof($array);
-    $md5 = md5($length);
-    $message['body'][0] .= "\n\n[$length:$md5]\n";
+  if ($client = support_client_load($node->client)) {
+    if ($client->integrate_email) {
+      // Add a string allowing the support module to try and strip previously
+      // quoted ticket notifications from emailed replies.
+      // @@@ TODO This is probabaly not sane in D7.
+      $array = explode("\n", $message['body'][0]);
+      $length = sizeof($array);
+      $md5 = md5($length);
+      $message['body'][0] .= "\n\n[$length:$md5]\n";
+    }
   }
 
   // We generate message ids based on comment cids and support nids.
@@ -3199,8 +3201,9 @@ function support_page_form($form, &$form_state, $client = NULL, $state = NULL) {
     $clients = _support_available_clients();
     if (count($clients)) {
       foreach ($clients as $key => $name) {
-        $client = support_client_load($key);
-        drupal_goto(support_queue_url($client));
+        if ($client = support_client_load($key)) {
+          drupal_goto(support_queue_url($client));
+        }
       }
     }
   }
@@ -3904,7 +3907,11 @@ function support_queue_url($client) {
   }
   else {
     // subclient support.
-    $parent = support_client_load($client->parent);
-    return "support/$parent->path/$client->path";
+    if ($parent = support_client_load($client->parent)) {
+      return "support/$parent->path/$client->path";
+    }
+    else {
+      return "support/$client->path";
+    }
   }
 }

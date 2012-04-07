@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+April 7, 2012
+ - support.module
+    o bug #1405768: Zoltán Balogh: add missing spaces between sentences
+    
 April 6, 2012
  - support.module
     o bug #1458904: use node_list_permissions() generated support_ticket permissions

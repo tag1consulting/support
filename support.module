@@ -549,7 +549,7 @@ function support_fetch_client_mail() {
 function support_help($path, $arg) {
   switch ($path) {
     case 'admin/support/clients':
-      $output = '<p>' . t('Each support ticket can only be assigned to one client.!create one or more clients, then!assign allowing users to access these tickets. Users can only create tickets for clients they have permission to access. If working with multiple clients you will need to!define for each to prevent one client from viewing the tickets of another client.', array('!create' => l(t('Create'), 'admin/support/clients/add'), '!assign' => l(t('assign permissions'), 'admin/people/permissions', array('fragment' => 'module-support')), '!define' => l(t('define roles'), 'admin/people/permissions/roles'))) . '</p>';
+      $output = '<p>' . t('Each support ticket can only be assigned to one client. !create one or more clients, then !assign allowing users to access these tickets. Users can only create tickets for clients they have permission to access. If working with multiple clients you will need to !define for each to prevent one client from viewing the tickets of another client.', array('!create' => l(t('Create'), 'admin/support/clients/add'), '!assign' => l(t('assign permissions'), 'admin/people/permissions', array('fragment' => 'module-support')), '!define' => l(t('define roles'), 'admin/people/permissions/roles'))) . '</p>';
       break;
     case 'admin/support/clients/add':
     case 'admin/support/clients/%/edit':

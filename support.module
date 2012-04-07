@@ -1632,17 +1632,18 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
    *   (for the same reason)
    * - if no variable is set, translate the default text using t()
    */
-  if (module_exists('i18n')) {
+  if (module_exists('i18n_variable')) {
     $admin_setting = i18n_variable_get('support_mail_' . $key, $langcode);
   }
   if (empty($admin_setting)) {
     $admin_setting = variable_get('support_mail_' . $key, '');
   }
-
   if (empty($admin_setting)) {
     return t(_support_mail_text_default($key), $variables, array('langcode' => $langcode));
   }
-  return strtr($admin_setting, $variables);
+  else {
+    return strtr($admin_setting, $variables);
+  }
 }
 
 /**

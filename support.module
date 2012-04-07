@@ -3868,9 +3868,12 @@ function _support_current_client() {
       // matching client...?
       $client = key($clients);
     }
+    else {
+      $client = FALSE;
+    }
   }
   else {
-    return NULL;
+    $client = FALSE;
   }
   return $client;
 }

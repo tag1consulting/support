@@ -1029,7 +1029,7 @@ function support_node_insert($node) {
       support_subscribe_user($node->nid, $node->uid);
     }
     else {
-      support_subscribe_user($node->nid, $node->uid, $node->notification);
+      support_subscribe_user($node->nid, $node->uid, isset($node->notification) ? $node->notification : FALSE);
     }
     // auto-subscribe assigned user
     if ($node->assigned || isset($node->created_by_email) || !user_access('can subscribe other users to notifications')) {

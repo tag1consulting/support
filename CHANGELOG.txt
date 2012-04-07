@@ -3,7 +3,8 @@
 April 7, 2012
  - support.module
     o bug #1405768: Zoltán Balogh: add missing spaces between sentences
-    
+    o bug #1405196: be sure $node->notification is set before using it
+
 April 6, 2012
  - support.module
     o bug #1458904: use node_list_permissions() generated support_ticket permissions

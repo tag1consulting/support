@@ -3,6 +3,8 @@
 April 8, 2012
  - support.install
     o bug #1392084: fully uninstall support module
+ - support.module
+    o bug #1327278: load full file object before using it in notifications
 
 April 7, 2012
  - support.module

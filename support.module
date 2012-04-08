@@ -1599,7 +1599,9 @@ function _support_mail_list_attachments($node, $comment) {
   // If there was a comment, we prefer it over the node.
   elseif (!empty($comment->{$field}[LANGUAGE_NONE])) {
     foreach ($comment->{$field}[LANGUAGE_NONE] as $file) {
-      $attachments[] = file_create_url($file['uri']);
+      // Load full file object.
+      $file = file_load($file['fid']);
+      $attachments[] = file_create_url($file->uri);
     }
   }
   return (!empty($attachments) ? "<br />\n" . t('Attachments:') . "<br />\n" . implode("<br />\n", $attachments) : '');

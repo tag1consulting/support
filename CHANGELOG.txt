@@ -1,5 +1,9 @@
 7.x changelog
 -------------
+April 8, 2012
+ - support.install
+    o bug #1392084: fully uninstall support module
+
 April 7, 2012
  - support.module
     o bug #1405768: Zoltán Balogh: add missing spaces between sentences

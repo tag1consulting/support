@@ -438,36 +438,41 @@ function support_install() {
     ->condition('name', 'support')
     ->execute();
 
-  $support_node_type = array(
-    'type' => 'support_ticket',
-    'name' => t('Support ticket'),
-    'base' => 'support',
-    'description' => t('<em>Support tickets</em> provide special options for tracking client tasks.'),
-    'custom' => 1,
-    'modified' => 1,
-    'locked' => 0,
-  );
-
-  $support_node_type = node_type_set_defaults($support_node_type);
-  node_type_save($support_node_type);
-  node_add_body_field($support_node_type);
+  // Add body field to support_ticket type.
+  node_types_rebuild();
+  $types = node_type_get_types();
+  node_add_body_field($types['support_ticket']);
 
   // Set up a file field for uploads.
   _support_ensure_upload_field();
 }
 
 /**
- * Cleanup.
+ * Cleanup; remove all support_ticket content.
  */
 function support_uninstall() {
-  // TODO:
-/*
-  $result = db_query("SELECT nid FROM {node} WHERE type = :type", array(':type' => 'support_ticket'));
-  foreach ($result as $node) {
-    node_delete($node->nid);
-  }
-*/
+  // Remove support content type.
   node_type_delete('support_ticket');
+
+  // Delete all support tickets.
+  $tickets = db_select('node', 'n')
+  ->fields('n', array('nid'))
+  ->condition('n.type', 'support_ticket')
+  ->execute();
+  foreach ($tickets as $ticket) {
+    node_delete($ticket->nid);
+  }
+
+  // Cleanup old support module permissions.
+  db_delete('role_permission')
+  ->condition('module', 'support')
+  ->execute();
+
+  // Cleanup old support module variables.
+  foreach (array('support_admin_notify', 'support_autoassign_ticket', 'support_autocomplete_limit', 'support_autocreate_users', 'support_autosubscribe_assigned', 'support_autosubscribe_creator', 'support_autosubscribe_force', 'support_cron_download_mail', 'support_default_sort_order', 'support_default_sort_tickets', 'support_disable_comment_reply', 'support_disable_post_comment', 'support_display_user_links', 'support_global_domains', 'support_global_mailfrom', 'support_notifications', 'support_override_block', 'support_override_theme', 'support_remove_tickets', 'support_require_comment', 'support_secondary_sort_order', 'support_secondary_sort_tickets', 'support_thread_by_mail_headers', 'support_thread_by_subject', 'support_use_aliased_urls', 'support_key', 'support_mail_ticket_comment_new_body', 'support_mail_ticket_comment_new_subject', 'support_mail_ticket_deny_body', 'support_mail_ticket_deny_subject', 'support_mail_ticket_new_body', 'support_mail_ticket_new_subject') as $variable) {
+    variable_del($variable);
+  }
+
 }
 
 /**

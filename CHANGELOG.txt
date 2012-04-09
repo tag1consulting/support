@@ -3,6 +3,7 @@
 April 9,2012
  - support.module
     o bug #1312652: by gapa, konstantin.komelin: add missing spaces
+    o bug #1337000: fix moving of tickets including comments and attachments
 
 April 8, 2012 (7.x-1.x-beta4)
  - support.install

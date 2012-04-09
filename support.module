@@ -1155,7 +1155,7 @@ function support_comment_insert($comment) {
       support_subscribe_user($comment->nid, $comment->uid);
     }
     else {
-      support_subscribe_user($comment->nid, $comment->uid, $comment->notification);
+      support_subscribe_user($comment->nid, $comment->uid, isset($comment->notification) ? $comment->notification : TRUE);
     }
     // force auto-subscribe configured users
     if (variable_get('support_autosubscribe_force', FALSE)) {
@@ -1381,126 +1381,73 @@ function _support_node_move($node, $destination) {
   // Finally, build the thread field for this new comment.
   $thread = int2vancode(vancode2int($max) + 1) . '/';
   $account = user_load($node->uid);
-  $id = db_insert('comment')
-    ->fields(array(
-      'nid' => $destination->nid,
-      'pid' => 0,
-      'uid' => $node->uid,
-      'subject' => $node->title,
-      'comment' => $node->body,
-      'format' => 1,
-      'hostname' => ip_address(),
-      'timestamp' => $node->changed,
-      'status' => 0,
-      'thread' => $thread,
-      'name' => $account->name,
-      'mail' => $account->mail,
-      'homepage' => $account->homepage,
-    ))
-    ->execute();
 
-  // Tell the other modules a new comment has been submitted.
-  $comment = array();
-  $comment['cid'] = db_last_insert_id('comments', 'cid');
-  $comment['subject'] = $node->title;
-  $comment['comment'] = $node->body;
-  $comment['nid'] = $destination->nid;
-  $comment['uid'] = $account->uid;
-  $comment['message_id'] = db_query('SELECT message_id FROM {support_ticket} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
-  $comment['support_email'] = TRUE;
-  $comment['notification'] = db_query('SELECT 1 FROM {support_assigned} WHERE nid = :nid AND uid = :uid', array(':nid' => $destination->nid, ':uid' => $account->uid))->fetchField();
-  // Preserve the existing values for the support ticket status.
-  $comment['state'] = $destination->state;
-  $comment['priority'] = $destination->priority;
-  $comment['client'] = $destination->client;
-  $comment['assigned'] = $destination->assigned;
-  comment_invoke_comment($comment, 'insert');
+  $comment = new stdClass();
+  $comment->cid = NULL;
+  $comment->pid = 0;
+  $comment->uid = $node->uid;
+  $comment->nid = $destination->nid;
+  $comment->status = COMMENT_PUBLISHED;
+  $comment->thread = $thread;
+  $comment->hostname = ip_address();
+  $comment->language = $node->language;
+  $comment->name = isset($account->name) ? $account->name : '';
+  $comment->mail = isset($account->mail) ? $account->mail : '';
+  $comment->homepage = isset($account->homepage) ? $account->homepage : '';
+  $comment->subject = $node->title;
+  $comment->timestamp = $node->changed;
+  $comment->comment_body = $node->body;
+  $comment->message_id = isset($node->message_id) ? $node->message_id : NULL;
+  $comment->state = $destination->state;
+  $comment->priority = $destination->priority;
+  $comment->client = $destination->client;
+  $comment->assigned = $destination->assigned;
+  // Preserve to re-use when transfering comments from this node.
+  $notification = db_query('SELECT 1 FROM {support_assigned} WHERE nid = :nid AND uid = :uid', array(':nid' => $destination->nid, ':uid' => $account->uid))->fetchField();
+  $comment->notification = $notification;
 
-  // transfer attachments
-  if (db_table_exists('upload')) {
-    if (module_exists('comment_upload')) {
-      // transfer attachments to new comment
-      $result = db_query('SELECT fid, description, list, weight FROM {upload} WHERE nid = :nid', array(':nid' => $node->nid));
-      foreach ($result as $upload) {
-        // TODO Please convert this statement to the D7 database API syntax.
-        /* db_query("INSERT INTO {comment_upload} (fid, nid, cid, description, list, weight) VALUES(%d, %d, %d, '%s', %d, %d)", $upload->fid, $destination->nid, $comment['cid'], $upload->description, $upload->list, $upload->weight) */
-        NULL;
-      }
-      db_delete('upload')
-        ->condition('nid', $node->nid)
-        ->execute();
-    }
-    else {
-      // transfer attachments to new node
-      db_update('upload')
-        ->fields(array(
-          'nid' => $destination->nid,
-        ))
-        ->condition('nid', $node->nid)
-        ->execute();
+  // Transfer attachments.
+  $field = variable_get('support_mail_upload_field', 'support_ticket_upload');
+  if (isset($node->{$field})) {
+    $comment->{$field} = $node->{$field};
+  }
+
+  comment_save($comment);
+  $new_cid = $comment->cid;
+
+  // Also move any comments from this node.
+  $comments = db_select('comment', 'c')->condition('c.nid', $node->nid)->fields('c', array('cid'))->execute();
+  $cids = array();
+  foreach ($comments as $comment) {
+    $cids[] = $comment->cid;
+  }
+  if (!empty($cids)) {
+    $comments = comment_load_multiple($cids);
+
+    foreach ($comments as $comment) {
+      $max = rtrim($thread, '/');
+      $thread = int2vancode(vancode2int($max) + 1) . '/';
+      $comment->thread = $thread;
+      $comment->nid = $destination->nid;
+      $comment->cid = NULL;
+      $comment->pid = 0;
+      $comment->state = $destination->state;
+      $comment->priority = $destination->priority;
+      $comment->client = $destination->client;
+      $comment->assigned = $destination->assigned;
+      $comment->notification = $notification;
+      comment_save($comment);
     }
   }
 
-  // add an entry to the watchdog log
-  watchdog('content', 'Comment: added %subject.', array('%subject' => $comment->subject), WATCHDOG_NOTICE, l(t('view'), 'node/' . $comment->nid, array('fragment' => 'comment-' . $comment->cid)));
-
-  $result = db_query('SELECT cid, uid, subject, comment, format, hostname, timestamp, timestamp, status, thread, name, mail, homepage FROM {comment} WHERE nid = :nid', array(':nid' => $node->nid));
-  foreach ($result as $update) {
-    $oldcid = $update['cid'];
-    $max = rtrim($thread, '/');
-    $thread = int2vancode(vancode2int($max) + 1) . '/';
-    $id = db_insert('comment')
-      ->fields(array(
-        'nid' => $destination->nid,
-        'pid' => 0,
-        'uid' => $update['uid'],
-        'subject' => $update['subject'],
-        'comment' => $update['comment'],
-        'format' => $update['format'],
-        'hostname' => $update['hostname'],
-        'timestamp' => $update['timestamp'],
-        'status' => $update['status'],
-        'thread' => $thread,
-        'name' => $update['name'],
-        'mail' => $update['mail'],
-        'homepage' => $update['homepage'],
-      ))
-      ->execute();
-    // Tell the other modules a new comment has been submitted.
-    $update['cid'] = db_last_insert_id('comments', 'cid');
-    $update['nid'] = $destination->nid;
-    $comment['message_id'] = db_query('SELECT message_id FROM {support_ticket_comment} WHERE cid = :cid', array(':cid' => $oldcid));
-    $update['support_email'] = TRUE;
-    $update['notification'] = $comment['notification'];
-    // Preserve the existing values for the support ticket status.
-    $update['state'] = $destination->state;
-    $update['priority'] = $destination->priority;
-    $update['client'] = $destination->client;
-    $update['assigned'] = $destination->assigned;
-    comment_invoke_comment($update, 'insert');
-
-    // transfer attachments to new comment
-    if (module_exists('comment_upload')) {
-      db_update('comment_upload')
-        ->fields(array(
-          'nid' => $destination->nid,
-          'cid' => $update['cid'],
-        ))
-        ->condition('nid', $node->nid)
-        ->condition('cid', $oldcid)
-        ->execute();
-    }
-  }
-  _comment_update_node_statistics($comment['nid']);
-
-  // remove the original node
+  // Now remove the original node.
   node_delete($node->nid);
 
   drupal_set_message(t('Successfully moved support ticket.'));
-  watchdog('content', 'support_ticket: moved ticket %title from node/%old to node/%new.', array('%title' => $node->title, '%old' => $node->nid, '%new' => $destination->nid), WATCHDOG_NOTICE, l(t('view'), 'node/' . $node->nid, array('fragment' => 'comment-' . $comment['cid'])));
+  watchdog('content', 'support_ticket: moved ticket %title from node/%old to node/%new.', array('%title' => $node->title, '%old' => $node->nid, '%new' => $destination->nid), WATCHDOG_NOTICE, l(t('view'), 'node/' . $destination->nid, array('fragment' => 'comment-' . $new_cid)));
 
   cache_clear_all();
-  drupal_goto("node/$destination->nid", array('fragment' => 'comment-' . $comment['cid']));
+  drupal_goto("node/$destination->nid", array('fragment' => 'comment-' . $new_cid));
 }
 
 /**

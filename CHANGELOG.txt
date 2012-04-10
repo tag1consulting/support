@@ -1,6 +1,6 @@
 7.x changelog
 -------------
-April 9,2012
+April 9,2012 (7.x-1.x-rc1)
  - support.module
     o bug #1312652: by gapa, konstantin.komelin: add missing spaces
     o bug #1337000: fix moving of tickets including comments and attachments

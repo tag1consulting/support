@@ -232,7 +232,6 @@ function support_menu() {
     'position' => 'right',
     'weight' => 5,
     'page callback' => 'support_admin_menu_block_page',
-    //'page callback' => 'system_admin_config_page',
     'access arguments' => array('administer support'),
     'file' => 'support.admin.inc',
   );

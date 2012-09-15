@@ -2353,14 +2353,27 @@ function support_query_alter(QueryAlterableInterface $query) {
           else {
             global $user;
             $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
-            $query->condition(db_or()
-              ->condition(db_and()
+            if ($table == 'node') {
+              $query->condition(db_or()
+                ->condition(db_and()
                 // Must be on the allowed clients list
                 ->condition($ticket_alias . '.client', $clients)
                 // and must be owned by the user
                 ->condition($nalias . '.uid', $user->uid))
-              // or must be something other than a support ticket
-              ->condition($ticket_alias . '.client', null));
+                // or must be something other than a support ticket
+                ->condition($ticket_alias . '.client', null));
+            }
+            else if ($table == 'comment') {
+              $query->leftJoin('node', 'n', 'n.nid = '. $nalias . '.nid');
+              $query->condition(db_or()
+                ->condition(db_and()
+                // Must be on the allowed clients list
+                ->condition($ticket_alias . '.client', $clients)
+                // and must be owned by the user
+                ->condition('n.uid', $user->uid))
+                // or must be something other than a support ticket
+                ->condition($ticket_alias . '.client', null));
+            }
           }
         }
         else {

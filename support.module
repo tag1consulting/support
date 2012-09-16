@@ -2342,7 +2342,7 @@ function support_query_alter(QueryAlterableInterface $query) {
         */
         $clients = support_search_available_clients();
         if (!empty($clients)) {
-          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any support_ticket content') || user_access('delete any support_ticket content')) {
+          if (user_access('view other users tickets') || user_access('administer support') || user_access('edit any support_ticket content') || user_access('delete any support_ticket content') || !db_field_exists($table, 'uid')) {
             $ticket_alias = $query->leftJoin('support_ticket', 'st', 'st.nid = ' . $nalias . '.nid');
             $query->condition(db_or()
               // Must be on the allowed clients list

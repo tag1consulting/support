@@ -1785,7 +1785,7 @@ function _support_save_attachments($attachments, $account, $entity_type = 'node'
     $weight = 0;
     foreach ($attachments as $attachment) {
       $attachment = (object) $attachment;
-      if (is_array($attachment->parameters)) {
+      if (isset($attachment->parameters) && is_array($attachment->parameters)) {
         foreach ($attachment->parameters as $parm) {
           switch (strtoupper($parm->attribute)) {
             case 'NAME':
@@ -1802,7 +1802,7 @@ function _support_save_attachments($attachments, $account, $entity_type = 'node'
           }
         }
       }
-      if ($attachment->type != TYPETEXT && is_array($attachment->dparameters)) {
+      if ($attachment->type != TYPETEXT && isset($attachment->dparameters) && is_array($attachment->dparameters)) {
         foreach ($attachment->dparameters as $parm) {
           switch (strtoupper($parm->attribute)) {
             case 'NAME':
@@ -1833,34 +1833,39 @@ function _support_save_attachments($attachments, $account, $entity_type = 'node'
       $destination = $field['settings']['uri_scheme'] . '://' . $field['instance']['settings']['file_directory'] . '/' . utf8_encode($attachment->filename);
       $destination = file_stream_wrapper_uri_normalize($destination);
 
-      if ($uri = file_unmanaged_save_data($attachment->attachment, $destination, FILE_EXISTS_RENAME)) {
-        // Create a file object.
-        $file = new stdClass();
-        $file->fid = NULL;
-        $file->uri = $uri;
-        // The *display* filename is based on the destination. Avoids _1, etc.
-        $file->filename = basename($destination);
-        // Differs from core -- filemime can come from the email directly.
-        // Don't use core logic unless filemime is missing.
-        if (isset($attachment->filemime)) {
-          $file->filemime = $attachment->filemime;
+      if (file_prepare_directory($destination, $options = FILE_CREATE_DIRECTORY)) {
+        if ($uri = file_unmanaged_save_data($attachment->attachment, $destination, FILE_EXISTS_RENAME)) {
+          // Create a file object.
+          $file = new stdClass();
+          $file->fid = NULL;
+          $file->uri = $uri;
+          // The *display* filename is based on the destination. Avoids _1, etc.
+          $file->filename = basename($destination);
+          // Differs from core -- filemime can come from the email directly.
+          // Don't use core logic unless filemime is missing.
+          if (isset($attachment->filemime)) {
+            $file->filemime = $attachment->filemime;
+          }
+          else {
+            $file->filemime = file_get_mimetype($file->uri);
+          }
+          $file->uid = $account->uid;
+          $file->status = FILE_STATUS_PERMANENT;
+          $file = file_save($file);
+
+          $files[LANGUAGE_NONE][] = array(
+            'fid' => $file->fid,
+            'description' => $file->filename,
+            'display' => $field['settings']['display_default'],
+            '_weight' => $weight,
+          );
         }
         else {
-          $file->filemime = file_get_mimetype($file->uri);
+          watchdog('support', 'Failed to save attachment %file, file_save_data() returned error.', array('%file' => utf8_encode($attachment->filename)));
         }
-        $file->uid = $account->uid;
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
-
-        $files[LANGUAGE_NONE][] = array(
-          'fid' => $file->fid,
-          'description' => $file->filename,
-          'display' => $field['settings']['display_default'],
-          '_weight' => $weight,
-        );
       }
       else {
-        watchdog('support', 'Failed to save attachment %file, file_save_data() returned error.', array('%file' => utf8_encode($attachment->filename)));
+          watchdog('support', 'Failed to save attachment %file, file_prepare_directory() returned error when preparing %directory.', array('%file' => utf8_encode($attachment->filename), '%directory' => utf8_encode($destination)));        
       }
       $weight++;
     }

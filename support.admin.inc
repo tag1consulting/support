@@ -57,16 +57,23 @@ function support_client_form($form, &$form_state, $client, $op = 'edit') {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => $client->name,
-    '#description' => t('The full name of your client.  This name will be used when building menus, sending emails, and anywhere else the name of your client is visibly displayed.'),
+    '#description' => t('A unique name to be displayed throughout the website and in emails.'),
   );
   // NOTE: This is actually 'path' but calling it that here confuses pathauto. We fix it up in the submit function.
   $form['client_path'] = array(
-    '#title' => t('Path'),
-    '#type' => 'textfield',
+    '#title' => t('Machine-readable name'),
+    '#type' => 'machine_name',
     '#required' => TRUE,
     '#default_value' => $client->path,
-    '#description' => t("Used to build the path to this client's tickets.  The path should only be comprised of alphanumeric characters, dashes, and underscores."),
+    '#size' => 15,
+    '#description' => t('The machine-readable name is used to build a unqiue URI for accessing client tickets. It must contain only letters, numbers, and underscores.'),
+    '#machine_name' => array(
+      'exists' => '_support_client_path_exists',
+      'label' => t('Path'),
+      'standalone' => TRUE,
+    ),
   );
+
   $form['status'] = array(
     '#title' => t('Status'),
     '#type' => 'radios',
@@ -208,6 +215,12 @@ function support_client_form($form, &$form_state, $client, $op = 'edit') {
     '#default_value' => $client->notes,
     '#description' => t('Notes are only displayed on this page when editing clients.  They are optional and are provided for administrative purposes.'),
   );
+  if (isset($client->clid)) {
+    $form['clid'] = array(
+      '#type' => 'hidden',
+      '#value' => $client->clid,
+    );
+  }
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -220,8 +233,15 @@ function support_client_form($form, &$form_state, $client, $op = 'edit') {
 
 function support_client_form_validate($form, &$form_state) {
   $client = $form_state['support_client'];
+
   if (preg_match('/[&*(),<>?\[\]]/', $form_state['values']['name'])) {
     form_set_error('name', t('You have entered an unsupported character.  The following characters can not be used in the client name: &*(),<>?[]'));
+  }
+  elseif (!isset($form_state['values']['clid'])) {
+    $result = db_query('SELECT 1 FROM {support_client} WHERE name = :value', array(':value' => $form_state['values']['name']));
+    foreach ($result as $exists) {
+      form_set_error('name', t('The client name %name is already in use. It must be unique.', array('%name' => $form_state['values']['name'])));
+    }
   }
   if (!empty($form_state['values']['autosubscribe'])) {
     $subscribe = array();
@@ -262,6 +282,24 @@ function support_client_form_validate($form, &$form_state) {
     form_set_error('integrate_email', t('PHP must be !compiled in order to enable inbound email integration.  The IMAP functions are required to support the IMAP, POP3, and local mailbox access methods.', array('!compiled' => l(t('compiled with the IMAP extension'), 'http://php.net/imap'))));
   }
   field_attach_form_validate('support_client', $client, $form, $form_state);
+}
+
+/**
+ * Render API callback: Checks if a client path name is already taken.
+ *
+ * @param $value
+ *   The path.
+ *
+ * @return
+ *   Whether or not the path is already taken.
+ */
+function _support_client_path_exists($value) {
+  $exists = FALSE;
+  $result = db_query('SELECT 1 FROM {support_client} WHERE path = :value', array(':value' => $value));
+  foreach ($result as $path) {
+    $exists = TRUE;
+  }
+  return $exists;
 }
 
 /**

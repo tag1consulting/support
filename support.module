@@ -458,6 +458,9 @@ function support_autocomplete_assigned($clid = 0, $string = '') {
         ->condition('u.status', 1)
         ->condition('u.name', db_like($string) . '%', 'LIKE')
         ->range(0, 10);
+      if (variable_get('support_filter_uid1', FALSE)) {
+        $query->condition('u.uid', 1, '<>');
+      }
       $result = $query->execute();
       foreach ($result as $user) {
         $matches[$user->name] = check_plain($user->name);
@@ -2811,6 +2814,11 @@ function _support_assigned($assigned, $node, $limit = 9999) {
         $account = user_load($uid);
         $available["$assigned-$node->nid"][$account->uid] = $account->name;
       }
+      // Filter uid1 if support_filter_uid1 enabled; however, don't filter if the ticket is already
+      // assigned to uid1, or current user is uid1.
+      if (variable_get('support_filter_uid1', FALSE) && $user->uid != 1 && $assigned != 1) {
+        unset($available["$assigned-$node->nid"][1]);
+      }
     }
     // sort by name
     asort($available["$assigned-$node->nid"]);
@@ -2872,11 +2880,13 @@ function _support_subscribe_form_attach(&$form, &$form_state, $node) {
       $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
       if ($available === FALSE) {
         $account = user_load($node->assigned);
-        $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = :nid', array(':nid' => $node->nid));
         $accounts = array();
-        foreach ($result as $a) {
-          $account = user_load($a->uid);
-          $accounts[] = $account->name;
+        if (isset($node->nid)) {
+          $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = :nid', array(':nid' => $node->nid));
+          foreach ($result as $a) {
+            $account = user_load($a->uid);
+            $accounts[] = $account->name;
+          }
         }
         if (!empty($accounts)) {
           $default = implode(', ', $accounts);

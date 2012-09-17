@@ -2416,6 +2416,7 @@ function support_search_available_clients() {
  */
 
 function support_search_execute($keys = NULL, $conditions = NULL) {
+  global $user;
   // Build matching conditions
   $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
   $query->join('node', 'n', 'n.nid = i.sid');

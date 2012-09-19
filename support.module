@@ -963,7 +963,8 @@ function support_node_validate($node, $form, &$form_state) {
     else if (!empty($node->$autocomplete)) {
       $notifications = explode(',', $node->$autocomplete);
       foreach ($notifications as $notify) {
-        $account = array_shift(user_load_multiple(array(), array('name' => trim($notify))));
+        $accounts = user_load_multiple(array(), array('name' => trim($notify)));
+        $account = array_shift($accounts);
         if (empty($account) || (!user_access("access $client tickets", $account) && !user_access('administer support', $account))) {
           form_set_error('subscribed_users', t('Unable to subscribe user, %user does not have permission to view this ticket.', array('%user' => $notify)));
         }
@@ -1011,7 +1012,8 @@ function _support_node_insert_update($node) {
   else if (isset($node->$autocomplete)) {
     $notifications = explode(',', $node->$autocomplete);
     foreach ($notifications as $notify) {
-      $account = array_shift(user_load_multiple(array(), array('name' => trim($notify))));
+      $accounts = user_load_multiple(array(), array('name' => trim($notify)));
+      $account = array_shift($accounts);
       if (!empty($account)) {
         support_subscribe_user($node->nid, $account->uid);
       }
@@ -2035,7 +2037,8 @@ function _support_autosubscribe($nid, $client, $save = TRUE) {
   $autosubscribe = db_query('SELECT autosubscribe FROM {support_client} WHERE clid = :clid', array(':clid' => $client))->fetchField();
   $autosubscribe = explode(',', $autosubscribe);
   foreach ($autosubscribe as $name) {
-    $account = array_shift(user_load_multiple(array(), array('name' => trim($name))));
+    $accounts = user_load_multiple(array(), array('name' => trim($name)));
+    $account = array_shift($accounts);
     if (is_object($account) && $account->uid) {
       $accounts[$account->uid] = $account->uid;
       if ($save) {
@@ -2417,6 +2420,7 @@ function support_search_available_clients() {
 
 function support_search_execute($keys = NULL, $conditions = NULL) {
   global $user;
+
   // Build matching conditions
   $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
   $query->join('node', 'n', 'n.nid = i.sid');
@@ -3797,7 +3801,8 @@ function _support_autoassign($clid, $uid = 0) {
         break;
       default:
         // no per-client auto-assign, or an invalid auto-assign
-        $account = array_shift(user_load_multiple(array(), array('name' => trim($name))));
+        $accounts = user_load_multiple(array(), array('name' => trim($name)));
+        $account = array_shift($account);
         if (empty($account) || !$account->uid) {
           $assign = variable_get('support_autoassign_ticket', '<nobody>');
           switch ($assign) {
@@ -3808,7 +3813,8 @@ function _support_autoassign($clid, $uid = 0) {
               $autoassign[$clid] = $uid;
               break;
             default:
-              $account = array_shift(user_load_multiple(array(), array('name' => trim($assign))));
+              $accounts = user_load_multiple(array(), array('name' => trim($assign)));
+              $account = array_shift($accounts);
               if (empty($account) || !$account->uid) {
                 $autoassign[$clid] = 0;
               }
@@ -3862,7 +3868,8 @@ function _support_enabled($clid, $uid) {
     $autosubscribe = db_query('SELECT autosubscribe FROM {support_client} WHERE clid = :clid', array(':clid' => $clid))->fetchField();
     $names = explode(',', $autosubscribe);
     foreach ($names as $name) {
-      $account = array_shift(user_load_multiple(array(), array('name' => trim($name))));
+      $accounts = user_load_multiple(array(), array('name' => trim($name)));
+      $account = array_shift($accounts);
       $enabled[$clid][$account->uid] = TRUE;
     }
   }

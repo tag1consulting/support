@@ -12,7 +12,7 @@ class SupportClientUIController extends EntityDefaultUIController {
    *
    * @param $conditions
    *   An array of conditions as needed by entity_load().
-
+   *
    * @return Array
    *   A renderable array.
    */
@@ -77,11 +77,6 @@ class SupportClientUIController extends EntityDefaultUIController {
       '#header' => $header,
       '#rows' => $rows,
       '#empty' => t('None.'),
-    );
-    $render[] = array(
-      '#theme' => 'pager',
-      '#tags' => array(),
-      '#element' => 0,
     );
     return $render;
   }

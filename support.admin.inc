@@ -247,7 +247,8 @@ function support_client_form_validate($form, &$form_state) {
     $subscribe = array();
     $autosubscribe = explode(',', $form_state['values']['autosubscribe']);
     foreach ($autosubscribe as $name) {
-      $account = array_shift(user_load_multiple(array(), array('name' => trim($name))));
+      $accounts = user_load_multiple(array(), array('name' => trim($name)));
+      $account = array_shift($accounts);
       if (!is_object($account) || !$account->uid) {
         form_set_error('autosubscribe', t('User %username does not exist.', array('%username' => $name)));
       }
@@ -263,7 +264,8 @@ function support_client_form_validate($form, &$form_state) {
       case '<creator>':
         break;
       default:
-        $account = array_shift(user_load_multiple(array(), array('name' => trim($form_state['values']['autoassign']))));
+        $accounts = user_load_multiple(array(), array('name' => trim($form_state['values']['autoassign'])));
+        $account = array_shift($accounts);
         $name = $form_state['values']['name'];
         if (empty($account)) {
           form_set_error('autoassign', t('Invalid %field user, %username does not exist.', array('%field' => t('auto-assign'), '%username' => trim($form_state['values']['autoassign']))));
@@ -593,7 +595,8 @@ function support_admin_settings_validate($form, &$form_state) {
       case '<creator>':
         break;
       default:
-        $account = array_shift(user_load_multiple(array(), array('name' => trim($form_state['values']['support_autoassign_ticket']))));
+        $accounts = user_load_multiple(array(), array('name' => trim($form_state['values']['support_autoassign_ticket'])));
+        $account = array_shift($accounts);
         if (empty($account) || !$account->uid) {
           form_set_error('support_autoassign_ticket', t('Invalid %field user, %username is not a valid user.', array('%field' => t('auto-assign'), '%username' => $form_state['values']['support_autoassign_ticket'])));
         }

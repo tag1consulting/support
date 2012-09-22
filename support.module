@@ -1568,10 +1568,10 @@ function _support_mail_text($key, $language = NULL, $variables = array(), $integ
   // This part of the text is not stored as a multilingual variable
   // but as a 'common' translatable string.
   if ($integrate_email == TRUE) {
-    $variables['!reply'] = t('You can reply to this email or visit the following URL to update this ticket');
+    $variables['!reply'] = t('You can reply to this email or visit the following URL to update this ticket', $variables, array('langcode' => $langcode));
   }
   else {
-    $variables['!reply'] = t('You can visit the following URL to update this ticket');
+    $variables['!reply'] = t('You can visit the following URL to update this ticket', $variables, array('langcode' => $langcode));
   }
 
   /* Get text from (possibly multilingual) variable, if it's user-configured.

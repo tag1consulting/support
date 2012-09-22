@@ -3816,7 +3816,7 @@ function _support_autoassign($clid, $uid = 0) {
       default:
         // no per-client auto-assign, or an invalid auto-assign
         $accounts = user_load_multiple(array(), array('name' => trim($name)));
-        $account = array_shift($account);
+        $account = array_shift($accounts);
         if (empty($account) || !$account->uid) {
           $assign = variable_get('support_autoassign_ticket', '<nobody>');
           switch ($assign) {

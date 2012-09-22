@@ -3627,6 +3627,13 @@ function support_client_fetch($client, $manual = TRUE) {
     $message = array();
     $message['headers'] = imap_headerinfo($stream, $number);
 
+    if (isset($message['headers']->Deleted)) {
+      if ($message['headers']->Deleted=='D') {
+        // Message is marked for deletion, ignore
+        continue;
+      }
+    }
+
     if (is_array($message['headers']->from)) {
       $message['from'] = $message['headers']->from[0]->mailbox . '@' . $message['headers']->from[0]->host;
     }

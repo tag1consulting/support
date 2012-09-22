@@ -3637,7 +3637,14 @@ function support_client_fetch($client, $manual = TRUE) {
     if (is_array($message['headers']->from)) {
       $message['from'] = $message['headers']->from[0]->mailbox . '@' . $message['headers']->from[0]->host;
     }
-    $strings = imap_mime_header_decode($message['headers']->subject);
+
+    if (isset($message['headers']->subject)) {
+      $strings = imap_mime_header_decode($message['headers']->subject);
+    }
+    else {
+      $strings = array();
+    }
+
     $message['subject'] = '';
     foreach ($strings as $string) {
       if ($string->charset == 'default') {

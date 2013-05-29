@@ -268,26 +268,34 @@ function support_pm_db_rewrite_sql($query, $primary_table, $primary_field, $args
   }
   else if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'support_ticket_timer') && strpos($query, 't.client IN')) {
     $project = isset($_GET['project']) ? $_GET['project'] : '';
-    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
-      $alter = array('join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid');
+    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]:/', '', $project)) {
+      list($project,$client) = explode(':', $project);
+      if (!$client) {
+        $client = _support_current_client();
+      }
+      $alter = array('join' => ' LEFT JOIN {support_project_ticket} spt ON n.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid');
       if (strtolower($project) == 'null') {
-        $alter['where'] = 'ISNULL(sp.path)';
+        $alter['where'] = "ISNULL(sp.path) AND spc.clid = $client";
       }
       else {
-        $alter['where'] = "sp.path = '$project'";
+        $alter['where'] = "sp.path = '$project' AND spc.clid = $client";
       }
       return $alter;
     }
   }
   else if ($primary_table == 'c' && $primary_field == 'cid' && strpos($query, 'support_ticket_comment_timer') && strpos($query, 't.client IN')) {
     $project = isset($_GET['project']) ? $_GET['project'] : '';
-    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
-      $alter = array('join' => ' LEFT JOIN {support_project_ticket} spt ON c.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid');
+    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]:/', '', $project)) {
+      list($project,$client) = explode(':', $project);
+      if (!$client) {
+        $client = _support_current_client();
+      }
+      $alter = array('join' => ' LEFT JOIN {support_project_ticket} spt ON c.nid = spt.nid LEFT JOIN {support_project} sp ON spt.projid = sp.projid LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid');
       if (strtolower($project) == 'null') {
-        $alter['where'] = 'ISNULL(sp.path)';
+        $alter['where'] = "ISNULL(sp.path) AND spc.clid = $client";
       }
       else {
-        $alter['where'] = "sp.path = '$project'";
+        $alter['where'] = "sp.path = '$project' AND spc.clid = $client";
       }
       return $alter;
     }
@@ -310,14 +318,18 @@ function support_pm_invoice_ui_form() {
   if (user_access('administer support projects')) {
     drupal_add_js('$(document).ready(function() { $("form#support-pm-invoice-ui-form select").change(function() { $("form#support-pm-invoice-ui-form").submit(); }); });', 'inline');
 
-    $projects = array(-1 => t('-- no project --'), 0 => t('-- all projects --')) + support_pm_load_projects(_support_current_client());
+    $projects = array(-1 => t('-- no project --'), 0 => t('-- all projects --')) + support_pm_load_projects(_support_current_client(), TRUE);
     $project = isset($_GET['project']) ? $_GET['project'] : '';
-    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]/', '', $project)) {
+    if ($project && $project == preg_replace('/[^0-9a-zA-Z_-]:/', '', $project)) {
       if (strtolower($project) == 'null') {
         $selected = -1;
       }
       else {
+        list($project,$client) = explode(':', $project);
         $selected = (int)db_result(db_query("SELECT projid FROM {support_project} WHERE path = '%s'", $project));
+        if ($client) {
+          $selected = "$selected:$client";
+        }
       }
     }
     else {
@@ -351,9 +363,13 @@ function support_pm_invoice_ui_form() {
 function support_pm_invoice_ui_form_submit($form, &$form_state) {
   $project = NULL;
   if (!empty($form_state['values']['projects'])) {
-    $projects = support_pm_load_projects(_support_current_client());
-    if (isset($projects[$form_state['values']['projects']])) {
-      $project = support_pm_project_load($form_state['values']['projects']);
+    list($projid, $client) = explode(':', $form_state['values']['projects']);
+    if (!$client) {
+      $client = _support_current_client();
+    }
+    $projects = support_pm_load_projects($client);
+    if (isset($projects[$projid])) {
+      $project = support_pm_project_load($projid);
     }
     else if ($form_state['values']['projects'] == -1) {
       $project = new stdClass();
@@ -368,7 +384,12 @@ function support_pm_invoice_ui_form_submit($form, &$form_state) {
     }
   }
   if (is_object($project)) {
-    $query['project'] = $project->path;
+    if ($client != _support_current_client()) {
+      $query['project'] = "$project->path:$client";
+    }
+    else {
+      $query['project'] = $project->path;
+    }
   }
   drupal_goto($path, $query);
 }
@@ -977,9 +998,12 @@ function support_pm_project_load($projid) {
   if (!isset($projects[$projid])) {
     $projects[$projid] = db_fetch_object(db_query('SELECT * FROM {support_project} WHERE projid = %d', $projid));
     $projects[$projid]->clids = array();
-    $result = db_query('SELECT clid FROM {support_project_client} WHERE projid = %d', $projid);
+    $result = db_query('SELECT spc.clid, sc.parent FROM {support_project_client} spc LEFT JOIN {support_client} sc ON spc.clid = sc.clid WHERE spc.projid = %d', $projid);
     while ($client = db_fetch_object($result)) {
       $projects[$projid]->clids[] = $client->clid;
+      if ($client->parent) {
+        $projects[$projid]->parent[$client->clid] = $client->parent;
+      }
     }
     drupal_alter('support_pm_project_load', $projects[$projid]);
   }
@@ -999,11 +1023,21 @@ function support_pm_project_load_nid($nid) {
 /**
  * Load projects assigned to a given client.
  */
-function support_pm_load_projects($clid) {
+function support_pm_load_projects($clid, $recursive = FALSE) {
   $projects = array();
   $result = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = %d OR ISNULL(spc.clid)) AND disabled = 0', $clid);
   while ($project = db_fetch_object($result)) {
     $projects[$project->projid] = $project->project;
+  }
+
+  if ($recursive) {
+    $result = db_query("SELECT clid, name FROM {support_client} WHERE parent = %d", $clid);
+    while ($subclient = db_fetch_object($result)) {
+      $result2 = db_query('SELECT sp.projid, sp.project FROM {support_project} sp LEFT JOIN {support_project_client} spc ON sp.projid = spc.projid WHERE (spc.clid = %d OR ISNULL(spc.clid)) AND disabled = 0', $subclient->clid);
+      while ($subproject = db_fetch_object($result2)) {
+        $projects["$subproject->projid:$subclient->clid"] = " -> $subclient->name: $subproject->project";
+      }
+    }
   }
   return $projects;
 }
@@ -1022,4 +1056,43 @@ function support_pm_default_project($projects) {
   else {
     return db_result(db_query_range('SELECT projid FROM {support_project} WHERE projid IN (%s) AND disabled = 0 ORDER BY weight ASC', implode(',', $projids), 0, 1));
   }
+}
+
+/**
+ * Implementation of hook_apachesolr_update_index().
+ */
+function support_pm_apachesolr_update_index(&$document, $node) {
+  if (!isset($node->project->projid)) {
+    $document->is_support_project = 0;
+  }
+  else {
+    $document->is_support_project = (int)$node->project->projid;
+  }
+}
+
+/**
+ * Implementation of hook_support_solr_info().
+ */
+function support_pm_support_solr_info() {
+  return array(
+    'support_pm_project' => array(
+      'facet' => array(
+        'info' => t('Support: Filter by project'),
+        'facet_field' => 'is_support_project',
+      ),
+      'filter_by' => t('Filter by Support Project'),
+      'facet_callback' => '_support_pm_project_name',
+      'block' => array(
+        'info' => t('Support: Project'),
+        'cache' => BLOCK_CACHE_PER_PAGE,
+      ),
+    ),
+  );
+}
+
+function _support_pm_project_name($projid) {
+  if (!$projid) {
+    return t('None');
+  }
+  return check_plain(db_result(db_query('SELECT project FROM {support_project} WHERE projid = %d', $projid)));
 }

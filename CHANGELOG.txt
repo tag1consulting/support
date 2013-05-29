@@ -1,4 +1,6 @@
 May 29th, 2013
+ - support_pm.module
+     o feature: allow reporting by subclient
  - support.module
      o feature #2007426: filter ticket listings by: taxonomy term, user,
        state, and/or priority

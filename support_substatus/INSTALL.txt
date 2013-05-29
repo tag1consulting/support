@@ -1,0 +1,5 @@
+-------------
+Requirements:
+-------------
+ - Drupal 6.x
+ - support.module (http://drupal.org/project/support)

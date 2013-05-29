@@ -1,4 +1,6 @@
 May 29th, 2013
+ - support_substatus.module
+     o feature #2007448: introduce optional substatus to describe ticket state
  - support_pm.module
      o feature: allow reporting by subclient
  - support.module

@@ -1,0 +1,592 @@
+<?php
+
+/**
+* @file 
+* Support Substatus -- allows per-status sub-status values, so for example a "pending" ticket
+* can be further marked with "needs review", etc.
+* @author Jeremy Andrews <jeremy@tag1consulting.com>
+* @package Support
+*/
+
+// @todo: Fix permissions.
+
+/**
+ * Implementation of hook_perm();
+ */
+function support_substatus_perm() {
+  return array(
+    'administer support substatus',
+    'view support substatus',
+  );
+}
+  
+/**
+ * Implementation of hook_menu().
+ */
+function support_substatus_menu() {
+  $items = array();
+ 
+  $items['admin/support/substatus'] = array(
+    'title' => 'Status',
+    'description' => 'Configure support substatus fields',
+    'page callback' => 'support_substatus_admin_overview',
+    'access arguments' => array('administer support substatus'),
+    'file' => 'support_substatus.admin.inc',
+  );
+  $items['admin/support/substatus/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/support/substatus/add'] = array(
+    'title' => 'Add substatus',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_substatus_admin_form'),
+    'access arguments' => array('administer support substatus'),
+    'file' => 'support_substatus.admin.inc',
+  );
+  $items['admin/support/substatus/%support_substatus/edit'] = array(
+    'title' => 'Edit',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('support_substatus_admin_form', 3),
+    'access arguments' => array('administer support substatus'),
+    'file' => 'support_substatus.admin.inc',
+  );
+
+// TODO: Add paths to substatus-filtered listings
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function support_substatus_nodeapi(&$node, $op, $teaser, $page) {
+  if ($node->type == 'support_ticket') {
+    switch ($op) {
+      // Notifications are sent before hook_nodeapi insert/update is invoked, so
+      // we cache the value from op_presave.
+      case 'presave':
+        $substatus = isset($node->substatus) ? (int)$node->substatus : 0;
+        if ($substatus) {
+          _support_substatus_notification_static($substatus);
+        }
+        break;
+      case 'view':
+        if (user_access('view support substatus') && _support_substatus_client_active($node->client)) {
+          if ($substatus = support_substatus_load_nid($node->nid)) {
+            $node->content['support-substatus'] = array(
+              '#value' => "<div class='support-priority'>Status: " . check_plain($substatus->substatus) . '</div>',
+              '#weight' => -1,
+            );
+          }
+        }
+        break;
+      case 'load':
+        $node->substatus = support_substatus_load_nid($node->nid);
+        break;
+      case 'insert':
+      case 'update':
+        db_query("UPDATE {support_substatus_ticket} SET subid = %d WHERE type = 'node' AND id = %d", $node->substatus, $node->nid);
+        if (!db_affected_rows()) {
+          db_query("INSERT INTO {support_substatus_ticket} (subid, type, id, nid, current) VALUES(%d, 'node', %d, %d, %d)", $node->substatus, $node->nid, $node->nid);
+        }
+        _support_substatus_set_current($node->nid);
+        break;
+      case 'delete':
+        db_query("DELETE FROM {support_substatus_ticket} WHERE nid = %d", $node->nid);
+        break;
+    }
+  }
+}
+
+function _support_substatus_notification_static($new_substatus = NULL) {
+  static $substatus = 0;
+  if ($new_substatus) {
+    $substatus = $new_substatus;
+  }
+  return $substatus;
+}
+
+function support_substatus_comment(&$comment, $op) {
+  if (is_array($comment)) {
+    $node = node_load($comment['nid']);
+    $cid = $comment['cid'];
+  }
+  else {
+    $node = node_load($comment->nid);
+    $cid = $comment->cid;
+  }
+
+  if ($node->type == 'support_ticket') {
+    switch ($op) {
+      // Notifications are sent before hook_comment insert/update is invoked, so
+      // we cache the value from op_validate.
+      case 'validate':
+        $substatus = isset($comment['substatus']) ? (int)$comment['substatus'] : 0;
+        if ($substatus) {
+          _support_substatus_notification_static($substatus);
+        }
+        break;
+      case 'view':
+        if (user_access('view support substatus') && _support_substatus_client_active($node->client)) {
+          static $old_substatus = 0;
+          if (!$old_substatus) {
+            $ss = support_substatus_load_nid($node->nid);
+            if (is_object($ss) && isset($ss->substatus)) {
+              $old_substatus = $ss->substatus;
+            }
+          }
+          $substatus = support_substatus_load_nid($node->nid, $cid);
+          if ($new_substatus = check_plain($substatus->substatus)) {
+            if ($new_substatus != $old_substatus) {
+              $comment->comment = "<div class='support-priority'>Status: $old_substatus -> $new_substatus</div>" . $comment->comment;
+            }
+            else if ($new_substatus) {
+               $comment->comment = "<div class='support-priority'>Status: $new_substatus</div>" . $comment->comment;
+            }
+            $old_substatus = $new_substatus;
+          }
+          else if ($old_substatus) {
+            $comment->comment = "<div class='support-priority'>Status: $old_substatus</div>" . $comment->comment;
+          }
+        }
+        break;
+      case 'insert':
+      case 'update':
+        db_query("UPDATE {support_substatus_ticket} SET subid = %d, nid = %d WHERE type = 'comment' AND id = %d", $comment['substatus'], $comment['nid'], $comment['cid']);
+        if (!db_affected_rows()) {
+          @db_query("INSERT INTO {support_substatus_ticket} (subid, type, id, nid) VALUES(%d, 'comment', %d, %d)", $comment['substatus'], $comment['cid'], $comment['nid']);
+        }
+        _support_substatus_set_current($node->nid);
+        break;
+      case 'delete':
+        db_query("DELETE FROM {support_substatus_ticket} WHERE type = 'comment' AND id = %d", $comment->cid);
+        _support_substatus_set_current($comment->nid);
+        break;
+        // @todo: handle if current was deleted
+    }
+  }
+}
+
+function support_substatus_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'support_ticket_node_form') {
+
+    $node = $form['#node'];
+    if (_support_substatus_client_active($node->client)) {
+      // @todo: move into functions
+      drupal_add_js(drupal_get_path('module', 'support_substatus') . '/support_substatus.js');
+      $states = _support_states();
+      $substatus = array();
+      foreach ($states as $ssid => $state) {
+        $substatus[$ssid] = support_substatus_load_client($node->client, $ssid);
+      }
+      drupal_add_js(array('substatus' => $substatus), 'setting');
+
+      $form['support']['state']['#id'] = 'select-state';
+
+      $support_form = array();
+      foreach($form['support'] as $key => $value) {
+        $support_form[$key] = $value;
+        if ($key == 'state') {
+          $options = support_substatus_load_client(_support_current_client());
+          $support_form['substatus'] = array(
+            '#type' => 'select',
+            '#title' => t('Status'),
+            '#prefix' => '&nbsp;&nbsp;',
+            '#options' => $options,
+            '#id' => 'select-substatus',
+            '#default_value' => (isset($node->substatus) && isset($node->substatus->ssid)) ? $node->substatus->ssid : support_substatus_default($options),
+          );
+        }
+      }
+      $form['support'] = $support_form;
+    }
+  }
+  // @todo: jQuery, pass in selected state
+  else if ($form_id == 'comment_form') {
+    $nid = $form['nid']['#value'];
+    $node = node_load($nid);
+    if (_support_substatus_client_active($node->client)) {
+      // @todo: move into function
+      drupal_add_js(drupal_get_path('module', 'support_substatus') . '/support_substatus.js');
+      $states = _support_states();
+      $substatus = array();
+      foreach ($states as $ssid => $state) {
+        $substatus[$ssid] = support_substatus_load_client($node->client, $ssid);
+      }
+      drupal_add_js(array('substatus' => $substatus), 'setting');
+      $form['support']['state']['#id'] = 'select-state';
+
+      $support_form = array();
+      foreach($form['support'] as $key => $value) {
+        $support_form[$key] = $value;
+        if ($key == 'state') {
+          $cid = $form['cid']['#value'];
+          $default_value = _support_substatus_last_value($nid);
+          $options = support_substatus_load_client(_support_current_client());
+          $support_form['substatus'] = array(
+            '#type' => 'select',
+            '#title' => t('Status'),
+            '#prefix' => '&nbsp;&nbsp;',
+            '#options' => $options,
+            '#id' => 'select-substatus',
+            '#default_value' => $default_value,
+          );
+        }
+      }
+      $form['support'] = $support_form;
+
+
+    }
+  }
+  else if ($form_id == 'support_page_form') {
+    if (user_access('view support substatus') && _support_substatus_client_active(_support_current_client())) {
+      // @todo: make "substate" field sortable, is it possible?
+
+      // Insert "Substate" into the ticket listing
+      foreach ($form['header']['#value'] as $key => $value) {
+        if ($value['data'] == 'State') {
+          array_splice($form['header']['#value'], ++$key, 0, array(array('data' => t('Status'))));
+          break;
+        }
+      }
+
+      $substatus = array();
+      if (isset($form['id'])) {
+        foreach ($form['id'] as $id => $data) {
+          $ssid = _support_substatus_last_value($id);
+          if ($ssid) {
+            $status = db_result(db_query('SELECT substatus FROM {support_substatus} WHERE ssid = %d', $ssid));
+            $substatus["substatus-$id"] = array('#value' => $status);
+          }
+          else {
+            $substatus["substatus-$id"] = array('#value' => '');
+          }
+        }
+      }
+
+      $ssid = isset($_GET['ssid']) ? $_GET['ssid'] : '';
+      $ssids = array();
+      $unsanitized = explode(',', $ssid);
+      foreach ($unsanitized as $element) {
+        $element = (int)$element;
+        if ($element) {
+          $ssids[$element] = $element;
+        }
+      }
+      $new_filter = array();
+      foreach ($form['filter'] as $key => $value) {
+        $new_filter[$key] = $value;
+        if ($key == 'state') {
+          $new_filter['substatus'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Status'),
+            '#collapsible' => TRUE,
+            '#collapsed' => empty($ssids),
+          );
+          $options = _support_substatus_client_substatus(_support_current_client());
+          $new_filter['substatus']['ssid'] = array(
+            '#type' => 'select',
+            '#multiple' => TRUE,
+            '#options' => $options,
+            '#default_value' => !empty($ssids) ? $ssids : 0,
+          );
+        }
+      }
+      $form['filter'] = $new_filter;
+
+      // @todo: don't bother inserting into the precise form location, this is unnecessary
+      $new_form = array();
+      foreach ($form as $key => $value) {
+        $new_form[$key] = $value;
+        if ($key == t('state')) {
+          $new_form['substatus'] = $substatus;
+        }
+      }
+
+      $form = $new_form;
+    }
+  }
+}
+
+function support_substatus_theme_registry_alter(&$theme_registry) {
+  $theme_registry['support_page_form']['function'] = 'theme_support_substatus_page_form';
+  $theme_registry['support_page_user']['function'] = 'theme_support_substatus_page_user';
+}
+
+function theme_support_substatus_page_form($form) {
+  if (!user_access('view support substatus') || !_support_substatus_client_active(_support_current_client())) {
+    return theme_support_page_form($form);
+  }
+  drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
+  $output = drupal_render($form['filter']);
+  $output .= drupal_render($form['post-ticket']);
+  if (isset($form['title']) && is_array($form['title'])) {
+    foreach (element_children($form['title']) as $key) {
+      $row = array();
+      $row[] = drupal_render($form['tickets'][$key]);
+      $row[] = drupal_render($form['id'][$key]);
+      $row[] = drupal_render($form['title'][$key]);
+      $row[] = drupal_render($form['updated'][$key]);
+      $row[] = drupal_render($form['reported'][$key]);
+      $row[] = drupal_render($form['assigned']["assigned-$key"]);
+      $row[] = drupal_render($form['state']["state-$key"]);
+      $row[] = drupal_render($form['substatus']["substatus-$key"]);
+      $row[] = drupal_render($form['priority']["priority-$key"]);
+      $row[] = drupal_render($form['updates'][$key]);
+      $rows[] = array( 
+        'data' => $row,
+        'class' => $form['class'][$key]['#value']
+      );
+      unset($form['class'][$key]);
+    }
+  }
+  else {
+    $rows[] = array(array('data' => t('No tickets available.'), 'colspan' => '9'));
+  }
+  if ($form['pager']['#value']) {
+    $output .= drupal_render($form['pager']);
+  }
+
+  $output .= theme('table', $form['header']['#value'], $rows, array('class' => 'support'));
+  $output .= drupal_render($form['update']);
+  $output .= drupal_render($form['suppress']);
+  $output .= drupal_render($form['submit']);
+
+  $output .= drupal_render($form);
+
+  return $output;
+}
+
+function theme_support_substatus_page_user($header, $rows) {
+  if (!user_access('view support substatus')) {
+    return theme_support_page_form($form);
+  }
+  $new_header = array();
+  $increment = $state_key = 0;
+  foreach ($header as $key => $value) {
+    $new_header[($key + $increment)] = $value;
+    if ($value['data'] == t('State')) {
+      $state_key = $key;
+      $increment++;
+      $new_header[($key + $increment)] = array(
+        'data' => t('Status'),
+      );
+    }
+  }
+
+  if ($state_key) {
+    $new_rows = array();
+    foreach ($rows as $key => $value) {
+      $new_row = array();
+      $increment = 0;
+      $ticket_url = preg_match('/>([0-9]+)</', $rows[$key]['data'][0]['data'], $matches);
+      $ticket_id = $matches[1];
+      $substatus = _support_substatus_last_value($ticket_id);
+      foreach ($rows[$key]['data'] as $subkey => $subvalue) {
+        $new_row['data'][($subkey + $increment)] = $subvalue;
+        if ($subkey == $state_key) {
+          $increment++;
+          $new_row['data'][($subkey + $increment)] = array(
+            'data' => _support_substatus_substatus($substatus),
+            'class' => 'ticket-substatus',
+          );
+        }
+      }
+      $new_row['class'] = $rows[$key]['class'];
+      $new_rows[] = $new_row;
+    }
+  }
+
+  return theme('table', $new_header, $new_rows, array('class' => 'support')) . theme('pager');
+}
+
+/**
+ * Use '!optional_status' to only add "Status: " when applicable to a client, for example:
+ *   State: !state !optional_status
+ *   Priority: !priority
+ *
+ * Use '!substatus' to always add the Status transition if you always have a status value.
+ */
+function support_substatus_support_mail_tokens_alter($tokens) {
+  $ticket_id = (int)$tokens['!ticket_id'];
+  $ticket_update_id = (int)$tokens['!ticket_update_id'];
+  $previous_substatus_id = (int)_support_substatus_last_value($ticket_id);
+  $current_substatus_id = (int)_support_substatus_notification_static();
+  $tokens['!previous_substatus_id'] = $previous_substatus_id;
+  $tokens['!current_substatus_id'] = $current_substatus_id;
+  $tokens['!substatus'] = (($previous_substatus && $previous_substatus_id != $current_substatus_id) ? _support_substatus_substatus($previous_substatus_id) .' -> ' : '') . _support_substatus_substatus($current_substatus_id);
+  $tokens['!optional_status'] = !empty($current_substatus_id) ? "\nStatus: ". $tokens['!substatus'] : '';
+}
+
+function support_substatus_support_ticket_listing_filter_alter($filters) {
+  if (_support_substatus_client_active(_support_current_client())) {
+    $ssid = isset($_GET['ssid']) ? $_GET['ssid'] : '';
+    $unsanitized = explode(',', $ssid);
+    foreach ($unsanitized as $element) {
+      $element = (int)$element;
+      if ($element) {
+        $filters['ssid'][$element] = $element;
+      }
+    }
+    if (isset($filters['ssid']) && !empty($filters['ssid'])) {
+      $filters['join'][] = 'LEFT JOIN {support_substatus_ticket} sst ON t.nid = sst.nid';
+      $filters['where'][] = strtr('sst.subid IN (!ssid) AND sst.current = 1', array('!ssid' => implode(',', $filters['ssid'])));
+    }
+  }
+}
+
+function support_substatus_support_filter_form_submit_alter($form_state) {
+  if (!empty($form_state['values']['ssid'])) {
+    $form_state['support_filter_query']['ssid'] = implode(',', $form_state['values']['ssid']);
+  }
+}
+
+/**
+ * Load substatus from database.
+ */
+function support_substatus_load($ssid) {
+  static $substatus = array();
+
+  if (!isset($substatus[$ssid])) {
+    $substatus[$ssid] = db_fetch_object(db_query('SELECT * FROM {support_substatus} WHERE ssid = %d', $ssid));
+    $substatus[$ssid]->clids = array();
+    $result = db_query('SELECT stid FROM {support_substatus_state} WHERE ssid = %d', $ssid);
+    while ($state = db_fetch_object($result)) {
+      $substatus[$ssid]->state[] = $state->stid;
+    }
+    $result = db_query('SELECT clid FROM {support_substatus_client} WHERE ssid = %d', $ssid);
+    while ($client = db_fetch_object($result)) {
+      $substatus[$ssid]->clids[] = $client->clid;
+    }
+    drupal_alter('support_substatus_load', $substatus[$ssid]);
+  }
+  return $substatus[$ssid];
+}
+
+function support_substatus_load_nid($nid, $cid = 0) {
+  static $substatus = array();
+
+  if (!isset($substatus[$nid][$cid])) {
+    if ($cid) {
+      $substatus[$nid][$cid] = db_fetch_object(db_query("SELECT * FROM {support_substatus_ticket} sst LEFT JOIN {support_substatus} ss ON sst.subid = ss.ssid WHERE sst.type = 'comment' AND sst.id = %d", $cid));
+    }
+    else {
+    $substatus[$nid][$cid] = db_fetch_object(db_query('SELECT * FROM {support_substatus_ticket} sst LEFT JOIN {support_substatus} ss ON sst.subid = ss.ssid WHERE sst.id = %d', $nid));
+    }
+    drupal_alter('support_substatus_load_nid', $substatus[$nid][$cid]);
+  }
+  return $substatus[$nid][$cid];
+}
+
+/**
+ * Load substatus assigned to a given client.
+ */
+function support_substatus_load_client($clid, $state = 0) {
+  $substatus = array();
+
+  if ($state) {
+    $result = db_query('SELECT ss.ssid, ss.substatus FROM {support_substatus} ss LEFT JOIN {support_substatus_client} ssc ON ss.ssid = ssc.ssid LEFT JOIN {support_substatus_state} sss ON ss.ssid = sss.ssid WHERE (ssc.clid = %d OR ISNULL(ssc.clid)) AND stid = %d AND disabled = 0 ORDER BY ss.weight ASC', $clid, $state);
+  }
+  else {
+    $result = db_query('SELECT ss.ssid, ss.substatus FROM {support_substatus} ss LEFT JOIN {support_substatus_client} ssc ON ss.ssid = ssc.ssid WHERE (ssc.clid = %d OR ISNULL(ssc.clid)) AND disabled = 0 ORDER BY ss.weight ASC', $clid);
+  }
+  while ($ss = db_fetch_object($result)) {
+    $substatus[$ss->ssid] = $ss->substatus;
+  }
+  return $substatus;
+}
+
+/**
+ * Determine default for a list of substatus fields.
+ */
+function support_substatus_default($substatus) {
+  $ssids = array();
+  foreach ($substatus as $ssid => $stuff) {
+    $ssids[] = $ssid;
+  }
+  if (empty($ssids)) {
+    return 0;
+  }
+  else {
+    return db_result(db_query_range('SELECT ssid FROM {support_substatus} WHERE ssid IN (%s) AND disabled = 0 ORDER BY weight ASC', implode(',', $ssids), 0, 1));
+  }
+}
+
+/**
+ * Implementation of hook_apachesolr_update_index().
+ */
+function support_substatus_apachesolr_update_index(&$document, $node) {
+  if (!isset($node->substatus->ssid)) {
+    $document->is_support_substatus = 0;
+  }
+  else {
+    $document->is_support_substatus = (int)$node->substatus->ssid;
+  }
+}
+
+/**
+ * Implementation of hook_support_solr_info().
+ */
+function support_substatus_support_solr_info() {
+  return array(
+    'support_substatus' => array(
+      'facet' => array(
+        'info' => t('Support: Filter by Status'),
+        'facet_field' => 'is_support_substatus',
+      ),
+      'filter_by' => t('Filter by Support Status'),
+      'facet_callback' => '_support_substatus_substatus',
+      'block' => array(
+        'info' => t('Support: Status'),
+        'cache' => BLOCK_CACHE_PER_PAGE,
+      ),
+    ),
+  );
+}
+
+function _support_substatus_substatus($ssid) {
+  if (!$ssid) {
+    return t('none');
+  }
+  return check_plain(db_result(db_query('SELECT substatus FROM {support_substatus} WHERE ssid = %d', $ssid)));
+}
+
+function _support_substatus_client_active($clid) {
+  return (int)db_result(db_query_range('SELECT 1 FROM {support_substatus} ss LEFT JOIN {support_substatus_client} ssc ON ss.ssid = ssc.ssid WHERE ss.disabled = 0 AND ssc.clid = %d', $clid, 0, 1));
+}
+
+function _support_substatus_last_value($nid) {
+  return (int)db_result(db_query('SELECT subid FROM {support_substatus_ticket} WHERE nid = %d AND current = 1', $nid));
+}
+
+/**
+ * Update current flag to allow for filtering and sorting.
+ */
+function _support_substatus_set_current($nid) {
+  $trid = db_result(db_query_range('SELECT trid FROM {support_substatus_ticket} WHERE nid = %d ORDER BY trid DESC', $nid, 0, 1));
+  db_query('UPDATE {support_substatus_ticket} SET current = 0 WHERE nid = %d', $nid);
+  db_query('UPDATE {support_substatus_ticket} SET current = 1 WHERE trid = %d', $trid);
+}
+
+
+/**
+ *
+ */
+function _support_substatus_client_substatus($clid) {
+  static $ssids = array();
+  if (!isset($ssids[$clid])) {
+    $result = db_query('SELECT DISTINCT(ss.ssid) AS ssid, ss.substatus FROM {support_substatus} ss LEFT JOIN {support_substatus_client} ssc ON ss.ssid = ssc.ssid WHERE ssc.clid = %d ORDER BY ss.substatus ASC', $clid);
+    while ($substatus = db_fetch_object($result)) {
+      $ssids[$clid][$substatus->ssid] = $substatus->substatus;
+    }
+  }
+
+  if (isset($ssids[$clid])) {
+    return $ssids[$clid];
+  }
+  return NULL;
+}

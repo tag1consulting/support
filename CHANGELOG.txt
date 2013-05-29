@@ -1,14 +1,16 @@
 May 29th, 2013
+ - support_solr.module
+    o feature #1336080: solr search integration
  - support_substatus.module
-     o feature #2007448: introduce optional substatus to describe ticket state
+    o feature #2007448: introduce optional substatus to describe ticket state
  - support_pm.module
-     o feature: allow reporting by subclient
+    o feature: allow reporting by subclient
  - support.module
-     o feature #2007426: filter ticket listings by: taxonomy term, user,
-       state, and/or priority
-     o bug #1342606: auto-assign per client configuration
-     o bug #2007430: when sorting ticket listing by priority, use priority weight
-       not priority name
+    o feature #2007426: filter ticket listings by: taxonomy term, user,
+      state, and/or priority
+    o bug #1342606: auto-assign per client configuration
+    o bug #2007430: when sorting ticket listing by priority, use priority weight
+      not priority name
 
 April 4th, 2012
  - support.module

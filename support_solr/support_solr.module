@@ -1,0 +1,240 @@
+<?php
+/**
+ * @file
+ * Apache Solr search for support module.
+ */
+
+/**
+ * Implementation of hook_apachesolr_update_index().
+ */
+function support_solr_apachesolr_update_index(&$document, $node) {
+  // Set support_client even for non tickets for access control reasons.
+  $document->is_support_client = 0;
+  if ($node->type == 'support_ticket') {
+    $document->is_support_assigned = $node->assigned;
+
+    $document->is_support_client = $node->client;
+    $document->ss_support_state = _support_state($node->state);
+    $document->ss_support_priority = _support_priorities($node->priority);
+  }
+}
+
+/**
+ * Creates a Solr query for a given user
+ *
+ * @param $account an account to get grants for and build a solr query
+ *
+ * @throws Exception
+ */
+function _support_solr_build_subquery($account) {
+  if (!user_access('access content', $account)) {
+    throw new Exception('No access');
+  }
+  $node_access_query = apachesolr_drupal_query();
+  if (empty($node_access_query)) {
+    throw new Exception('No query object in apachesolr_nodeaccess');
+  }
+  if (user_access('administer nodes', $account)) {
+    // Access all content from the current site, or public content.
+    //$node_access_query->add_filter('nodeaccess_all', 0);
+    //$node_access_query->add_filter('hash', apachesolr_site_hash());
+  }
+  else {
+    $clients = support_search_available_clients();
+    if (!empty($clients)) {
+      if (user_access('view other users tickets', $account) || user_access('administer support', $account) || user_access('edit any ticket', $account) || user_access('delete any ticket', $account)) {
+        // Allow non support tickets (client 0)
+        $node_access_query->add_filter('is_support_client', 0);
+        // OR check for each possible client...
+        foreach ($clients as $client) {
+          $node_access_query->add_filter('is_support_client', $client);
+        }
+        return $node_access_query;
+      }
+      else {
+        // Allow non support tickets (client 0)
+        $node_access_query->add_filter('is_support_client', 0);
+        // Set up a subquery to support the AND on the uid
+        $sq = apachesolr_drupal_query();
+        // Set up a sub-subquery to support the OR of the clients.
+        $ssq = apachesolr_drupal_query();
+        foreach ($clients as $client) {
+          $ssq->add_filter('is_support_client', $client);
+        }
+        $sq->add_subquery($ssq, 'OR');
+        $sq->add_filter('uid', $account->uid);
+        $node_access_query->add_subquery($sq, 'AND'); // client is one of the available clients AND ticket is authored by the user...
+        return $node_access_query;
+      }
+    }
+    else {
+      // No access, filter out support tickets
+      return $node_access_query->add_filter('type', 'support_ticket', TRUE);
+    }
+  }
+  return $node_access_query;
+}
+
+/**
+ * Implementation of hook_apachesolr_modify_query().
+ */
+function support_solr_apachesolr_modify_query(&$query, &$params, $caller) {
+  global $user;
+  try {
+    $subquery = _support_solr_build_subquery($user);
+  }
+  catch (Exception $e) {
+    $query = NULL;
+    watchdog("support_solr", 'User %name (UID:!uid) cannot search: @message', array('%name' => $user->name, '!uid' => $user->uid, '@message' => $e->getMessage()));
+    return;
+  }
+
+  if (!empty($subquery)) {
+    $query->add_subquery($subquery, 'OR');
+  }
+}
+
+/**
+ * Implementation of hook_support_solr_info().
+ */
+function support_solr_support_solr_info() {
+  return array(
+    'support_client' => array(
+      'facet' => array(
+        'info' => t('Support: Filter by client'),
+        'facet_field' => 'is_support_client',
+      ),
+      'filter_by' => t('Filter by Support Client'),
+      'facet_callback' => '_support_solr_client_name',
+      'block' => array(
+        'info' => t('Support: Client'),
+        'cache' => BLOCK_CACHE_PER_PAGE,
+      ),
+    ),
+    'support_assigned' => array(
+      'facet' => array(
+        'info' => t('Support: Filter by assigned'),
+        'facet_field' => 'is_support_assigned',
+      ),
+      'filter_by' => t('Filter by Assigned'),
+      'facet_callback' => '_support_solr_assigned_name',
+      'block' => array(
+        'info' => t('Support: Assigned'),
+        'cache' => BLOCK_CACHE_PER_PAGE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_apachesolr_facets().
+ */
+function support_solr_apachesolr_facets() {
+  $facets = array();
+  $info = module_invoke_all('support_solr_info');
+  foreach ($info as $k => $v) {
+    $facets[$k] = $v['facet'];
+  }
+  return $facets;
+}
+
+/**
+ * Implementation of hook_block().
+ * Forwards to D7 style hooks.
+ */
+function support_solr_block($op = 'list', $delta = 0, $edit = array()) {
+  switch($op) {
+    case 'list':
+      return support_solr_block_list();
+    case 'view':
+      return support_solr_block_view($delta);
+  }
+}
+
+/**
+ * Implements hook_block_list().
+ */
+function support_solr_block_list() {
+  $blocks = array();
+  $enabled = apachesolr_get_enabled_facets('support_solr');
+  $info = module_invoke_all('support_solr_info');
+  foreach ($enabled as $name => $field) {
+    $blocks[$name] = $info[$name]['block'];
+  }
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function support_solr_block_view($delta = '') {
+  if (apachesolr_has_searched()) {
+    // Get the query and response. Without these no blocks make sense.
+    $response = apachesolr_static_response_cache();
+    if (empty($response)) {
+      return;
+    }
+    $query = apachesolr_current_query();
+
+    $facets = apachesolr_get_enabled_facets('support_solr');
+/*
+    if (empty($facets[$delta]) && ($delta != 'currentsearch')) {
+      return;
+    }*/
+
+    $info = module_invoke_all('support_solr_info');
+
+    return apachesolr_facet_block($response, $query, 'support_solr', $delta, $facets[$delta], $info[$delta]['filter_by'], $info[$delta]['facet_callback']);
+  }
+}
+
+/**
+ * Callback to get the client name given an is_support_client value.
+ */
+function _support_solr_client_name($facet) {
+  if (!$facet) {
+    return t('Unknown');
+  }
+  $result = db_fetch_object(db_query('SELECT parent FROM {support_client} WHERE clid = %d', $facet));
+  if ($result->parent) {
+    return check_plain(_support_client($result->parent) . '/' . _support_client($facet));
+  }
+  else {
+    return check_plain(_support_client($facet));
+  }
+}
+
+/**
+ * Callback to get the assigned name given an is_support_assigned value.
+ */
+function _support_solr_assigned_name($facet) {
+  if (!$facet) {
+    return t('unassigned');
+  }
+  $account = user_load($facet);
+  return check_plain($account->name);
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function support_solr_theme() {
+  return array(
+    'apachesolr_breadcrumb_is_support_client' => array('arguments' => array('client_id' => NULL)),
+    'apachesolr_breadcrumb_is_support_assigned' => array('arguments' => array('client_id' => NULL)),
+  );
+}
+
+/**
+ * Theme client breadcrumb
+ */
+function theme_apachesolr_breadcrumb_is_support_client($client_id) {
+  return _support_solr_client_name($client_id);
+}
+
+/**
+ * Theme assigned breadcrumb
+ */
+function theme_apachesolr_breadcrumb_is_support_assigned($uid) {
+  return _support_solr_assigned_name($uid);
+}

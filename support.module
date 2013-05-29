@@ -318,6 +318,15 @@ function support_link_alter(&$links, $node, $comment = NULL) {
   if ($node->type == 'support_ticket' && variable_get('support_disable_comment_reply', FALSE)) {
     unset($links['comment_reply']);
   }
+  if ($node->type == 'support_ticket' && isset($node->taxonomy)) {
+    foreach ($node->taxonomy as $tid => $term) {
+      if (isset($links["taxonomy_term_$tid"])) {
+        $client = support_client_load($node->client);
+        $links["taxonomy_term_$tid"]['href'] = "support/$client->path";
+        $links["taxonomy_term_$tid"]['query'] = "tid=$tid";
+      }
+    }
+  }
 }
 
 /**
@@ -1135,6 +1144,8 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!client_name' => $client->name,
     '!client_path' => $client->path,
     '!key' => '[' . variable_get('support_key', 'tkt') . ":$nid]",
+    '!ticket_id' => $nid,
+    '!ticket_update_id' => isset($comment['cid']) ? $comment['cid'] : 0,
     '!update_username' => isset($update_account->name) ? $update_account->name : '',
     '!update_realname' => theme('username', $user, array('plain' => TRUE)),
     '!site' => variable_get('site_name', 'Drupal'),
@@ -1158,6 +1169,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
   if (!empty($account->password)) {
     $tokens['!password'] = $account->password;
   }
+  drupal_alter('support_mail_tokens', $tokens);
   return $tokens;
 }
 
@@ -1839,6 +1851,33 @@ function support_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
       return array('join' => ' LEFT JOIN {node} n ON nc.nid = n.nid', 'where' => " n.type != 'support_ticket'");
     }
   }
+  // Filter support_timer_reports by taxonomy term, when desired.
+  else if ($primary_table == 'n' && $primary_field == 'nid' && strpos($query, 'support_ticket_timer') && strpos($query, 't.client IN')) {
+    $tid = isset($_GET['tid']) ? $_GET['tid'] : '';
+    if ($tid) {
+      $alter = array('join' => ' LEFT JOIN {term_node} tn ON n.nid = tn.nid');
+      if ($tid == 'null') {
+        $alter['where'] = "ISNULL(tn.tid)";
+      }
+      else if ($tid && $tid == preg_replace('/[^0-9,]/', '', $tid)) {
+        $alter['where'] = "tn.tid IN($tid)";
+      }
+      return $alter;
+    }
+  }
+  else if ($primary_table == 'c' && $primary_field == 'cid' && strpos($query, 'support_ticket_comment_timer') && strpos($query, 't.client IN')) {
+    $tid = isset($_GET['tid']) ? $_GET['tid'] : '';
+    if ($tid) {
+      $alter = array('join' => ' LEFT JOIN {term_node} tn ON c.nid = tn.nid');
+      if ($tid == 'null') {
+        $alter['where'] = "ISNULL(tn.tid)";
+      }
+      else if ($tid && $tid == preg_replace('/[^0-9,]/', '', $tid)) {
+        $alter['where'] = "tn.tid IN($tid)";
+      }
+      return $alter;
+    }
+  }
 }
 
 /**
@@ -2377,7 +2416,7 @@ function support_subscribe_form(&$form_state, $edit, $title) {
           }
           else {
             $autoassign = _support_autoassign($node->client, $node->uid);
-            if ($autoassign && $autoassign != $user->uid) {
+            if ($autoassign && $autoassign == $uid) {
               $enabled = TRUE;
             }
             else {
@@ -2605,6 +2644,143 @@ function _support_truncate($text, $maxlen = 64) {
 }
 
 /**
+ * Form builder; Return form for support ticket listing filters.
+ */
+function support_filter_form($client, $filters, $state) {
+  // Ignore these values when determining if a given filter is active.
+  unset($filters['join']);
+  unset($filters['where']);
+  unset($filters['or']);
+
+  $form = array();
+  $form['filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Filter by'),
+    '#collapsible' => TRUE,
+    '#collapsed' => empty($filters),
+  );
+
+  $options = _support_client_terms($client, $state);
+  if (count($options)) {
+    // Filter by taxonomy.
+    $form['filter']['tags'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Tags'),
+      '#collapsible' => TRUE,
+      '#collapsed' => empty($filters['tid']),
+    );
+    $form['filter']['tags']['tid'] = array(
+      '#type' => 'select',
+      '#multiple' => TRUE,
+      '#options' => $options,
+      '#size' => count($options) > 10 ? 10 : 5,
+      '#default_value' => isset($filters['tid']) ? $filters['tid'] : 0,
+    );
+  }
+
+  // No point in filtering by user if showing only self-assigned tickets.
+  if ($state != -2) {
+    $options = array('-1' => '- not assigned -');
+    if ($users = _support_client_users($client)) {
+      $options += $users;
+    }
+    unset($options[0]);
+    if (count($options)) {
+      // Filter by who's assigned.
+      $form['filter']['assigned'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Assigned'),
+        '#collapsible' => TRUE,
+        '#collapsed' => empty($filters['uid']),
+      );
+      $form['filter']['assigned']['uid'] = array(
+        '#type' => 'select',
+        '#multiple' => TRUE,
+        '#options' => $options,
+        '#default_value' => isset($filters['uid']) ? $filters['uid'] : 0,
+      );
+    }
+  }
+
+  // No point in filtering by state if only showing tickets in a specific state.
+  if ($state < 1) {
+    // Filter by states.
+    $form['filter']['state'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('State'),
+      '#collapsible' => TRUE,
+      '#collapsed' => empty($filters['sid']),
+    );
+    $options = _support_states();
+    $form['filter']['state']['sid'] = array(
+      '#type' => 'select',
+      '#multiple' => TRUE,
+      '#options' => $options,
+      '#default_value' => isset($filters['sid']) ? $filters['sid'] : 0,
+    );
+  }
+
+  // Filter by priorities.
+  $form['filter']['priority'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Priority'),
+    '#collapsible' => TRUE,
+    '#collapsed' => empty($filters['pid']),
+  );
+  $options = _support_priorities();
+  $form['filter']['priority']['pid'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#options' => $options,
+    '#default_value' => isset($filters['pid']) ? $filters['pid'] : 0,
+  );
+
+  $form['filter']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#validate' => array('support_filter_form_validate'),
+    '#submit' => array('support_filter_form_submit'),
+  );
+  $form['filter']['markup'] = array(
+    '#type' => 'markup',
+    '#value' => l(t('Reset'), 'support'),
+  );
+  return $form;
+}
+
+/**
+ * Validate the support_filter_form.
+ */
+function support_filter_form_validate($form, &$form_state) {
+  // Nothing to do here at this time.
+}
+
+/**
+ * Convert tid array to comma seperated list for URL.
+ */
+function support_filter_form_submit($form, &$form_state) {
+  $query = array();
+  if (!empty($form_state['values']['tid'])) {
+    $query['tid'] = implode(',', $form_state['values']['tid']);
+  }
+  if (!empty($form_state['values']['uid'])) {
+    $query['uid'] = implode(',', $form_state['values']['uid']);
+  }
+  if (!empty($form_state['values']['sid'])) {
+    $query['sid'] = implode(',', $form_state['values']['sid']);
+  }
+  if (!empty($form_state['values']['pid'])) {
+    $query['pid'] = implode(',', $form_state['values']['pid']);
+  }
+
+  $form_state['support_filter_query'] = $query;
+  drupal_alter('support_filter_form_submit', $form_state);
+
+  $path = drupal_get_path_alias(isset($_GET['q']) ? $_GET['q'] : '');
+  drupal_goto($path, $form_state['support_filter_query']);
+}
+
+/**
  * Display tickets
  */
 function support_page_form(&$form_state, $client = NULL, $state = NULL) {
@@ -2656,6 +2832,53 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   }
   $state = _support_get_state($state);
 
+  // Optionally filter ticket listing.
+  $available = array('tid', 'uid', 'sid', 'pid');
+  $filters = array();
+  foreach ($available as $filter) {
+    $to_filter = isset($_GET[$filter]) ? $_GET[$filter] : '';
+    $unsanitized = explode(',', $to_filter);
+    foreach ($unsanitized as $element) {
+      $element = (int)$element;
+      if ($element) {
+        $filters[$filter][$element] = $element;
+      }
+    }
+  }
+
+  $join = $where = $or = array();
+  if (!empty($filters)) {
+    $client_object = support_client_load($client);
+    if (isset($filters['tid']) && !empty($filters['tid'])) {
+      $join[] = 'LEFT JOIN {term_node} tn ON n.nid = tn.nid';
+      $where[] = strtr('tn.tid IN (!tid)', array('!tid' => implode(',', $filters['tid'])));
+    }
+    if (isset($filters['uid']) && !empty($filters['uid'])) {
+      if (isset($filters['uid'][-1])) {
+        $filters['uid'][-1] = 0;
+      }
+      $where[] = strtr('t.assigned IN (!uid)', array('!uid' => implode(',', $filters['uid'])));
+      if (isset($filters['uid'][-1])) {
+        $filters['uid'][-1] = -1;
+      }
+    }
+    if (isset($filters['sid']) && !empty($filters['sid'])) {
+      $where[] = strtr('t.state IN (!sid)', array('!sid' => implode(',', $filters['sid'])));
+    }
+    if (isset($filters['pid']) && !empty($filters['pid'])) {
+      $where[] = strtr('t.priority IN (!pid)', array('!pid' => implode(',', $filters['pid'])));
+    }
+  }
+  $filters['join'] = $join;
+  $filters['where'] = $where;
+  $filters['or'] = $or;
+  drupal_alter('support_ticket_listing_filter', $filters);
+  if (!empty($filters['where'])) {
+    array_unshift($filters['where'], ' ');
+  }
+  // Allow filtering of ticket listing.
+  $form += support_filter_form($client, $filters, $state);
+
   $form['post-ticket'] = array(
     '#type' => 'markup',
     '#value' => l(t('Post new support ticket'), 'node/add/support-ticket'),
@@ -2673,7 +2896,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     SUPPORT_SORT_UPDATE => array('data' => t('Updated'), 'field' => 'last_updated'),
     SUPPORT_SORT_NID => array('data' => t('Id'), 'field' => 'n.nid'),
     SUPPORT_SORT_STATE => array('data' => t('State'), 'field' => 't.state'),
-    SUPPORT_SORT_PRIORITY => array('data' => t('Priority'), 'field' => 't.priority')) as $key => $array) {
+    SUPPORT_SORT_PRIORITY => array('data' => t('Priority'), 'field' => 'spri.weight')) as $key => $array) {
     if ($sort == $key) {
       $headers[$key] = $array + array('sort' => $order);
     }
@@ -2697,10 +2920,10 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
   );
 
   if ($state == -2) {
-    $my_open = " AND t.assigned = $user->uid";
+    $my_open = "AND t.assigned = $user->uid";
   }
   else {
-    $my_open = "";
+    $my_open = '';
   }
 
   if ($state < 0) {
@@ -2710,9 +2933,13 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     $state = $state ? "AND t.state = $state" : '';
   }
 
-  $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.assigned, t.client FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.status = 1 AND n.type = 'support_ticket' AND client = $client $state $my_open";
+  $sql = "SELECT DISTINCT(n.nid), n.title, n.type, n.changed, n.uid, u.name, GREATEST(n.changed, l.last_comment_timestamp) AS last_updated, l.comment_count, t.state, t.priority, t.assigned, t.client FROM {node} n LEFT JOIN {support_ticket} t ON n.nid = t.nid LEFT JOIN {support_priority} spri ON t.priority = spri.pid INNER JOIN {node_comment_statistics} l ON n.nid = l.nid INNER JOIN {users} u ON n.uid = u.uid ". implode(' ', $filters['join']) ." WHERE (n.status = 1 AND n.type = 'support_ticket' AND client = $client $state $my_open ". implode(' AND ', $filters['where']);
   if (!user_access('view other users tickets') && !user_access('administer support') && !user_access('edit any ticket') && !user_access('delete any ticket')) {
     $sql .= " AND (n.uid = $user->uid OR t.assigned = $user->uid)";
+  }
+  $sql .= ')';
+  if (!empty($filters['or'])) {
+    $sql .= ' OR ('. implode(' OR ', $filters['or']) .')';
   }
   $sql = db_rewrite_sql($sql);
   $sql .= tablesort_sql($form['header']['#value']);
@@ -2736,7 +2963,7 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
       $sql .= ", t.priority $order";
       break;
   }
-  $sql_count = "SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {comments} c ON n.nid = c.nid AND (c.status = %d OR c.status IS NULL) LEFT JOIN {support_ticket} t ON n.nid = t.nid WHERE n.status = 1 AND client = $client $state $my_open";
+  $sql_count = 'SELECT COUNT(DISTINCT(n.nid)) FROM {node} n LEFT JOIN {comments} c ON n.nid = c.nid AND (c.status = 0 OR c.status IS NULL) LEFT JOIN {support_ticket} t ON n.nid = t.nid '. implode(' ', $filters['join']) ." WHERE n.status = 1 AND client = $client $state $my_open ". implode(' AND ', $filters['where']);
   $sql_count = db_rewrite_sql($sql_count);
   $result = pager_query($sql, 50, 0, $sql_count);
   $rows = array();
@@ -2841,7 +3068,6 @@ function support_page_form(&$form_state, $client = NULL, $state = NULL) {
     $form['update'] = array(
       '#title' => t('Update'),
       '#type' => 'textarea',
-      '#required' => variable_get('support_require_comment', TRUE),
       '#description' => t('This text will be added to all selected tickets.'),
     );
     if (user_access('can suppress notification') && variable_get('support_notifications', TRUE)) {
@@ -2868,6 +3094,11 @@ function support_page_form_validate($form, &$form_state) {
   $form_state['values']['tickets'] = array_diff($form_state['values']['tickets'], array(0));
   if (count($form_state['values']['tickets']) == 0) {
     form_set_error('', t('Please select one or more tickets to perform the update on.'));
+  }
+  if (variable_get('support_require_comment', TRUE)) {
+    if (!$form_state['values']['update']) {
+      form_set_error('update', t('You must enter a ticket update.'));
+    }
   }
 }
 
@@ -2901,7 +3132,8 @@ function support_page_form_submit($form, &$form_state) {
  */
 function theme_support_page_form($form) {
   drupal_add_css(drupal_get_path('module', 'support') .'/support-tickets.css');
-  $output = drupal_render($form['post-ticket']);
+  $output = drupal_render($form['filter']);
+  $output .= drupal_render($form['post-ticket']);
   if (isset($form['title']) && is_array($form['title'])) {
     foreach (element_children($form['title']) as $key) {
       $row = array();
@@ -3362,4 +3594,152 @@ function support_client_create($client) {
   else {
     drupal_set_message(t('Client %client creation failed.', array('%client' => $client->name)), 'error');
   }
+}
+
+/**
+ * Allow projects to be selected.
+ */
+function support_support_timer_client_report_alter(&$report) {
+  $report->filters .= drupal_get_form('support_invoice_ui_form');
+}
+
+function _support_state_query_filter($state) {
+  if ($state == -2) {
+    global $user;
+    $query_filter = " AND st.assigned = $user->uid ";
+  }
+  else {
+    $query_filter = '';
+  }
+
+  if ($state < 0) {
+    $query_filter .= ' AND st.state NOT IN ('. implode(', ', _support_get_state(SUPPORT_STATE_CLOSED)) .') ';
+  }
+  else {
+    $query_filter .= $state ? " AND st.state = $state " : '';
+  }
+  return $query_filter;
+}
+
+/**
+ * Return an alphabetized list of all terms used with this client.
+ */
+function _support_client_terms($clid, $state = NULL) {
+  static $tids = array();
+
+  if (!isset($tids[$clid][$state])) {
+    $query_filter = _support_state_query_filter($state);
+
+    if ($state < 0) {
+      $query_filter .= 'AND st.state NOT IN ('. implode(', ', _support_get_state(SUPPORT_STATE_CLOSED)) .')';
+    }
+    else {
+      $query_filter .= $state ? "AND st.state = $state" : '';
+    }
+
+    $result = db_query('SELECT DISTINCT(tn.tid) AS tid, td.name FROM {support_ticket} st LEFT JOIN {term_node} tn ON st.nid = tn.nid LEFT JOIN {term_data} td ON tn.tid = td.tid WHERE st.client = %d AND !ISNULL(tn.nid) '. $query_filter .' ORDER BY td.name ASC', $clid);
+
+    while ($term = db_fetch_object($result)) {
+      $tids[$clid][$state][$term->tid] = $term->name;
+    }
+  }
+
+  if (isset($tids[$clid][$state])) {
+    return $tids[$clid][$state];
+  }
+  return NULL;
+}
+
+/**
+ *
+ */
+function _support_client_users($clid) {
+  static $uids = array();
+  if (!isset($uids[$clid])) {
+    $result = db_query('SELECT DISTINCT(u.uid) AS uid, u.name FROM {support_ticket} st LEFT JOIN {users} u ON st.assigned = u.uid WHERE st.client = %d ORDER BY u.name ASC', $clid);
+    while ($account = db_fetch_object($result)) {
+      $uids[$clid][$account->uid] = $account->name;
+    }
+  }
+
+  if (isset($uids[$clid])) {
+    return $uids[$clid];
+  }
+  return NULL;
+}
+
+/**
+ * Provide form for selecting projects.
+ */
+function support_invoice_ui_form() {
+  $form = array();
+
+  if (user_access('administer support') && count(_support_client_terms(_support_current_client()))) {
+    $tags = array(-1 => t('-- no tag --'), 0 => t('-- all tags --')) + _support_client_terms(_support_current_client());
+    $term = isset($_GET['tid']) ? $_GET['tid'] : '';
+    if ($term && $term == preg_replace('/[^0-9,]/', '', $term)) {
+      $selected = explode(',', $term);
+    }
+    else if ($_GET['tid'] == 'null') {
+      $selected = -1;
+    }
+    else {
+      $selected = 0;
+    }
+    $form['tags'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Tags'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $selected ? FALSE : TRUE,
+    );
+    $form['tags']['tids']= array(
+      '#title' => t('Tag'),
+      '#type' => 'select',
+      '#multiple' => TRUE,
+      '#options' => $tags,
+      '#default_value' => $selected,
+      '#description' => t('Filter report by selected tag(s).'),
+    );
+    $form['tags']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Update filter'),
+    );
+  }
+  return $form;
+}
+
+/*
+ * Add url filter when tags are selected.
+ */
+function support_invoice_ui_form_submit($form, &$form_state) {
+  $tids = array();
+  if (!empty($form_state['values']['tids'])) {
+    foreach ($form_state['values']['tids'] as $tid) {
+      if ($tid == -1) {
+        $tids = array('null');
+        break;
+      }
+      else if ($tid == 0) {
+        $tids = '';
+        break;
+      }
+      else {
+        $tids[$tid] = $tid;
+      }
+    }
+    if ($tids) {
+      $tids = implode(',', $tids);
+    }
+  }
+  $path = drupal_get_path_alias(isset($_GET['q']) ? $_GET['q'] : '');
+  $query = array();
+  foreach ($_GET as $key => $value) {
+    if (!in_array($key, array('q', 'tid'))) {
+      $query[$key] = $value;
+    }
+  }
+  if ($tids) {
+    $query['tid'] = $tids;
+  }
+  drupal_goto($path, $query);
 }

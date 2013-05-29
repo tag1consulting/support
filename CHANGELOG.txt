@@ -1,3 +1,11 @@
+May 29th, 2013
+ - support.module
+     o feature #2007426: filter ticket listings by: taxonomy term, user,
+       state, and/or priority
+     o bug #1342606: auto-assign per client configuration
+     o bug #2007430: when sorting ticket listing by priority, use priority weight
+       not priority name
+
 April 4th, 2012
  - support.module
      o bug #1508708 by andrewfn: sort per configured secondary sort order.

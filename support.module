@@ -1151,7 +1151,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!ticket_id' => $nid,
     '!ticket_update_id' => isset($comment['cid']) ? $comment['cid'] : 0,
     '!update_username' => isset($update_account->name) ? $update_account->name : '',
-    '!update_realname' => theme('username', $user, array('plain' => TRUE)),
+    '!update_realname' => theme('username', $user),
     '!site' => variable_get('site_name', 'Drupal'),
     '!uri' => $base_url,
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
@@ -1166,7 +1166,7 @@ function support_mail_tokens($account, $language, $nid, $comment, $suppress) {
     '!state' => ((isset($previous->state) && $previous->state != $node->state) ? _support_state($previous->state) .' -> ' : '') . _support_state($node->state),
     '!priority' => ((isset($previous->priority) && $previous->priority != $node->priority) ? _support_priorities($previous->priority) .' -> ' : '') . _support_priorities($node->priority),
     '!assigned_username' => !empty($assigned) ? $assigned->name : '',
-    '!assigned_realname' => !empty($assigned) ? theme('username', $assigned, array('plain' => TRUE)) : '',
+    '!assigned_realname' => !empty($assigned) ? theme('username', $assigned) : '',
     '!unsubscribe_ticket' => url("support/$nid/unsubscribe/$account->uid/$ticket_unsubscribe_key", array('absolute' => TRUE, 'language' => $language, 'alias' => !variable_get('support_use_aliased_urls', TRUE))),
     '!unsubscribe_all' => url("support/all/unsubscribe/$account->uid/$all_unsubscribe_key", array('absolute' => TRUE, 'language' => $language, 'alias' => !variable_get('support_use_aliased_urls', TRUE))),
   );

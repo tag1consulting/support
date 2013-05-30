@@ -13,6 +13,7 @@ May 29th, 2013
       not priority name
     o bug #1313856 by wodenx, tinker, jeremy: use aliases in notification emails
     o feature #621378 backport by tinker, optionally filter uid1
+    o bug #1886052 by tinker: extra parameter sent to theme_username()
 
 April 4th, 2012
  - support.module

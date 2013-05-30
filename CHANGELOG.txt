@@ -11,6 +11,8 @@ May 29th, 2013
     o bug #1342606: auto-assign per client configuration
     o bug #2007430: when sorting ticket listing by priority, use priority weight
       not priority name
+    o bug #1313856 by wodenx, tinker, jeremy: use aliases in notification emails
+    o feature #621378 backport by tinker, optionally filter uid1
 
 April 4th, 2012
  - support.module

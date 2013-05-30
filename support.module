@@ -364,7 +364,11 @@ function support_autocomplete_assigned($clid = 0, $string = '') {
       $roles[$role->rid] = $role->rid;
     }
     if (!empty($roles)) {
-      $result = db_query_range("SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')", implode(', ', $roles), $string, 0, 10);
+      $role_sql = "SELECT u.name FROM {users} u LEFT JOIN {users_roles} r ON u.uid = r.uid WHERE r.rid IN (%s) AND u.status = 1 AND LOWER(name) LIKE LOWER('%s%%')";
+      if (variable_get('support_filter_uid1', FALSE)) {
+        $role_sql .= ' AND u.uid <> 1';
+      }
+      $result = db_query_range($role_sql, implode(', ', $roles), $string, 0, 10);
       while ($user = db_fetch_object($result)) {
         $matches[$user->name] = check_plain($user->name);
       }
@@ -2309,6 +2313,11 @@ function _support_assigned($assigned, $node, $limit = 9999) {
         $account = user_load(array('uid' => $uid));
         $available["$assigned-$node->nid"][$account->uid] = $account->name;
       }
+      // Filter uid1 if support_filter_uid1 enabled; however, don't filter if
+      // the ticket is already assigned to uid1, or current user is uid1.
+      if ($user->uid != 1 && $assigned != 1 && variable_get('support_filter_uid1', FALSE)) {
+        unset($available["$assigned-$node->nid"][1]);
+      }
     }
     // sort by name
     asort($available["$assigned-$node->nid"]);
@@ -2380,11 +2389,13 @@ function support_subscribe_form(&$form_state, $edit, $title) {
       $available = _support_assigned(0, $node, variable_get('support_autocomplete_limit', 15));
       if ($available === FALSE) {
         $account = user_load(array('uid' => $node->assigned));
-        $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d', $node->nid);
         $accounts = array();
-        while ($a = db_fetch_object($result)) {
-          $account = user_load(array('uid' => $a->uid));
-          $accounts[] = $account->name;
+        if (isset($node->nid)) {
+          $result = db_query('SELECT uid FROM {support_assigned} WHERE nid = %d', $node->nid);
+          while ($a = db_fetch_object($result)) {
+            $account = user_load(array('uid' => $a->uid));
+            $accounts[] = $account->name;
+          }
         }
         if (!empty($accounts)) {
           $default = implode(', ', $accounts);

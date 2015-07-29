@@ -1,0 +1,5 @@
+name: 'Support'
+type: module
+description: 'A simple helpdesk and support ticketing system.'
+package: Support
+core: 8.x

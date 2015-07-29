@@ -16,6 +16,10 @@ php:
   - 7
   - hhvm
 
+branches:
+  only:
+    - "8.x-1.x"
+
 matrix:
   fast_finish: true
   allow_failures:

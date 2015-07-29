@@ -1,5 +1,0 @@
-name = Support Substatus
-description = Add per-client substatus fields to the support module
-package = Support
-dependencies[] = support
-core = 6.x

@@ -1,6 +1,0 @@
-name = Support
-package = Support
-description = A simple helpdesk and support ticketing system.
-dependencies[] = comment
-dependencies[] = upload
-core = 6.x

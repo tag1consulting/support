@@ -1,7 +1,0 @@
-name = Support Solr
-description = Provides integration with ApacheSolr for facet-based support ticket browsing
-package = Support
-dependencies[] = support
-dependencies[] = apachesolr
-core = 6.x
-

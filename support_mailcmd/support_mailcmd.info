@@ -1,5 +1,0 @@
-name = Support Mail Commands
-package = Support
-description = Advanced support ticket editing via emil.
-dependencies[] = support
-core = 6.x

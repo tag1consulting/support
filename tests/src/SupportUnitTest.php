@@ -9,6 +9,8 @@ namespace Drupal\Tests\support;
 
 /**
  * @todo Add coversDefaultClass \Drupal\support\Support
+ *
+ * @group support
  */
 class SupportTest extends UnitTestBase {
 

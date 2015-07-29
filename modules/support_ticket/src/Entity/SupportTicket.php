@@ -15,11 +15,12 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\user\UserInterface;
 
 /**
- * Defines the Support Ticket entity.
+ * Defines the SupportTicket entity.
  *
  * @ConfigEntityType(
  *   id = "support_ticket",
  *   label = @Translation("Support ticket"),
+ *   bundle_label = @Translation("Support ticket type"),
  *   handlers = {
  *     "storage" = "Drupal\support\SupportTicketStorage", // @todo -- what do we do with this?
  *     "storage_schema" = "Drupal\support\SupportTicketStorageSchema", // @todo -- what do we do with this?
@@ -40,22 +41,18 @@ use Drupal\user\UserInterface;
  *   data_table = "support_ticket_field_data",
  *   revision_table = "support_ticket_revision",
  *   revision_data_table = "support_ticket_field_revision",
+ *   translatable = TRUE,
  *   config_prefix = "form", // @todo -- what is a config_prefix?
  *   entity_keys = {
  *     "id" = "stid",
  *     "revision" = "vid",
- *     "bundle" = "type", // @todo -- will we define a bundle?
+ *     "bundle" = "type",
  *     "label" = "title",
  *     "uuid" = "uuid",
  *     "status" = "status",
  *     "uid" = "uid",
  *   },
- *   admin_permission = "administer support ticket",
- *   bundle_of = "contact_message", // @todo -- do we need a bundle?
- *   entity_keys = {
- *     "id" = "id",
- *     "label" = "label"
- *   },
+ *   bundle_entity_type = "support_ticket_type",
  *   links = {
  *     "canonical" = "/support_ticket/{support_ticket}",
  *     "delete-form" = "/support_ticket/{support_ticket}/delete",
@@ -128,6 +125,33 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
         search_index_clear('support_ticket_search', $entity->stid->value);
       }
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getType() {
+    return $this->bundle();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function prepareLangcode() {
+    $langcode = $this->language()->getId();
+    // If the Language module is enabled, try to use the language from content
+    // negotiation.
+    if (\Drupal::moduleHandler()->moduleExists('language')) {
+      // Load languages the support ticket exists in.
+      $support_ticket_translations = $this->getTranslationLanguages();
+      // Load the language from content negotiation.
+      $content_negotiation_langcode = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+      // If there is a translation available, use it.
+      if (isset($support_ticket_translations[$content_negotiation_langcode])) {
+        $langcode = $content_negotiation_langcode;
+      }
+    }
+    return $langcode;
   }
 
   /**
@@ -263,9 +287,29 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 
+    $fields['type'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Type'))
+      ->setDescription(t('The support ticket type.'))
+      ->setSetting('target_type', 'support_ticket_type')
+      ->setReadOnly(TRUE);
+
+    $fields['langcode'] = BaseFieldDefinition::create('language')
+      ->setLabel(t('Language'))
+      ->setDescription(t('The support ticket language code.'))
+      ->setTranslatable(TRUE)
+      ->setRevisionable(TRUE)
+      ->setDisplayOptions('view', array(
+        'type' => 'hidden',
+      ))
+      ->setDisplayOptions('form', array(
+        'type' => 'language_select',
+        'weight' => 2,
+      ));
+
     $fields['title'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Title'))
       ->setRequired(TRUE)
+      ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
       ->setDefaultValue('')
       ->setSetting('max_length', 255)
@@ -287,6 +331,7 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
       ->setSetting('target_type', 'user')
       ->setSetting('handler', 'default')
       ->setDefaultValueCallback('Drupal\support\Entity\SupportTicket::getCurrentUserId')
+      ->setTranslatable(TRUE)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'author',
@@ -307,18 +352,21 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
       ->setLabel(t('Publishing status'))
       ->setDescription(t('A boolean indicating whether the support ticket is published.'))
       ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
       ->setDefaultValue(TRUE);
 
     $fields['locked'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Locked status'))
       ->setDescription(t('A boolean indicating whether the support ticket is locked (only editable by an admin).'))
       ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
       ->setDefaultValue(FALSE);
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Authored on'))
       ->setDescription(t('The time that the support ticket was created.'))
       ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'timestamp',
@@ -334,7 +382,7 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the support ticket was last edited.'))
       ->setRevisionable(TRUE)
-
+      ->setTranslatable(TRUE);
 
     $fields['revision_timestamp'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Revision timestamp'))
@@ -353,6 +401,7 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
       ->setLabel(t('Revision log message'))
       ->setDescription(t('Briefly describe the changes you have made.'))
       ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
       ->setDisplayOptions('form', array(
         'type' => 'string_textarea',
         'weight' => 25,
@@ -360,6 +409,13 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
           'rows' => 4,
         ),
       ));
+
+    $fields['revision_translation_affected'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Revision translation affected'))
+      ->setDescription(t('Indicates if the last edit of a translation belongs to current revision.'))
+      ->setReadOnly(TRUE)
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE);
 
     return $fields;
   }

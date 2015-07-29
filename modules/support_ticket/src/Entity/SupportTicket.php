@@ -25,7 +25,6 @@ use Drupal\user\UserInterface;
  *     "storage" = "Drupal\support\SupportTicketStorage",
  *     "storage_schema" = "Drupal\support\SupportTicketStorageSchema",
  *     "view_builder" = "Drupal\support\SupportTicketViewBuilder",
- *     "access" = "Drupal\support\SupportTicketAccessControlHandler", // @todo -- what do we do with this?
  *     "views_data" = "Drupal\support\SupportTicketViewsData",
  *     "form" = {
  *       "default" = "Drupal\support\SupportTicketForm",

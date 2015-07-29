@@ -24,8 +24,8 @@ class SupportTicketRouteProvider implements EntityRouteProviderInterface {
     $route_collection = new RouteCollection();
     $route = (new Route('/support_ticket/{support_ticket}'))
       ->addDefaults([
-        '_controller' => '\Drupal\support\Controller\SupportTicketViewController::view', // @todo: implement
-        '_title_callback' => '\Drupal\support\Controller\SupportTicketViewController::title', // @todo: implement
+        '_controller' => '\Drupal\support\Controller\SupportTicketViewController::view',
+        '_title_callback' => '\Drupal\support\Controller\SupportTicketViewController::title',
       ])
       ->setRequirement('_entity_access', 'support_ticket.view'); // @todo: is this supported?
     $route_collection->add('entity.support_ticket.canonical', $route);

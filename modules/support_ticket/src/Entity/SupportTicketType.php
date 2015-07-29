@@ -33,7 +33,7 @@ use Drupal\support\SupportTicketInterface;
  *     "label" = "name"
  *   },
  *   links = {
- *     "edit-form" = "/admin/support/ticket-types/manage/{support_ticket_type}", // @todo - revisit admin paths
+ *     "edit-form" = "/admin/support/ticket-types/manage/{support_ticket_type}",
  *     "delete-form" = "/admin/support/ticket-types/manage/{suppor_ticket_type}/delete",
  *     "collection" = "/admin/support/ticket-types",
  *   },

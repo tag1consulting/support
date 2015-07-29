@@ -19,9 +19,11 @@ class SupportBasicTest extends WebTestBase {
   /**
    * Modules to enable.
    *
+   * Note: node is only needed for testing 'access content'.
+   *
    * @var array
    */
-  public static $modules = array('support');
+  public static $modules = array('support', 'node');
 
   /**
    * The basic functionality of the support module.

@@ -8,6 +8,26 @@
 use Drupal\Core\Routing\RouteMatchInterface
 
 /**
+ * Denotes that the support ticket is not published.
+ */
+const SUPPORT_TICKET_NOT_PUBLISHED = 0;
+
+/**
+ * Denotes that the support ticket is published.
+ */
+const SUPPORT_TICKET_PUBLISHED = 1;
+
+/**
+ * Denotes that the support ticket is not locked.
+ */
+const SUPPORT_TICKET_NOT_LOCKED = 0;
+
+/**
+ * Denotes that the support ticket is locked.
+ */
+const SUPPORT_TICKET_LOCKED = 1;
+
+/**
  * Implements hook_help().
  */
 function support_ticket_help($route_name, RouteMatchInterface $route_match) {

@@ -194,6 +194,21 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
   /**
    * {@inheritdoc}
    */
+  public function isLocked() {
+    return (bool) $this->get('locked')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setLocked($locked) {
+    $this->set('locked', $locked ? SUPPORT_TICKET_LOCKED : SUPPORT_TICKET_NOT_LOCKED);
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function isPublished() {
     return (bool) $this->getEntityKey('status');
   }
@@ -202,7 +217,7 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
    * {@inheritdoc}
    */
   public function setPublished($published) {
-    $this->set('status', $published ? NODE_PUBLISHED : NODE_NOT_PUBLISHED);
+    $this->set('status', $published ? SUPPORT_TICKET_PUBLISHED : SUPPORT_TICKET_NOT_PUBLISHED);
     return $this;
   }
 

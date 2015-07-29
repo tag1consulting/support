@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Contains \Drupal\Tests\support\SupportUnitTest;
+ */
+
+namespace Drupal\Tests\support;
+
+/**
+ * @todo Add coversDefaultClass \Drupal\support\Support
+ */
+class SupportTest extends UnitTestBase {
+
+  /**
+   * Tests that unit tests work.
+   */
+  public function testGeneric() {
+    // @todo Add real test code here.
+    $this->assertEquals(TRUE, TRUE, 'Tautology is true.');
+  }
+
+}

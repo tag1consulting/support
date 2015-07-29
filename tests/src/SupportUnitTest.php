@@ -14,7 +14,7 @@ use Drupal\Tests\UnitTestCase;
  *
  * @group support
  */
-class SupportTest extends UnitTestBase {
+class SupportTest extends UnitTestCase {
 
   /**
    * Tests that unit tests work.

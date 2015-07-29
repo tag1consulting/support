@@ -23,7 +23,7 @@ use Drupal\support\SupportTicketInterface;
  *       "edit" = "Drupal\support\SupportTicketTypeForm", @todo
  *       "delete" = "Drupal\support\Form\SupportTicketTypeDeleteConfirm" @todo
  *     },
- *     "list_builder" = "Drupal\support\SupportTicketTypeListBuilder", @todo
+ *     "list_builder" = "Drupal\support\SupportTicketTypeListBuilder",
  *   },
  *   admin_permission = "administer support ticket types",
  *   config_prefix = "type", @todo: -- what is this?

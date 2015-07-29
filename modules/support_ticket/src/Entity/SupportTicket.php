@@ -23,8 +23,8 @@ use Drupal\user\UserInterface;
  *   bundle_label = @Translation("Support ticket type"),
  *   handlers = {
  *     "storage" = "Drupal\support\SupportTicketStorage",
- *     "storage_schema" = "Drupal\support\SupportTicketStorageSchema", // @todo -- what do we do with this?
- *     "view_builder" = "Drupal\support\SupportTicketViewBuilder", // @todo -- what do we do with this?
+ *     "storage_schema" = "Drupal\support\SupportTicketStorageSchema",
+ *     "view_builder" = "Drupal\support\SupportTicketViewBuilder",
  *     "access" = "Drupal\support\SupportTicketAccessControlHandler", // @todo -- what do we do with this?
  *     "views_data" = "Drupal\support\SupportTicketViewsData", // @todo -- what do we do with this?
  *     "form" = {
@@ -33,7 +33,7 @@ use Drupal\user\UserInterface;
  *       "edit" = "Drupal\support\SupportTicketForm"
  *     },
  *     "route_provider" = {
- *       "html" = "Drupal\support\Entity\SupportTicketRouteProvider", // @todo -- what do we do with this?
+ *       "html" = "Drupal\support\Entity\SupportTicketRouteProvider",
  *     },
  *     "list_builder" = "Drupal\support\SupportTicketListBuilder",
  *   },

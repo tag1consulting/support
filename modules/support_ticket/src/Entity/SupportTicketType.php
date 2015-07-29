@@ -19,9 +19,9 @@ use Drupal\support\SupportTicketInterface;
  *   label = @Translation("Support ticket type"),
  *   handlers = {
  *     "form" = {
- *       "add" = "Drupal\support\SupportTicketTypeForm", @todo
- *       "edit" = "Drupal\support\SupportTicketTypeForm", @todo
- *       "delete" = "Drupal\support\Form\SupportTicketTypeDeleteConfirm" @todo
+ *       "add" = "Drupal\support\SupportTicketTypeForm",
+ *       "edit" = "Drupal\support\SupportTicketTypeForm",
+ *       "delete" = "Drupal\support\Form\SupportTicketTypeDeleteConfirm"
  *     },
  *     "list_builder" = "Drupal\support\SupportTicketTypeListBuilder",
  *   },

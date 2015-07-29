@@ -7,6 +7,8 @@
 
 namespace Drupal\Tests\support;
 
+use Drupal\Tests\UnitTestCase;
+
 /**
  * @todo Add coversDefaultClass \Drupal\support\Support
  *

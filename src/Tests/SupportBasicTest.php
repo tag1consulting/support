@@ -5,7 +5,7 @@
  */
 namespace Drupal\support\Tests;
 
-use Drupal\support\WebTestBase;
+use Drupal\simpletest\WebTestBase;
 
 /**
  * Tests the basic support integration functionality.

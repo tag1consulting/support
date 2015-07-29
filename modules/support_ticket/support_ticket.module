@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Enables use of support tickets with optional time tracking.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface
+
+/**
+ * Implements hook_help().
+ */
+function support_ticket_help($route_name, RouteMatchInterface $route_match) {
+
+  switch ($route_name) {
+    case 'help.page.support_ticket':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Support Ticket module provides a Support Ticket content type with optional time tracking.') . '</p>';
+      // @todo write useful documentation.
+      return $output;
+  }
+
+}

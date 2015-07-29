@@ -1,3 +1,21 @@
+July 29th, 2015:
+ - support.module
+    o feature: optional filtering of UID1 from ticket assignment and subscription
+      lists
+    o feature: combined ticket listing from all clients user has access to
+    o feature: block displaying all users with access to current client ticket queue
+    o feature: filter tickets by one or more clients
+    o feature: allow sending and receiving HTML emails (sending requires "mimemail")
+    o feature: more verbose when manually downloading ticket emails
+    o feature: pass mail hooks raw email headers (for use by plugins)
+    o cleanup: don't force automatic changing of state from 'new' to 'active'.
+    o cleanup: remove unused string at end of all notification emails
+ - support_pm.module:
+    o feature: introduce 'view support project' permission, no longer require
+      'administer support projects' to view projects
+ - support_substatus:
+    o bug: properly display substatus
+
 May 29th, 2013
  - support_solr.module
     o feature #1336080: solr search integration

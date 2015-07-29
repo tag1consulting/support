@@ -363,6 +363,8 @@ function theme_support_substatus_page_form($form) {
 
 function theme_support_substatus_page_user($header, $rows) {
   if (!user_access('view support substatus')) {
+    // @todo fix; we likely shouldn't be calling with an empty array
+    $form = array();
     return theme_support_page_form($form);
   }
   $new_header = array();
@@ -418,11 +420,16 @@ function support_substatus_support_mail_tokens_alter($tokens) {
   $current_substatus_id = (int)_support_substatus_notification_static();
   $tokens['!previous_substatus_id'] = $previous_substatus_id;
   $tokens['!current_substatus_id'] = $current_substatus_id;
-  $tokens['!substatus'] = (($previous_substatus && $previous_substatus_id != $current_substatus_id) ? _support_substatus_substatus($previous_substatus_id) .' -> ' : '') . _support_substatus_substatus($current_substatus_id);
-  $tokens['!optional_status'] = !empty($current_substatus_id) ? "\nStatus: ". $tokens['!substatus'] : '';
+  $tokens['!substatus'] = (($previous_substatus_id && $previous_substatus_id != $current_substatus_id) ? _support_substatus_substatus($previous_substatus_id) .' -> ' : '') . _support_substatus_substatus($current_substatus_id);
+  if (function_exists('mimemail')) {
+    $tokens['!optional_status'] = !empty($current_substatus_id) ? "<br />Status: ". $tokens['!substatus'] : '';
+  }
+  else {
+    $tokens['!optional_status'] = !empty($current_substatus_id) ? "\nStatus: ". $tokens['!substatus'] : '';
+  }
 }
 
-function support_substatus_support_ticket_listing_filter_alter($filters) {
+function support_substatus_support_ticket_listing_filter_alter(&$filters) {
   if (_support_substatus_client_active(_support_current_client())) {
     $ssid = isset($_GET['ssid']) ? $_GET['ssid'] : '';
     $unsanitized = explode(',', $ssid);
@@ -439,7 +446,7 @@ function support_substatus_support_ticket_listing_filter_alter($filters) {
   }
 }
 
-function support_substatus_support_filter_form_submit_alter($form_state) {
+function support_substatus_support_filter_form_submit_alter(&$form_state) {
   if (!empty($form_state['values']['ssid'])) {
     $form_state['support_filter_query']['ssid'] = implode(',', $form_state['values']['ssid']);
   }

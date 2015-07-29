@@ -479,7 +479,17 @@ function support_admin_settings() {
     '#default_value' => variable_get('support_autocreate_users', TRUE),
     '#description' => t('Check this box if you would like the support module to automatically create new user accounts when emails are received from unknown email addresses.  If you uncheck this box and have "Integrate inbound email" enabled for one or more of your clients, notification emails will be sent when emails are discarded notifying the sender that they have to register to be able to create or update support tickets via mail. This option can also be set on a per-client basis.'),
   );
-
+  $admin = user_load(1);
+  $form['user']['support_filter_uid1'] = array(
+    '#title' => t('Filter UID1 from ticket assignment and subscription lists'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('support_filter_uid1', FALSE),
+    '#description' => t('Check this box to prevent the user with UID 1 (%admin)
+      from showing up in ticket assignment and subscription lists. Tickets can
+      still be assigned to UID 1 if you use autocomplete text fields and
+      manually type the username when assigning a ticket.',
+      array('%admin' => $admin->name)),
+  );
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Search'),

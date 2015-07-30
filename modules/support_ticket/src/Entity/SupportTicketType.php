@@ -9,7 +9,7 @@ namespace Drupal\support_ticket\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\support_ticket\SupportTicketInterface;
+use Drupal\support_ticket\SupportTicketTypeInterface;
 
 /**
  * Defines the SupportTicket type configuration entity.

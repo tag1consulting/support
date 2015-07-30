@@ -5,7 +5,7 @@
  * Enables use of support tickets with optional time tracking.
  */
 
-use Drupal\Core\Routing\RouteMatchInterface
+use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
  * Denotes that the support ticket is not published.

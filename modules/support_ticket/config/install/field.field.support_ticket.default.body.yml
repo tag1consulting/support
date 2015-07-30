@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - support_ticket.support_ticket_type.default
+    - field.storage.support_ticket.body
+  module:
+    - text
+id: support_ticket.default.body
+field_name: body
+entity_type: support_ticket
+bundle: default
+label: Body
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  display_summary: false
+field_type: text_with_summary

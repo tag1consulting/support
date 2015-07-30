@@ -7,6 +7,8 @@
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\support_ticket\Entity\SupportTicket;
 use Drupal\support_ticket\Entity\SupportTicketType;
 use Drupal\support_ticket\SupportTicketInterface;
@@ -64,4 +66,63 @@ function support_ticket_help($route_name, RouteMatchInterface $route_match) {
  */
 function support_ticket_type_get_types() {
   return SupportTicketType::loadMultiple();
+}
+
+/**
+ * Adds the default body field to a support ticket type.
+ *
+ * @TODO: I copied this from the node module, but it feels
+ * unnecessary. I need to understand if there's an easier/better
+ * way to do this for the ticket body.
+ *
+ * @param \Drupal\support_ticket\SupportTicketTypeInterface $type
+ *   A support ticket type object.
+ * @param string $label
+ *   (optional) The label for the body instance.
+ *
+ * @return \Drupal\field\Entity\FieldConfig Body field.
+ */
+function support_ticket_add_body_field(SupportTicketTypeInterface $type, $label = 'Body') {
+   // Add or remove the body field, as needed.
+  $field_storage = FieldStorageConfig::loadByName('support_ticket', 'body');
+  $field = FieldConfig::loadByName('support_ticket', $type->id(), 'body');
+  if (empty($field)) {
+    $field = entity_create('field_config', array(
+      'field_storage' => $field_storage,
+      'bundle' => $type->id(),
+      'label' => $label,
+      'settings' => array('display_summary' => TRUE),
+    ));
+    $field->save();
+
+    // Assign widget settings for the 'default' form mode.
+    entity_get_form_display('support_ticket', $type->id(), 'default')
+      ->setComponent('body', array(
+        'type' => 'text_textarea_with_summary',
+      ))
+      ->save();
+
+    // Assign display settings for the 'default' and 'teaser' view modes.
+    entity_get_display('support_ticket', $type->id(), 'default')
+      ->setComponent('body', array(
+        'label' => 'hidden',
+        'type' => 'text_default',
+      ))
+      ->save();
+
+    // The teaser view mode is created by the Standard profile and therefore
+    // might not exist.
+    // @TODO: Does this affect Support Tickets, or noly Nodes?
+    $view_modes = \Drupal::entityManager()->getViewModes('support_ticket');
+    if (isset($view_modes['teaser'])) {
+      entity_get_display('support_ticket', $type->id(), 'teaser')
+        ->setComponent('body', array(
+          'label' => 'hidden',
+          'type' => 'text_summary_or_trimmed',
+        ))
+        ->save();
+    }
+  }
+
+  return $field;
 }

@@ -127,7 +127,7 @@ class SupportTicketRevisionDeleteForm extends ConfirmFormBase {
       'entity.support_ticket.canonical',
       array('support_ticket' => $this->revision->id())
     );
-    if ($this->connection->query('SELECT COUNT(DISTINCT vid) FROM {support_ticket_field_revision} WHERE nid = :nid', array(':nid' => $this->revision->id()))->fetchField() > 1) {
+    if ($this->connection->query('SELECT COUNT(DISTINCT vid) FROM {support_ticket_field_revision} WHERE stid = :stid', array(':stid' => $this->revision->id()))->fetchField() > 1) {
       $form_state->setRedirect(
         'entity.support_ticket.version_history',
         array('support_ticket' => $this->revision->id())

@@ -23,8 +23,7 @@ class SupportTicketStorageSchema extends SqlContentEntityStorageSchema {
     $schema = parent::getEntitySchema($entity_type, $reset);
 
     $schema['support_ticket_field_data']['indexes'] += array( // @todo update indexes[ once default views are built
-      'support_ticket__frontpage' => array('promote', 'status', 'created'),
-      'support_ticket__status_type' => array('status', 'type', 'nid'),
+      'support_ticket__status_type' => array('status', 'type', 'stid'),
       'support_ticket__title_type' => array('title', array('type', 4)),
     );
 
@@ -52,7 +51,6 @@ class SupportTicketStorageSchema extends SqlContentEntityStorageSchema {
 
     if ($table_name == 'support_ticket_field_data') {
       switch ($field_name) {
-        case 'promote':
         case 'status':
         case 'locked':
         case 'title':

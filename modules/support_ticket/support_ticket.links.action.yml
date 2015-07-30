@@ -7,4 +7,4 @@ support_ticket.add_page:
   route_name: support_ticket.add_page
   title: 'Add support ticket'
   appears_on:
-    - system.admin_content
+    - support.admin_support_tickets

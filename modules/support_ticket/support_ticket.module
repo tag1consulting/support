@@ -48,3 +48,20 @@ function support_ticket_help($route_name, RouteMatchInterface $route_match) {
   }
 
 }
+
+/**
+ * Returns a list of all the available support ticket types.
+ *
+ * This list can include types that are queued for addition or deletion.
+ *
+ * @return \Drupal\support_ticket\SupportTicketTypeInterface[]
+ *   An array of support ticket type entities, keyed by ID.
+ *
+ * @deprecated in Drupal 8.x, will be removed before Drupal 9.0.
+ *   Use \Drupal\support_ticket\Entity\SupportTicketType::loadMultiple().
+ *
+ * @see \Drupal\support_ticket\Entity\SupportTicketType::load()
+ */
+function support_ticket_type_get_types() {
+  return SupportTicketType::loadMultiple();
+}

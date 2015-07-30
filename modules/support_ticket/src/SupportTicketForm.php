@@ -193,14 +193,6 @@ class SupportTicketForm extends ContentEntityForm {
       '#optional' => TRUE,
     );
 
-    if (isset($form['promote'])) {
-      $form['promote']['#group'] = 'options';
-    }
-
-    if (isset($form['sticky'])) {
-      $form['sticky']['#group'] = 'options';
-    }
-
     $form['#attached']['library'][] = 'support_ticket/form';
 
     $form['#entity_builders']['update_status'] = [$this, 'updateStatus'];
@@ -385,8 +377,8 @@ class SupportTicketForm extends ContentEntityForm {
     }
 
     if ($support_ticket->id()) {
-      $form_state->setValue('nid', $support_ticket->id());
-      $form_state->set('nid', $support_ticket->id());
+      $form_state->setValue('stid', $support_ticket->id());
+      $form_state->set('stid', $support_ticket->id());
       $form_state->setRedirect(
         'entity.support_ticket.canonical',
         array('support_ticket' => $support_ticket->id())

@@ -141,7 +141,6 @@ class SupportTicketTypeForm extends EntityForm {
     $workflow_options = array(
       'status' => $support_ticket->status->value,
       'locked' => $support_ticket->locked->value,
-      'promote' => $support_ticket->promote->value,
       'revision' => $type->isNewRevision(),
     );
     // Prepare workflow options to be used for 'checkboxes' form element.
@@ -153,7 +152,6 @@ class SupportTicketTypeForm extends EntityForm {
       '#options' => array(
         'status' => t('Published'),
         'locked' => t('Locked'),
-        'promote' => t('Promoted to front page'),
         'revision' => t('Create new revision'),
       ),
       '#description' => t('Users with the <em>Administer support tickets</em> permission will be able to override these options.'),
@@ -244,7 +242,7 @@ class SupportTicketTypeForm extends EntityForm {
     }
     // Update workflow options.
     $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('type' => $type->id()));
-    foreach (array('status', 'promote', 'locked')  as $field_name) {
+    foreach (array('status', 'locked')  as $field_name) {
       $value = (bool) $form_state->getValue(['options', $field_name]);
       if ($support_ticket->$field_name->value != $value) {
         $fields[$field_name]->getConfig($type->id())->setDefaultValue($value)->save();

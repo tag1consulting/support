@@ -5,7 +5,13 @@
  * Enables use of support tickets with optional time tracking.
  */
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\support_ticket\Entity\SupportTicket;
+use Drupal\support_ticket\Entity\SupportTicketType;
+use Drupal\support_ticket\SupportTicketInterface;
+use Drupal\support_ticket\SupportTicketTypeInterface;
+
 
 /**
  * Denotes that the support ticket is not published.

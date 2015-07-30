@@ -26,7 +26,7 @@ use Drupal\support_ticket\SupportTicketInterface;
  *     "list_builder" = "Drupal\support_ticket\SupportTicketTypeListBuilder",
  *   },
  *   admin_permission = "administer support ticket types",
- *   config_prefix = "type", @todo: -- what is this?
+ *   config_prefix = "type",
  *   bundle_of = "support_ticket",
  *   entity_keys = {
  *     "id" = "type",
@@ -110,7 +110,7 @@ class SupportTicketType extends ConfigEntityBundleBase implements SupportTicketT
    * {@inheritdoc}
    */
   public function isLocked() {
-    $locked = \Drupal::state()->get('support-ticket.type.locked');
+    $locked = \Drupal::state()->get('support_ticket.type.locked');
     return isset($locked[$this->id()]) ? $locked[$this->id()] : FALSE;
   }
 

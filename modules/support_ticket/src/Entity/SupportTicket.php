@@ -43,7 +43,7 @@ use Drupal\user\UserInterface;
  *   revision_table = "support_ticket_revision",
  *   revision_data_table = "support_ticket_field_revision",
  *   translatable = TRUE,
- *   config_prefix = "form", // @todo -- what is a config_prefix?
+ *   config_prefix = "form",
  *   entity_keys = {
  *     "id" = "stid",
  *     "revision" = "vid",

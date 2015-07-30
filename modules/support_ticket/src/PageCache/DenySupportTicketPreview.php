@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\PageCache\DenySupportTicketPreview.
+ * Contains \Drupal\support_ticket\PageCache\DenySupportTicketPreview.
  */
 
-namespace Drupal\support\PageCache;
+namespace Drupal\support_ticket\PageCache;
 
 use Drupal\Core\PageCache\ResponsePolicyInterface;
 use Drupal\Core\Routing\RouteMatchInterface;

@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketStorage.
+ * Contains \Drupal\support_ticket\SupportTicketStorage.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Session\AccountInterface;

@@ -2,15 +2,15 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketViewBuilder.
+ * Contains \Drupal\support_ticket\SupportTicketViewBuilder.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
-use Drupal\support\Entity\SupportTicket;
+use Drupal\support_ticket\Entity\SupportTicket;
 use Drupal\user\Entity\User;
 
 /**
@@ -22,7 +22,7 @@ class SupportTicketViewBuilder extends EntityViewBuilder {
    * {@inheritdoc}
    */
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
-    /** @var \Drupal\support\SupportTicketInterface[] $entities */
+    /** @var \Drupal\support_ticket\SupportTicketInterface[] $entities */
     if (empty($entities)) {
       return;
     }
@@ -93,7 +93,7 @@ class SupportTicketViewBuilder extends EntityViewBuilder {
   /**
    * Build the default links (Read more) for a support ticket.
    *
-   * @param \Drupal\support\SupportTicketInterface $entity
+   * @param \Drupal\support_ticket\SupportTicketInterface $entity
    *   The support ticket object.
    * @param string $view_mode
    *   A view mode identifier.
@@ -132,7 +132,7 @@ class SupportTicketViewBuilder extends EntityViewBuilder {
    * {@inheritdoc}
    */
   protected function alterBuild(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode = NULL) {
-    /** @var \Drupal\support\SupportTicketInterface $entity */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $entity */
     parent::alterBuild($build, $entity, $display, $view_mode, $langcode);
     if ($entity->id()) {
       $build['#contextual_links']['support_ticket'] = array(

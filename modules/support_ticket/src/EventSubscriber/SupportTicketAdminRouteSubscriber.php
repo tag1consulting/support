@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\EventSubscriber\SupportTicketAdminRouteSubscriber.
+ * Contains \Drupal\support_ticket\EventSubscriber\SupportTicketAdminRouteSubscriber.
  */
 
-namespace Drupal\support\EventSubscriber;
+namespace Drupal\support_ticket\EventSubscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Routing\RouteSubscriberBase;

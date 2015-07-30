@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Form\DeleteMultiple.
+ * Contains \Drupal\support_ticket\Form\DeleteMultiple.
  */
 
-namespace Drupal\support\Form;
+namespace Drupal\support_ticket\Form;
 
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\ConfirmFormBase;
@@ -100,7 +100,7 @@ class DeleteMultiple extends ConfirmFormBase {
     if (empty($this->supportTicketInfo)) {
       return new RedirectResponse($this->getCancelUrl()->setAbsolute()->toString());
     }
-    /** @var \Drupal\support\SupportTicketInterface[] $support_tickets */
+    /** @var \Drupal\support_ticket\SupportTicketInterface[] $support_tickets */
     $support_tickets = $this->storage->loadMultiple(array_keys($this->supportTicketInfo));
 
     $items = [];
@@ -153,7 +153,7 @@ class DeleteMultiple extends ConfirmFormBase {
       $delete_support_tickets = [];
       /** @var \Drupal\Core\Entity\ContentEntityInterface[][] $delete_translations */
       $delete_translations = [];
-      /** @var \Drupal\support\SupportTicketInterface[] $support_tickets */
+      /** @var \Drupal\support_ticket\SupportTicketInterface[] $support_tickets */
       $support_tickets = $this->storage->loadMultiple(array_keys($this->supportTicketInfo));
 
       foreach ($this->supportTicketInfo as $id => $langcodes) {

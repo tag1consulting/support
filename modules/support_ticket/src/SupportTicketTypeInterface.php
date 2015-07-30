@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketTypeInterface.
+ * Contains \Drupal\support_ticket\SupportTicketTypeInterface.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 

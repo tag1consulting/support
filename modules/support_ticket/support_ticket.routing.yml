@@ -1,7 +1,7 @@
 support_ticket.multiple_delete_confirm:
   path: '/admin/support/ticket/delete'
   defaults:
-    _form: '\Drupal\support\Form\DeleteMultiple'
+    _form: '\Drupal\support_ticket\Form\DeleteMultiple'
   requirements:
     _permission: 'administer support tickets'
 
@@ -9,15 +9,15 @@ support_ticket.add_page:
   path: '/support-ticket/add'
   defaults:
     _title: 'Add support ticket'
-    _controller: '\Drupal\support\Controller\SupportTicketController::addPage'
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketController::addPage'
   options:
     _support_ticket_operation_route: TRUE
 
 support_ticket.add:
   path: '/support-ticket/add/{support_ticket_type}'
   defaults:
-    _controller: '\Drupal\support\Controller\SupportTicketController::add'
-    _title_callback: '\Drupal\support\Controller\SupportTicketController::addPageTitle'
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketController::add'
+    _title_callback: '\Drupal\support_ticket\Controller\SupportTicketController::addPageTitle'
   options:
     _support_ticket_operation_route: TRUE
     parameters:
@@ -27,8 +27,8 @@ support_ticket.add:
 entity.support_ticket.preview:
   path: '/support-ticket/preview/{support_ticket_preview}/{view_mode_id}'
   defaults:
-    _controller: '\Drupal\support\Controller\SupportTicketPreviewController::view'
-    _title_callback: '\Drupal\support\Controller\SupportTicketPreviewController::title'
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketPreviewController::view'
+    _title_callback: '\Drupal\support_ticket\Controller\SupportTicketPreviewController::title'
   options:
     parameters:
       support_ticket_preview:
@@ -38,20 +38,20 @@ entity.support_ticket.version_history:
   path: '/support-ticket/{support_ticket}/revisions'
   defaults:
     _title: 'Revisions'
-    _controller: '\Drupal\support\Controller\SupportTicketController::revisionOverview'
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketController::revisionOverview'
   options:
     _support_ticket_operation_route: TRUE
 
 entity.support_ticket.revision:
   path: '/support-ticket/{support_ticket}/revisions/{support_ticket_revision}/view'
   defaults:
-    _controller: '\Drupal\support\Controller\SupportTicketController::revisionShow'
-    _title_callback: '\Drupal\support\Controller\SupportTicketController::revisionPageTitle'
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketController::revisionShow'
+    _title_callback: '\Drupal\support_ticket\Controller\SupportTicketController::revisionPageTitle'
 
 support_ticket.revision_revert_confirm:
   path: '/support-ticket/{support_ticket}/revisions/{support_ticket_revision}/revert'
   defaults:
-    _form: '\Drupal\support\Form\SupportTicketRevisionRevertForm'
+    _form: '\Drupal\support_ticket\Form\SupportTicketRevisionRevertForm'
     _title: 'Revert to earlier revision'
   options:
     _support_ticket_operation_route: TRUE
@@ -59,7 +59,7 @@ support_ticket.revision_revert_confirm:
 support_ticket.revision_delete_confirm:
   path: '/support-ticket/{support_ticket}/revisions/{support_ticket_revision}/delete'
   defaults:
-    _form: '\Drupal\support\Form\SupportTicketRevisionDeleteForm'
+    _form: '\Drupal\support_ticket\Form\SupportTicketRevisionDeleteForm'
     _title: 'Delete earlier revision'
   options:
     _support_ticket_operation_route: TRUE

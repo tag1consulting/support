@@ -2,17 +2,17 @@
 
 /**
  * @file
- * Contains \Drupal\support\Form\SupportTicketRevisionDeleteForm.
+ * Contains \Drupal\support_ticket\Form\SupportTicketRevisionDeleteForm.
  */
 
-namespace Drupal\support\Form;
+namespace Drupal\support_ticket\Form;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\support\SupportInterface;
+use Drupal\support_ticket\SupportInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -23,7 +23,7 @@ class SupportTicketRevisionDeleteForm extends ConfirmFormBase {
   /**
    * The support ticket revision.
    *
-   * @var \Drupal\support\SupportTicketInterface
+   * @var \Drupal\support_ticket\SupportTicketInterface
    */
   protected $revision;
 

@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketStorageInterface.
+ * Contains \Drupal\support_ticket\SupportTicketStorageInterface.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -19,7 +19,7 @@ interface SupportTicketStorageInterface extends EntityStorageInterface {
   /**
    * Gets a list of support ticket revision IDs for a specific support ticket.
    *
-   * @param \Drupal\support\SupportTicketInterface
+   * @param \Drupal\support_ticket\SupportTicketInterface
    *   The support ticket entity.
    *
    * @return int[]
@@ -41,7 +41,7 @@ interface SupportTicketStorageInterface extends EntityStorageInterface {
   /**
    * Counts the number of revisions in the default language.
    *
-   * @param \Drupal\support\SupportTicketInterface
+   * @param \Drupal\support_ticket\SupportTicketInterface
    *   The support ticket entity.
    *
    * @return int

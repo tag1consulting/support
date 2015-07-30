@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Contains \Drupal\support\Entity\SupportTicketType.
+ * Contains \Drupal\support_ticket\Entity\SupportTicketType.
  */
 
-namespace Drupal\support\Entity;
+namespace Drupal\support_ticket\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\support\SupportTicketInterface;
+use Drupal\support_ticket\SupportTicketInterface;
 
 /**
  * Defines the SupportTicket type configuration entity.
@@ -19,11 +19,11 @@ use Drupal\support\SupportTicketInterface;
  *   label = @Translation("Support ticket type"),
  *   handlers = {
  *     "form" = {
- *       "add" = "Drupal\support\SupportTicketTypeForm",
- *       "edit" = "Drupal\support\SupportTicketTypeForm",
- *       "delete" = "Drupal\support\Form\SupportTicketTypeDeleteConfirm"
+ *       "add" = "Drupal\support_ticket\SupportTicketTypeForm",
+ *       "edit" = "Drupal\support_ticket\SupportTicketTypeForm",
+ *       "delete" = "Drupal\support_ticket\Form\SupportTicketTypeDeleteConfirm"
  *     },
- *     "list_builder" = "Drupal\support\SupportTicketTypeListBuilder",
+ *     "list_builder" = "Drupal\support_ticket\SupportTicketTypeListBuilder",
  *   },
  *   admin_permission = "administer support ticket types",
  *   config_prefix = "type", @todo: -- what is this?

@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketTypeForm.
+ * Contains \Drupal\support_ticket\SupportTicketTypeForm.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -83,7 +83,7 @@ class SupportTicketTypeForm extends EntityForm {
       '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
       '#disabled' => $type->isLocked(),
       '#machine_name' => array(
-        'exists' => ['Drupal\support\Entity\SupportTicketType', 'load'],
+        'exists' => ['Drupal\support_ticket\Entity\SupportTicketType', 'load'],
         'source' => array('name'),
       ),
       '#description' => t('A unique machine-readable name for this support ticket type. It must only contain lowercase letters, numbers, and underscores. This name will be used for constructing the URL of the %support-ticket-add page, in which underscores will be converted into hyphens.', array(

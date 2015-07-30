@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Form\SupportTicketDeleteForm.
+ * Contains \Drupal\support_ticket\Form\SupportTicketDeleteForm.
  */
 
-namespace Drupal\support\Form;
+namespace Drupal\support_ticket\Form;
 
 use Drupal\Core\Entity\ContentEntityDeleteForm;
 
@@ -18,7 +18,7 @@ class SupportTicketDeleteForm extends ContentEntityDeleteForm {
    * {@inheritdoc}
    */
   protected function getDeletionMessage() {
-    /** @var \Drupal\support\SupportTicketInterface $entity */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $entity */
     $entity = $this->getEntity();
 
     $support_ticket_type_storage = $this->entityManager->getStorage('support_ticket_type');
@@ -42,7 +42,7 @@ class SupportTicketDeleteForm extends ContentEntityDeleteForm {
    * {@inheritdoc}
    */
   protected function logDeletionMessage() {
-    /** @var \Drupal\support\SupportTicketInterface $entity */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $entity */
     $entity = $this->getEntity();
     $this->logger('content')->notice('@type: deleted %title.', ['@type' => $entity->getType(), '%title' => $entity->label()]);
   }

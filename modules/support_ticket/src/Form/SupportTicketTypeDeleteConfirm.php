@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Form\SupportTypeDeleteConfirm.
+ * Contains \Drupal\support_ticket\Form\SupportTypeDeleteConfirm.
  */
 
-namespace Drupal\support\Form;
+namespace Drupal\support_ticket\Form;
 
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Entity\EntityDeleteForm;

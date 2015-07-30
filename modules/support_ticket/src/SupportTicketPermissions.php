@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketPermissions.
+ * Contains \Drupal\support_ticket\SupportTicketPermissions.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Routing\UrlGeneratorTrait;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\support\Entity\SupportTicketType;
+use Drupal\support_ticket\Entity\SupportTicketType;
 
 /**
  * Defines a class containing permission callbacks.
@@ -39,7 +39,7 @@ class SupportTicketPermissions {
   /**
    * Builds a standard list of support ticket permissions for a given type.
    *
-   * @param \Drupal\support\Entity\SupportTicketType $type
+   * @param \Drupal\support_ticket\Entity\SupportTicketType $type
    *   The machine name of the support ticket type.
    *
    * @return array

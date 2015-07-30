@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketStorageSchema.
+ * Contains \Drupal\support_ticket\SupportTicketStorageSchema.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorageSchema;

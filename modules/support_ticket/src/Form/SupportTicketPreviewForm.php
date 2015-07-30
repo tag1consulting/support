@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Form\SupportTicketPreviewForm.
+ * Contains \Drupal\support_ticket\Form\SupportTicketPreviewForm.
  */
 
-namespace Drupal\support\Form;
+namespace Drupal\support_ticket\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;

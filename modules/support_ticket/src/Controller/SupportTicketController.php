@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Controller\SupportTicketController.
+ * Contains \Drupal\support_ticket\Controller\SupportTicketController.
  */
 
-namespace Drupal\support\Controller;
+namespace Drupal\support_ticket\Controller;
 
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
@@ -13,8 +13,8 @@ use Drupal\Core\Datetime\DateFormatter;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Url;
-use Drupal\support\SupportTicketTypeInterface;
-use Drupal\support\SupportTicketInterface;
+use Drupal\support_ticket\SupportTicketTypeInterface;
+use Drupal\support_ticket\SupportTicketInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -98,7 +98,7 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
   /**
    * Provides the support ticket submission form.
    *
-   * @param \Drupal\support\SupportTicketTypeInterface $support_ticket_type
+   * @param \Drupal\support_ticket\SupportTicketTypeInterface $support_ticket_type
    *   The support ticket type entity for the support ticket.
    *
    * @return array
@@ -148,7 +148,7 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
   /**
    * Generates an overview table of older revisions of a support ticket.
    *
-   * @param \Drupal\support\SupportTicketInterface $support_ticket
+   * @param \Drupal\support_ticket\SupportTicketInterface $support_ticket
    *   A support_ticket object.
    *
    * @return array
@@ -251,7 +251,7 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
   /**
    * The _title_callback for the support_ticket.add route.
    *
-   * @param \Drupal\support\SupportTicketTypeInterface $support_ticket_type
+   * @param \Drupal\support_ticket\SupportTicketTypeInterface $support_ticket_type
    *   The current support ticket.
    *
    * @return string

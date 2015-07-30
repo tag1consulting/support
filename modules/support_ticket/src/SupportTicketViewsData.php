@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketViewsData.
+ * Contains \Drupal\support_ticket\SupportTicketViewsData.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\views\EntityViewsData;
 

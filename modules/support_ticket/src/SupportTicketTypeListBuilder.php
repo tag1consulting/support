@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketTypeListBuilder.
+ * Contains \Drupal\support_ticket\SupportTicketTypeListBuilder.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Url;
@@ -14,7 +14,7 @@ use Drupal\Core\Entity\EntityInterface;
 /**
  * Defines a class to build a listing of support ticket type entities.
  *
- * @see \Drupal\support\Entity\SupportTicketType
+ * @see \Drupal\support_ticket\Entity\SupportTicketType
  */
 class SupportTicketTypeListBuilder extends ConfigEntityListBuilder {
 

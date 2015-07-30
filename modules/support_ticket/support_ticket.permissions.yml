@@ -22,4 +22,4 @@ delete all revisions:
   description: 'Role requires permission to <em>view revisions</em> and <em>delete rights</em> for support tickets in question or <em>administer support tickets</em>.'
 
 permission_callbacks:
-  - \Drupal\support\SupportTicketPermissions::supportTicketTypePermissions
+  - \Drupal\support_ticket\SupportTicketPermissions::supportTicketTypePermissions

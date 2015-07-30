@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Entity\SupportTicket.
+ * Contains \Drupal\support_ticket\Entity\SupportTicket.
  */
 
-namespace Drupal\support\Entity;
+namespace Drupal\support_ticket\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
@@ -22,19 +22,19 @@ use Drupal\user\UserInterface;
  *   label = @Translation("Support ticket"),
  *   bundle_label = @Translation("Support ticket type"),
  *   handlers = {
- *     "storage" = "Drupal\support\SupportTicketStorage",
- *     "storage_schema" = "Drupal\support\SupportTicketStorageSchema",
- *     "view_builder" = "Drupal\support\SupportTicketViewBuilder",
- *     "views_data" = "Drupal\support\SupportTicketViewsData",
+ *     "storage" = "Drupal\support_ticket\SupportTicketStorage",
+ *     "storage_schema" = "Drupal\support_ticket\SupportTicketStorageSchema",
+ *     "view_builder" = "Drupal\support_ticket\SupportTicketViewBuilder",
+ *     "views_data" = "Drupal\support_ticket\SupportTicketViewsData",
  *     "form" = {
- *       "default" = "Drupal\support\SupportTicketForm",
- *       "delete" = "Drupal\support\Form\SupportTicketDeleteForm",
- *       "edit" = "Drupal\support\SupportTicketForm"
+ *       "default" = "Drupal\support_ticket\SupportTicketForm",
+ *       "delete" = "Drupal\support_ticket\Form\SupportTicketDeleteForm",
+ *       "edit" = "Drupal\support_ticket\SupportTicketForm"
  *     },
  *     "route_provider" = {
- *       "html" = "Drupal\support\Entity\SupportTicketRouteProvider",
+ *       "html" = "Drupal\support_ticket\Entity\SupportTicketRouteProvider",
  *     },
- *     "list_builder" = "Drupal\support\SupportTicketListBuilder",
+ *     "list_builder" = "Drupal\support_ticket\SupportTicketListBuilder",
  *   },
  *   base_table = "support_ticket",
  *   data_table = "support_ticket_field_data",
@@ -344,7 +344,7 @@ class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
       ->setRevisionable(TRUE)
       ->setSetting('target_type', 'user')
       ->setSetting('handler', 'default')
-      ->setDefaultValueCallback('Drupal\support\Entity\SupportTicket::getCurrentUserId')
+      ->setDefaultValueCallback('Drupal\support_ticket\Entity\SupportTicket::getCurrentUserId')
       ->setTranslatable(TRUE)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',

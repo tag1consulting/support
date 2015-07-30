@@ -2,17 +2,17 @@
 
 /**
  * @file
- * Contains \Drupal\support\ContextProvider\SupportTicketRouteContext.
+ * Contains \Drupal\support_ticket\ContextProvider\SupportTicketRouteContext.
  */
 
-namespace Drupal\support\ContextProvider;
+namespace Drupal\support_ticket\ContextProvider;
 
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Plugin\Context\Context;
 use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\Core\Plugin\Context\ContextProviderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\support\Entity\SupportTicket;
+use Drupal\support_ticket\Entity\SupportTicket;
 
 /**
  * Sets the current support ticket as a context on support ticket routes.

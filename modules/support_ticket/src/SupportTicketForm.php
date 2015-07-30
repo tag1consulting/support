@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketForm.
+ * Contains \Drupal\support_ticket\SupportTicketForm.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -58,7 +58,7 @@ class SupportTicketForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   protected function prepareEntity() {
-    /** @var \Drupal\support\SupportTicketInterface $support_ticket */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $support_ticket */
     $support_ticket = $this->entity;
 
     if (!$support_ticket->isNew()) {
@@ -98,7 +98,7 @@ class SupportTicketForm extends ContentEntityForm {
       $this->hasBeenPreviewed = TRUE;
     }
 
-    /** @var \Drupal\support\SupportTicketInterface $support_ticket */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $support_ticket */
     $support_ticket = $this->entity;
 
     if ($this->operation == 'edit') {
@@ -213,14 +213,14 @@ class SupportTicketForm extends ContentEntityForm {
    *
    * @param string $entity_type_id
    *   The entity type identifier.
-   * @param \Drupal\support\SupportTicketInterface $support_ticket
+   * @param \Drupal\support_ticket\SupportTicketInterface $support_ticket
    *   The support_ticket updated with the submitted values.
    * @param array $form
    *   The complete form array.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The current state of the form.
    *
-   * @see \Drupal\support\SupportTicketForm::form()
+   * @see \Drupal\support_ticket\SupportTicketForm::form()
    */
   function updateStatus($entity_type_id, SupportTicketInterface $support_ticket, array $form, FormStateInterface $form_state) {
     $element = $form_state->getTriggeringElement();
@@ -353,7 +353,7 @@ class SupportTicketForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
-    /** @var \Drupal\support\SupportTicketInterface $entity */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $entity */
     $entity = parent::buildEntity($form, $form_state);
     if (!empty($form_state->getValue('uid')[0]['target_id']) && $account = User::load($form_state->getValue('uid')[0]['target_id'])) {
       $entity->setOwnerId($account->id());

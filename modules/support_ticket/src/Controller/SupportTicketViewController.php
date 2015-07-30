@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\Controller\SupportTicketViewController.
+ * Contains \Drupal\support_ticket\Controller\SupportTicketViewController.
  */
 
-namespace Drupal\support\Controller;
+namespace Drupal\support_ticket\Controller;
 
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\EntityInterface;

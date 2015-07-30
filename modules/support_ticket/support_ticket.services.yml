@@ -1,17 +1,17 @@
 services:
   support_ticket.admin_path.route_subscriber:
-    class: Drupal\support\EventSubscriber\SupportTicketAdminRouteSubscriber
+    class: Drupal\support_ticket\EventSubscriber\SupportTicketAdminRouteSubscriber
     arguments: ['@config.factory']
     tags:
       - { name: event_subscriber }
   support_ticket_preview:
-    class: Drupal\support\ParamConverter\SupportTicketPreviewConverter
+    class: Drupal\support_ticket\ParamConverter\SupportTicketPreviewConverter
     arguments: ['@user.private_tempstore']
     tags:
       - { name: paramconverter }
     lazy: true
   support_ticket.page_cache_response_policy.deny_support_ticket_preview:
-    class: Drupal\support\PageCache\DenySupportTicketPreview
+    class: Drupal\support_ticket\PageCache\DenySupportTicketPreview
     arguments: ['@current_route_match']
     public: false
     tags:

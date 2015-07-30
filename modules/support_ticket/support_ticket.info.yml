@@ -1,6 +1,6 @@
 name: Support ticket
+type: module
 description: Enables use of support tickets with optional time tracking.
 package: Support
-type: module
-version: VERSION
 core: 8.x
+version: VERSION

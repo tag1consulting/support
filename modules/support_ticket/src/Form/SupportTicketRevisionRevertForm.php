@@ -2,16 +2,16 @@
 
 /**
  * @file
- * Contains \Drupal\support\Form\SupportTicketRevisionRevertForm.
+ * Contains \Drupal\support_ticket\Form\SupportTicketRevisionRevertForm.
  */
 
-namespace Drupal\support\Form;
+namespace Drupal\support_ticket\Form;
 
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\support\SupportTicketInterface;
+use Drupal\support_ticket\SupportTicketInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -22,7 +22,7 @@ class SupportTicketRevisionRevertForm extends ConfirmFormBase {
   /**
    * The support ticket revision.
    *
-   * @var \Drupal\support\SupportTicketInterface
+   * @var \Drupal\support_ticket\SupportTicketInterface
    */
   protected $revision;
 
@@ -121,14 +121,14 @@ class SupportTicketRevisionRevertForm extends ConfirmFormBase {
   /**
    * Prepares a revision to be reverted.
    *
-   * @param \Drupal\support\SupportTicketInterface $revision
+   * @param \Drupal\support_ticket\SupportTicketInterface $revision
    *   The revision to be reverted.
    *
-   * @return \Drupal\support\SupportTicketInterface
+   * @return \Drupal\support_ticket\SupportTicketInterface
    *   The prepared revision ready to be stored.
    */
   protected function prepareRevertedRevision(SupportTicketInterface $revision) {
-    /** @var \Drupal\support\SupportTicketInterface $default_revision */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $default_revision */
     $default_revision = $this->supportTicketStorage->load($revision->id());
 
     // If the entity is translated, make sure only translations affected by the

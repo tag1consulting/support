@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketInterface.
+ * Contains \Drupal\support_ticket\SupportTicketInterface.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
@@ -39,7 +39,7 @@ interface SupportTicketInterface extends ContentEntityInterface, EntityChangedIn
    * @param string $title
    *   The support ticket title.
    *
-   * @return \Drupal\support\SupportTicketInterface
+   * @return \Drupal\support_ticket\SupportTicketInterface
    *   The called support ticket entity.
    */
   public function setTitle($title);
@@ -58,7 +58,7 @@ interface SupportTicketInterface extends ContentEntityInterface, EntityChangedIn
    * @param int $timestamp
    *   The support ticket creation timestamp.
    *
-   * @return \Drupal\support\SupportTicketInterface
+   * @return \Drupal\support_ticket\SupportTicketInterface
    *   The called support ticket entity.
    */
   public function setCreatedTime($timestamp);
@@ -77,7 +77,7 @@ interface SupportTicketInterface extends ContentEntityInterface, EntityChangedIn
    * @param bool $locked
    *   TRUE to lock this support ticket, FALSE to unlock this support ticket.
    *
-   * @return \Drupal\support\SupportTicketInterface
+   * @return \Drupal\support_ticket\SupportTicketInterface
    *   The called support ticket entity.
    */
   public function setLocked($locked);
@@ -117,7 +117,7 @@ interface SupportTicketInterface extends ContentEntityInterface, EntityChangedIn
    * @param int $timestamp
    *   The UNIX timestamp of when this revision was created.
    *
-   * @return \Drupal\support\SupportTicketInterface
+   * @return \Drupal\support_ticket\SupportTicketInterface
    *   The called support ticket entity.
    */
   public function setRevisionCreationTime($timestamp);
@@ -136,7 +136,7 @@ interface SupportTicketInterface extends ContentEntityInterface, EntityChangedIn
    * @param int $uid
    *   The user ID of the revision author.
    *
-   * @return \Drupal\support\SupportTicketInterface
+   * @return \Drupal\support_ticket\SupportTicketInterface
    *   The called support ticket entity.
    */
   public function setRevisionAuthorId($uid);

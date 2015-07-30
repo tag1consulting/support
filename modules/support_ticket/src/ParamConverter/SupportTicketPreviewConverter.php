@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\ParamConverter\SupportTicketPreviewConverter.
+ * Contains \Drupal\support_ticket\ParamConverter\SupportTicketPreviewConverter.
  */
 
-namespace Drupal\support\ParamConverter;
+namespace Drupal\support_ticket\ParamConverter;
 
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\user\PrivateTempStoreFactory;

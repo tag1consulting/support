@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\support\SupportTicketListBuilder.
+ * Contains \Drupal\support_ticket\SupportTicketListBuilder.
  */
 
-namespace Drupal\support;
+namespace Drupal\support_ticket;
 
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Datetime\DateFormatter;
@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Defines a class to build a listing of support ticket entities.
  *
- * @see \Drupal\support\Entity\SupportTicket
+ * @see \Drupal\support_ticket\Entity\SupportTicket
  */
 class SupportTicketListBuilder extends EntityListBuilder {
 
@@ -103,7 +103,7 @@ class SupportTicketListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    /** @var \Drupal\support\SupportTicketInterface $entity */
+    /** @var \Drupal\support_ticket\SupportTicketInterface $entity */
     $mark = array(
       '#theme' => 'mark',
       '#mark_type' => support_ticket_mark($entity->id(), $entity->getChangedTime()), // @todo support_ticket_mark

@@ -12,12 +12,14 @@ use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\support_ticket\SupportTicketInterface;
 use Drupal\user\UserInterface;
 
 /**
- * Defines the SupportTicket entity.
+ * Defines the support ticket entity class.
  *
- * @ConfigEntityType(
+ * @ContentEntityType(
  *   id = "support_ticket",
  *   label = @Translation("Support ticket"),
  *   bundle_label = @Translation("Support ticket type"),
@@ -47,6 +49,7 @@ use Drupal\user\UserInterface;
  *     "revision" = "vid",
  *     "bundle" = "type",
  *     "label" = "title",
+ *     "langcode" = "langcode",
  *     "uuid" = "uuid",
  *     "status" = "status",
  *     "uid" = "uid",
@@ -61,7 +64,7 @@ use Drupal\user\UserInterface;
  *   }
  * )
  */
-class SupportTicket extends ConfigEntityBase implements SupportTicketInterface {
+class SupportTicket extends ContentEntityBase implements SupportTicketInterface {
 
   use EntityChangedTrait;
 

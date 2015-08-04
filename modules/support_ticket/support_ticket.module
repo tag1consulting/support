@@ -321,7 +321,7 @@ function template_preprocess_support_ticket_add_list(&$variables) {
     foreach ($variables['content'] as $type) {
       $variables['types'][$type->id()] = array(
         'type' => $type->id(),
-        'add_link' => \Drupal::l($type->label(), new Url('support-ticket.add', array('support_ticket_type' => $type->id()))),
+        'add_link' => \Drupal::l($type->label(), new Url('support_ticket.add', array('support_ticket_type' => $type->id()))),
         'description' => array(
           '#markup' => $type->getDescription(),
         ),

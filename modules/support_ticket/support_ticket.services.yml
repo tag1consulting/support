@@ -1,4 +1,19 @@
 services:
+  access_check.support_ticket.revision:
+    class: Drupal\support_ticket\Access\SupportTicketRevisionAccessCheck
+    arguments: ['@entity.manager']
+    tags:
+      - { name: access_check, applies_to: _access_support_ticket_revision }
+  access_check.support_ticket.add:
+    class: Drupal\support_ticket\Access\SupportTicketAddAccessCheck
+    arguments: ['@entity.manager']
+    tags:
+      - { name: access_check, applies_to: _support_ticket_add_access }
+  access_check.support_ticket.preview:
+    class: Drupal\support_ticket\Access\SupportTicketPreviewAccessCheck
+    arguments: ['@entity.manager']
+    tags:
+      - { name: access_check, applies_to: _support_ticket_preview_access }
   support_ticket.admin_path.route_subscriber:
     class: Drupal\support_ticket\EventSubscriber\SupportTicketAdminRouteSubscriber
     arguments: ['@config.factory']

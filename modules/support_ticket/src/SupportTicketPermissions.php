@@ -50,23 +50,26 @@ class SupportTicketPermissions {
     $type_params = array('%type_name' => $type->label());
 
     return array(
-      "create $type_id content" => array(
-        'title' => $this->t('%type_name: Create new content', $type_params),
+      "create $type_id ticket" => array(
+        'title' => $this->t('%type_name: Create new ticket', $type_params),
       ),
-      "edit own $type_id content" => array(
-        'title' => $this->t('%type_name: Edit own content', $type_params),
+      "edit own $type_id ticket" => array(
+        'title' => $this->t('%type_name: Edit own ticket', $type_params),
       ),
-      "edit any $type_id content" => array(
-        'title' => $this->t('%type_name: Edit any content', $type_params),
+      "edit any $type_id ticket" => array(
+        'title' => $this->t('%type_name: Edit any ticket', $type_params),
       ),
-      "delete own $type_id content" => array(
-        'title' => $this->t('%type_name: Delete own content', $type_params),
+      "delete own $type_id ticket" => array(
+        'title' => $this->t('%type_name: Delete own ticket', $type_params),
       ),
-      "delete any $type_id content" => array(
-        'title' => $this->t('%type_name: Delete any content', $type_params),
+      "delete any $type_id ticket" => array(
+        'title' => $this->t('%type_name: Delete any ticket', $type_params),
       ),
       "view $type_id revisions" => array(
         'title' => $this->t('%type_name: View revisions', $type_params),
+      ),
+      "modify locked $type_id ticket" => array(
+        'title' => $this->t('%type_name: Modify locked ticket', $type_params),
       ),
       "revert $type_id revisions" => array(
         'title' => $this->t('%type_name: Revert revisions', $type_params),

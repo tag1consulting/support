@@ -12,12 +12,16 @@ support_ticket.add_page:
     _controller: '\Drupal\support_ticket\Controller\SupportTicketController::addPage'
   options:
     _support_ticket_operation_route: TRUE
+  requirements:
+    _support_ticket_add_access: 'support_ticket'
 
 support_ticket.add:
   path: '/support-ticket/add/{support_ticket_type}'
   defaults:
     _controller: '\Drupal\support_ticket\Controller\SupportTicketController::add'
     _title_callback: '\Drupal\support_ticket\Controller\SupportTicketController::addPageTitle'
+  requirements:
+    _support_ticket_add_access: 'support_ticket:{support_ticket_type}'
   options:
     _support_ticket_operation_route: TRUE
     parameters:
@@ -29,6 +33,8 @@ entity.support_ticket.preview:
   defaults:
     _controller: '\Drupal\support_ticket\Controller\SupportTicketPreviewController::view'
     _title_callback: '\Drupal\support_ticket\Controller\SupportTicketPreviewController::title'
+  requirements:
+    _support_ticket_preview_access: '{support_ticket_preview}'
   options:
     parameters:
       support_ticket_preview:
@@ -39,6 +45,8 @@ entity.support_ticket.version_history:
   defaults:
     _title: 'Revisions'
     _controller: '\Drupal\support_ticket\Controller\SupportTicketController::revisionOverview'
+  requirements:
+    _access_support_ticket_revision: 'view'
   options:
     _support_ticket_operation_route: TRUE
 
@@ -47,12 +55,16 @@ entity.support_ticket.revision:
   defaults:
     _controller: '\Drupal\support_ticket\Controller\SupportTicketController::revisionShow'
     _title_callback: '\Drupal\support_ticket\Controller\SupportTicketController::revisionPageTitle'
+  requirements:
+    _access_support_ticket_revision: 'view'
 
 support_ticket.revision_revert_confirm:
   path: '/support-ticket/{support_ticket}/revisions/{support_ticket_revision}/revert'
   defaults:
     _form: '\Drupal\support_ticket\Form\SupportTicketRevisionRevertForm'
     _title: 'Revert to earlier revision'
+  requirements:
+    _access_support_ticket_revision: 'update'
   options:
     _support_ticket_operation_route: TRUE
 
@@ -61,6 +73,8 @@ support_ticket.revision_delete_confirm:
   defaults:
     _form: '\Drupal\support_ticket\Form\SupportTicketRevisionDeleteForm'
     _title: 'Delete earlier revision'
+  requirements:
+    _access_support_ticket_revision: 'delete'
   options:
     _support_ticket_operation_route: TRUE
 

@@ -27,7 +27,7 @@ class SupportTicketRouteProvider implements EntityRouteProviderInterface {
         '_controller' => '\Drupal\support_ticket\Controller\SupportTicketViewController::view',
         '_title_callback' => '\Drupal\support_ticket\Controller\SupportTicketViewController::title',
       ])
-      ->setRequirement('_entity_access', 'support_ticket.view'); // @todo: is this supported?
+      ->setRequirement('_entity_access', 'support_ticket.view');
     $route_collection->add('entity.support_ticket.canonical', $route);
 
     $route = (new Route('/support_ticket/{support_ticket}/delete'))
@@ -36,7 +36,7 @@ class SupportTicketRouteProvider implements EntityRouteProviderInterface {
         '_title' => 'Delete',
       ])
       ->setRequirement('_entity_access', 'support_ticket`.delete')
-      ->setOption('_support_ticket_operation_route', TRUE); // @todo
+      ->setOption('_support_ticket_operation_route', TRUE);
     $route_collection->add('entity.support_ticket.delete_form', $route);
 
     $route = (new Route('/support_ticket/{support_ticket}/edit'))

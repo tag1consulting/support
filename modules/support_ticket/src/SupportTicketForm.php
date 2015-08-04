@@ -1,5 +1,7 @@
 <?php
 
+SD G SD 
+
 /**
  * @file
  * Contains \Drupal\support_ticket\SupportTicketForm.
@@ -181,7 +183,7 @@ class SupportTicketForm extends ContentEntityForm {
     // Support ticket options for administrators.
     $form['options'] = array(
       '#type' => 'details',
-      '#title' => t('Promotion options'),
+      '#title' => t('Locking options'),
       '#group' => 'advanced',
       '#attributes' => array(
         'class' => array('support-ticket-form-options'),
@@ -192,6 +194,10 @@ class SupportTicketForm extends ContentEntityForm {
       '#weight' => 95,
       '#optional' => TRUE,
     );
+
+    if (isset($form['locked'])) {
+      $form['locked']['#group'] = 'options';
+    }
 
     $form['#attached']['library'][] = 'support_ticket/form';
 

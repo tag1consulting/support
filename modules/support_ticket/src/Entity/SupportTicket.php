@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\support_ticket\SupportTicketInterface;
 use Drupal\user\UserInterface;
 
@@ -27,6 +28,7 @@ use Drupal\user\UserInterface;
  *     "storage" = "Drupal\support_ticket\SupportTicketStorage",
  *     "storage_schema" = "Drupal\support_ticket\SupportTicketStorageSchema",
  *     "view_builder" = "Drupal\support_ticket\SupportTicketViewBuilder",
+ *     "access" = "Drupal\support_ticket\SupportTicketAccessControlHandler",
  *     "views_data" = "Drupal\support_ticket\SupportTicketViewsData",
  *     "form" = {
  *       "default" = "Drupal\support_ticket\SupportTicketForm",
@@ -134,6 +136,19 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
    */
   public function getType() {
     return $this->bundle();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function access($operation = 'view', AccountInterface $account = NULL, $return_as_object = FALSE) {
+    if ($operation == 'create') {
+      return parent::access($operation, $account, $return_as_object);
+    }
+
+    return \Drupal::entityManager()
+      ->getAccessControlHandler($this->entityTypeId)
+      ->access($this, $operation, $this->prepareLangcode(), $account, $return_as_object);
   }
 
   /**

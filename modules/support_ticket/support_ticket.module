@@ -5,8 +5,11 @@
  * Enables use of support tickets with optional time tracking.
  */
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -347,7 +350,7 @@ function support_ticket_preprocess_html(&$variables) {
  */
 function support_ticket_theme_suggestions_support_ticket(array $variables) {
   $suggestions = array();
-  $support_ticket = $variables['elements']['#support-ticket'];
+  $support_ticket = $variables['elements']['#support_ticket'];
   $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
 
   $suggestions[] = 'support_ticket__' . $sanitized_view_mode;
@@ -378,7 +381,7 @@ function template_preprocess_support_ticket(&$variables) {
   $variables['view_mode'] = $variables['elements']['#view_mode'];
   // Provide a distinct $teaser boolean.
   $variables['teaser'] = $variables['view_mode'] == 'teaser';
-  $variables['support_ticket'] = $variables['elements']['#support-ticket'];
+  $variables['support_ticket'] = $variables['elements']['#support_ticket'];
   /** @var \Drupal\support_ticket\SupportTicketInterface $support_ticket */
   $support_ticket = $variables['support_ticket'];
   $variables['date'] = drupal_render($variables['elements']['created']);
@@ -403,11 +406,8 @@ function template_preprocess_support_ticket(&$variables) {
   }
 
   // Display post information only on certain support ticket types.
-  $upport_ticket_type = $support_ticket->type->entity;
+  $support_ticket_type = $support_ticket->type->entity;
   // Used by RDF to add attributes around the author and date submitted.
   $variables['author_attributes'] = new Attribute();
   $variables['display_submitted'] = $support_ticket_type->displaySubmitted();
-
-  // Add article ARIA role.
-  $variables['attributes']['role'] = 'article';
 }

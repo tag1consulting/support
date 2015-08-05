@@ -24,7 +24,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @see \Drupal\support_ticket\Entity\SupportTicket
  * @ingroup support_ticket_access
  */
-class SupportTicketAccessControlHandler extends EntityAccessControlHandler {
+class SupportTicketAccessControlHandler extends EntityAccessControlHandler implements EntityHandlerInterface {
 
   /**
    * {@inheritdoc}

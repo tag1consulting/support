@@ -1,7 +1,5 @@
 <?php
 
-SD G SD 
-
 /**
  * @file
  * Contains \Drupal\support_ticket\SupportTicketForm.

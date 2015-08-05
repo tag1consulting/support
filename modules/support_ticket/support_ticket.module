@@ -7,6 +7,7 @@
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\support_ticket\Entity\SupportTicket;
@@ -56,22 +57,22 @@ function support_ticket_help($route_name, RouteMatchInterface $route_match) {
  */
 function support_ticket_theme() {
   return array(
-    'support-ticket' => array(
+    'support_ticket' => array(
       'render element' => 'elements',
     ),
-    'support-ticket_add_list' => array(
+    'support_ticket_add_list' => array(
       'variables' => array('content' => NULL),
     ),
-    'support_ticket-edit_form' => array(
+    'support_ticket_edit_form' => array(
       'render element' => 'form',
     ),
-    'field__support-ticket__title' => array(
+    'field__support_ticket__title' => array(
       'base hook' => 'field',
     ),
-    'field__support-ticket__uid' => array(
+    'field__support_ticket__uid' => array(
       'base hook' => 'field',
     ),
-    'field__support-ticket__created' => array(
+    'field__support_ticket__created' => array(
       'base hook' => 'field',
     ),
   );
@@ -309,7 +310,7 @@ function support_ticket_is_page(SupportTicketInterface $support_ticket) {
 /**
  * Prepares variables for list of available support ticket type templates.
  *
- * Default template: support-ticket-add-list.html.twig.
+ * Default template: support_ticket-add-list.html.twig.
  *
  * @param array $variables
  *   An associative array containing:
@@ -349,11 +350,11 @@ function support_ticket_theme_suggestions_support_ticket(array $variables) {
   $support_ticket = $variables['elements']['#support-ticket'];
   $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
 
-  $suggestions[] = 'support-ticket__' . $sanitized_view_mode;
-  $suggestions[] = 'support-ticket__' . $support_ticket->bundle();
-  $suggestions[] = 'support-ticket__' . $support_ticket->bundle() . '__' . $sanitized_view_mode;
-  $suggestions[] = 'support-ticket__' . $support_ticket->id();
-  $suggestions[] = 'support-ticket__' . $support_ticket->id() . '__' . $sanitized_view_mode;
+  $suggestions[] = 'support_ticket__' . $sanitized_view_mode;
+  $suggestions[] = 'support_ticket__' . $support_ticket->bundle();
+  $suggestions[] = 'support_ticket__' . $support_ticket->bundle() . '__' . $sanitized_view_mode;
+  $suggestions[] = 'support_ticket__' . $support_ticket->id();
+  $suggestions[] = 'support_ticket__' . $support_ticket->id() . '__' . $sanitized_view_mode;
 
   return $suggestions;
 }
@@ -361,10 +362,10 @@ function support_ticket_theme_suggestions_support_ticket(array $variables) {
 /**
  * Prepares variables for support ticket templates.
  *
- * Default template: support-ticket.html.twig.
+ * Default template: support_ticket.html.twig.
  *
- * Themes can use their own copy of support-ticket.html.twig. The default is located
- * inside "support/modules/support_ticket/templates/support-ticket.html.twig". Look in there
+ * Themes can use their own copy of support_ticket.html.twig. The default is located
+ * inside "support/modules/support_ticket/templates/support_ticket.html.twig". Look in there
  * for the full list of variables.
  *
  * @param array $variables

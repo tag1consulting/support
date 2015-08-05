@@ -88,10 +88,9 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
       $type = array_shift($types);
       return $this->redirect('support_ticket.add', array('support_ticket_type' => $type->id()));
     }
-
     return array(
       '#theme' => 'support_ticket_add_list',
-      '#types' => $types,
+      '#content' => $types,
     );
   }
 

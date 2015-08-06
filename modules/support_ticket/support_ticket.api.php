@@ -20,14 +20,14 @@ use Drupal\Core\Access\AccessResult;
  * a given user has access to perform a given operation on a support ticket.
  *
  * Note that not all modules will want to influence access on all support ticket
- * types. If your module does not want to explicitly allow or forbid access, return
- * an AccessResultInterface object with neither isAllowed() nor isForbidden()
- * equaling TRUE. Blindly returning an object with isForbidden() equaling TRUE
- * will break other support ticket access modules.
+ * types. If your module does not want to explicitly allow or forbid access,
+ * return an AccessResultInterface object with neither isAllowed() nor
+ * isForbidden() equaling TRUE. Blindly returning an object with isForbidden()
+ * equaling TRUE will break other support ticket access modules.
  *
  * @param \Drupal\support_ticket\SupportTicketInterface|string $support_ticket
- *   Either a support ticket entity or the machine name of the content type on which
- *   to perform the access check.
+ *   Either a support ticket entity or the machine name of the content type on
+ *   which to perform the access check.
  * @param string $op
  *   The operation to be performed. Possible values:
  *   - "create"
@@ -49,22 +49,22 @@ function hook_support_ticket_access(\Drupal\support_ticket\SupportTicketInterfac
 
   switch ($op) {
     case 'create':
-      return AccessResult::allowedIfHasPermission($account, 'create ' . $type . ' content');
+      return AccessResult::allowedIfHasPermission($account, 'create ' . $type . ' support tickets');
 
     case 'update':
-      if ($account->hasPermission('edit any ' . $type . ' content', $account)) {
+      if ($account->hasPermission('edit any ' . $type . ' support tickets', $account)) {
         return AccessResult::allowed()->cachePerPermissions();
       }
       else {
-        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' content', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' support tickets', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
       }
 
     case 'delete':
-      if ($account->hasPermission('delete any ' . $type . ' content', $account)) {
+      if ($account->hasPermission('delete any ' . $type . ' support tickets', $account)) {
         return AccessResult::allowed()->cachePerPermissions();
       }
       else {
-        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' content', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' support tickets', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
       }
 
     default:

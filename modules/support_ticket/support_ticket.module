@@ -411,3 +411,112 @@ function template_preprocess_support_ticket(&$variables) {
   $variables['author_attributes'] = new Attribute();
   $variables['display_submitted'] = $support_ticket_type->displaySubmitted();
 }
+
+/**
+ * Finds the most recently changed support tickets that are available to the current
+ * user.
+ *
+ * @param $number
+ *   (optional) The maximum number of support tickets to find. Defaults to 10.
+ *
+ * @return
+ *   An array of support ticket entities or an empty array if there are no recent
+ *   support tickets visible to the current user.
+ */
+function support_ticket_get_recent($number = 10) {
+  $account = \Drupal::currentUser();
+  $query = \Drupal::entityQuery('support_ticket');
+
+  // If the user is able to view their own unpublished support tickets, allow them
+  // to see these in addition to published support tickets. Check that they actually
+  // have some unpublished support tickets to view before adding the condition.
+  $access_query =  \Drupal::entityQuery('support_ticket')
+    ->condition('uid', $account->id())
+    ->condition('status', SUPPORT_TICKET_NOT_PUBLISHED);
+  if ($account->hasPermission('view own unpublished support tickets') && ($own_unpublished = $access_query->execute())) {
+    $query->orConditionGroup()
+      ->condition('status', SUPPORT_TICKET_PUBLISHED)
+      ->condition('stid', $own_unpublished, 'IN');
+  }
+  else {
+    // If not, restrict the query to published support tickets.
+    $query->condition('status', SUPPORT_TICKET_PUBLISHED);
+  }
+  $stids = $query
+    ->sort('changed', 'DESC')
+    ->range(0, $number)
+    ->addTag('support_ticket_access')
+    ->execute();
+
+  $support_tickets = SupportTicket::loadMultiple($stids);
+
+  return $support_tickets ? $support_tickets : array();
+}
+
+/**
+ * Generates an array for rendering the given support ticket.
+ *
+ * @param \Drupal\support_ticket\SupportTicketInterface $support_ticket
+ *   A support ticket entity.
+ * @param $view_mode
+ *   (optional) View mode, e.g., 'full', 'teaser', etc. Defaults to 'full.'
+ * @param $langcode
+ *   (optional) A language code to use for rendering. Defaults to NULL which is
+ *   the global content language of the current request.
+ *
+ * @return
+ *   An array as expected by drupal_render().
+ */
+function support_ticket_view(SupportTicketInterface $support_ticket, $view_mode = 'full', $langcode = NULL) {
+  return entity_view($support_ticket, $view_mode, $langcode);
+}
+
+/**
+ * Constructs a drupal_render() style array from an array of loaded support tickets.
+ *
+ * @param $support_tickets
+ *   An array of support tickets as returned by SupportTicket::loadMultiple().
+ * @param $view_mode
+ *   (optional) View mode, e.g., 'full', 'teaser', etc. Defaults to 'teaser.'
+ * @param $langcode
+ *   (optional) A language code to use for rendering. Defaults to the global
+ *   content language of the current request.
+ *
+ * @return
+ *   An array in the format expected by drupal_render().
+ */
+function support_ticket_view_multiple($support_tickets, $view_mode = 'teaser', $langcode = NULL) {
+  return entity_view_multiple($support_tickets, $view_mode, $langcode);
+}
+
+/**
+ * Implements hook_support_ticket_access().
+ */
+function support_ticket_support_ticket_access(SupportTicketInterface $support_ticket, $op, $account) {
+  $type = $support_ticket->bundle();
+
+  switch ($op) {
+    case 'create':
+      return AccessResult::allowedIfHasPermission($account, 'create ' . $type . ' support tickets');
+
+    case 'update':
+      if ($account->hasPermission('edit any ' . $type . ' support tickets', $account)) {
+        return AccessResult::allowed()->cachePerPermissions();
+      }
+      else {
+        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' support tickets', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+      }
+
+    case 'delete':
+      if ($account->hasPermission('delete any ' . $type . ' support tickets', $account)) {
+        return AccessResult::allowed()->cachePerPermissions();
+      }
+      else {
+        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' support tickets', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+      }
+
+    default:
+      // No opinion.
+      return AccessResult::neutral();
+  }
+}

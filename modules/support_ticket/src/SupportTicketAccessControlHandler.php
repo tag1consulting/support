@@ -81,8 +81,8 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
       return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
     }
 
-    // @todo is this the right default?
-    return TRUE;
+    // @todo: Fabian: we're defaulting to access allowed, is this correct?
+    return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
   }
 
   /**

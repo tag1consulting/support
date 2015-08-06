@@ -35,7 +35,7 @@ class SupportTicketRouteProvider implements EntityRouteProviderInterface {
         '_entity_form' => 'support_ticket.delete',
         '_title' => 'Delete',
       ])
-      ->setRequirement('_entity_access', 'support_ticket`.delete')
+      ->setRequirement('_entity_access', 'support_ticket.delete')
       ->setOption('_support_ticket_operation_route', TRUE);
     $route_collection->add('entity.support_ticket.delete_form', $route);
 

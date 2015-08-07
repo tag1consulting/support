@@ -157,9 +157,9 @@ function support_ticket_type_load($name) {
  * @param string $label
  *   (optional) The label for the body instance.
  *
- * @return \Drupal\field\Entity\FieldConfig Body field.
+ * @return \Drupal\field\Entity\FieldConfig Ticket body field.
  */
-function support_ticket_add_body_field(SupportTicketTypeInterface $type, $label = 'Body') {
+function support_ticket_add_body_field(SupportTicketTypeInterface $type, $label = 'Ticket body') {
    // Add or remove the body field, as needed.
   $field_storage = FieldStorageConfig::loadByName('support_ticket', 'body');
   $field = FieldConfig::loadByName('support_ticket', $type->id(), 'body');

@@ -1,0 +1,183 @@
+# Schema for the views plugins of the Support Ticket module.
+
+views.area.support_ticket_listing_empty:
+  type: views_area
+  label: 'Support ticket link'
+
+views.argument.support_ticket_stid:
+  type: views_argument
+  label: 'Support Ticket ID'
+  mapping:
+    break_phrase:
+      type: boolean
+      label: 'Allow multiple values'
+    not:
+      type: boolean
+      label: 'Exclude'
+
+views.argument.support_ticket_type:
+  type: views_argument
+  label: 'Support ticket type'
+  mapping:
+    glossary:
+      type: boolean
+      label: 'Glossary mode'
+    limit:
+      type: integer
+      label: 'Character limit'
+    case:
+      type: string
+      label: 'Case'
+    path_case:
+      type: string
+      label: 'Case in path'
+    transform_dash:
+      type: boolean
+      label: 'Transform spaces to dashes in URL'
+    break_phrase:
+      type: boolean
+      label: 'Allow multiple values'
+    add_table:
+      type: boolean
+      label: 'Allow multiple filter values to work together'
+    require_value:
+      type: boolean
+      label: 'Do not display items with no value in summary'
+
+views.argument.support_ticket_uid_revision:
+  type: views_argument
+  label: 'Support ticket user ID'
+  mapping:
+    break_phrase:
+      type: boolean
+      label: 'Allow multiple values'
+    not:
+      type: boolean
+      label: 'Exclude'
+
+views.argument.support_ticket_vid:
+  type: views_argument
+  label: 'Support ticket revision ID'
+  mapping:
+    break_phrase:
+      type: boolean
+      label: 'Allow multiple values'
+    not:
+      type: boolean
+      label: 'Exclude'
+
+views.argument_default.support_ticket:
+  type: sequence
+  label: 'Support ticket ID from URL'
+  sequence:
+    type: string
+    label: 'Stid'
+
+views.argument_validator.support_ticket:
+  type: mapping
+  label: 'Tickets'
+  mapping:
+    types:
+      type: sequence
+      label: 'Ticket types types'
+      sequence:
+        type: string
+        label: 'Type'
+    access:
+      type: boolean
+      label: 'Validate user has access to the tickets'
+    access_op:
+      type: boolean
+      label: 'Access operation to check'
+    nid_type:
+      type: string
+      label: 'Filter value format'
+
+views.field.support_ticket:
+  type: views_field
+  label: 'Support ticket'
+  mapping:
+    link_to_support_ticket:
+      type: boolean
+      label: 'Link this field to the original ticket'
+
+views.field.support_ticket_bulk_form:
+  type: views_field_bulk_form
+  label: 'Support ticket bulk form'
+
+views.field.support_ticket_path:
+  type: views_field
+  label: 'Support ticket path'
+  mapping:
+    absolute:
+      type: boolean
+      label: 'Use absolute link (begins with "http://")'
+
+views.field.support_ticket_revision_link:
+  type: views_field
+  label: 'Link to a support ticket revision'
+  mapping:
+    text:
+      type: label
+      label: 'Text to display'
+
+views.field.support_ticket_revision_link_delete:
+  type: views_field
+  label: 'Link to delete a support ticket revision'
+  mapping:
+    text:
+      type: label
+      label: 'Text to display'
+
+views.field.support_ticket_revision_link_revert:
+  type: views_field
+  label: 'Link to revert a support ticket to a revision'
+  mapping:
+    text:
+      type: label
+      label: 'Text to display'
+
+views.filter.support_ticket_access:
+  type: views_filter
+  label: 'Support ticket access'
+
+views.filter.support_ticket_status:
+  type: views_filter
+  label: 'Support ticket status'
+
+views.filter.support_ticket_uid_revision:
+  type: views_filter
+  label: 'Support ticket revisions of an user'
+  mapping:
+    operator:
+      type: string
+      label: 'Operator'
+    value:
+      type: sequence
+      label: 'Values'
+      sequence:
+        type: string
+        label: 'Value'
+    expose:
+      type: mapping
+      label: 'Expose'
+      mapping:
+        reduce:
+          type: boolean
+          label: 'Reduce'
+
+views.filter_value.support_ticket_access:
+  type: string
+  label: 'Access'
+
+views.filter_value.support_ticket_status:
+  type: boolean
+  label: 'Status'
+
+views.row.support_ticket_rss:
+  type: views_row
+  label: 'Ticket options'
+  mapping:
+    view_mode:
+      type: string
+      label: 'Display type'

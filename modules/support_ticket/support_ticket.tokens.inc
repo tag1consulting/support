@@ -41,7 +41,7 @@ function support_ticket_token_info() {
     'name' => t("Title"),
   );
   $support_ticket['body'] = array(
-    'name' => t("Body"),
+    'name' => t("Ticket body"),
     'description' => t("The main body text of the support ticket."),
   );
   $support_ticket['summary'] = array(

@@ -188,8 +188,8 @@ class SupportTicketViewsData extends EntityViewsData {
     $data['support_ticket_field_data']['uid']['relationship']['label'] = t('author');
 
     $data['support_ticket']['support_ticket_listing_empty'] = array(
-      'title' => t('Empty Support Ticket Frontpage behavior'),
-      'help' => t('Provides a link to the support ticket add overview page.'),
+      'title' => t('Empty Support Ticket listing behavior'),
+      'help' => t('Provides a link to the support ticket add page.'),
       'area' => array(
         'id' => 'support_ticket_listing_empty',
       ),

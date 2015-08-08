@@ -1,0 +1,30 @@
+uuid: 9d53bedd-ebbc-4d6a-ba32-50d2ddd45c83
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.support_ticket.field_assigned_to
+    - support_ticket.type.ticket
+  module:
+    - entity_reference
+id: support_ticket.ticket.field_assigned_to
+field_name: field_assigned_to
+entity_type: support_ticket
+bundle: ticket
+label: 'Assigned to'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: false
+    filter:
+      type: _none
+    target_bundles: {  }
+    sort:
+      field: name
+      direction: ASC
+field_type: entity_reference

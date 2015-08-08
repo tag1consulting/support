@@ -1,0 +1,38 @@
+uuid: 59aa18aa-43ed-421f-984b-7501a7b216e2
+langcode: en
+status: true
+dependencies:
+  module:
+    - options
+    - support_ticket
+id: support_ticket.field_state
+field_name: field_state
+entity_type: support_ticket
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: new
+      label: new
+    -
+      value: active
+      label: active
+    -
+      value: pending
+      label: pending
+    -
+      value: blocked
+      label: blocked
+    -
+      value: inactive
+      label: inactive
+    -
+      value: closed
+      label: closed
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false

@@ -1,7 +1,13 @@
+uuid: 218bf668-bd0f-41ef-ba24-3625e8e17f48
 langcode: en
 status: true
 dependencies:
+  config:
+    - field.storage.support_ticket.field_assigned_to
+    - field.storage.support_ticket.field_priority
+    - field.storage.support_ticket.field_state
   module:
+    - options
     - support_ticket
     - user
 id: support_tickets
@@ -80,7 +86,10 @@ display:
             vid: vid
             title: title
             changed: changed
+            field_assigned_to: field_assigned_to
             uid: uid
+            field_state: field_state
+            field_priority: field_priority
           info:
             vid:
               sortable: true
@@ -103,7 +112,28 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
+            field_assigned_to:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
             uid:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_state:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_priority:
               sortable: true
               default_sort_order: asc
               align: ''
@@ -302,6 +332,69 @@ display:
           entity_type: support_ticket
           entity_field: changed
           plugin_id: date
+        field_assigned_to:
+          id: field_assigned_to
+          table: support_ticket__field_assigned_to
+          field: field_assigned_to
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: 'Assigned to'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: author
+          settings:
+            view_mode: default
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+          plugin_id: field
         uid:
           id: uid
           table: support_ticket_field_data
@@ -367,6 +460,130 @@ display:
           entity_type: support_ticket
           entity_field: uid
           plugin_id: field
+        field_state:
+          id: field_state
+          table: support_ticket__field_state
+          field: field_state
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: State
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: list_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+          plugin_id: field
+        field_priority:
+          id: field_priority
+          table: support_ticket__field_priority
+          field: field_priority
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: Priority
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: list_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+          plugin_id: field
       filters:
         status:
           value: true
@@ -379,7 +596,7 @@ display:
           expose:
             operator: ''
           group: 1
-      sorts: { }
+      sorts: {  }
       title: 'Support tickets'
       header: {  }
       footer: {  }
@@ -421,6 +638,13 @@ display:
         options:
           relationship: none
           view_mode: rss
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - user.permissions
+      cacheable: false
   page_1:
     display_plugin: page
     id: page_1

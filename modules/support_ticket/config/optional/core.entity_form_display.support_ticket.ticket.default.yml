@@ -1,0 +1,64 @@
+uuid: 3dc3683e-b5b7-496d-8906-6fc932236a42
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.support_ticket.ticket.body
+    - field.field.support_ticket.ticket.field_assigned_to
+    - field.field.support_ticket.ticket.field_priority
+    - field.field.support_ticket.ticket.field_state
+    - support_ticket.type.ticket
+  module:
+    - text
+id: support_ticket.ticket.default
+targetEntityType: support_ticket
+bundle: ticket
+mode: default
+content:
+  body:
+    type: text_textarea_with_summary
+    weight: 26
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+    third_party_settings: {  }
+  created:
+    type: datetime_timestamp
+    weight: 10
+    settings: {  }
+    third_party_settings: {  }
+  field_assigned_to:
+    weight: 29
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    type: entity_reference_autocomplete
+  field_priority:
+    weight: 27
+    settings: {  }
+    third_party_settings: {  }
+    type: options_select
+  field_state:
+    weight: 28
+    settings: {  }
+    third_party_settings: {  }
+    type: options_select
+  title:
+    type: string_textfield
+    weight: -5
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

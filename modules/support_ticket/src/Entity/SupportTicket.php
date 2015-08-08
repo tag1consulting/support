@@ -57,6 +57,7 @@ use Drupal\user\UserInterface;
  *     "uid" = "uid",
  *   },
  *   bundle_entity_type = "support_ticket_type",
+ *   field_ui_base_route = "entity.support_ticket_type.edit_form",
  *   links = {
  *     "canonical" = "/support_ticket/{support_ticket}",
  *     "delete-form" = "/support_ticket/{support_ticket}/delete",

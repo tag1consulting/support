@@ -1,0 +1,11 @@
+uuid: 3f5da3a4-1b80-4797-b255-85418d8f992d
+langcode: en
+status: true
+dependencies: {  }
+name: Ticket
+type: ticket
+description: 'A support ticket.'
+help: ''
+new_revision: true
+preview_mode: 1
+display_submitted: true

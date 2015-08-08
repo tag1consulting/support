@@ -147,10 +147,10 @@ display:
         options:
           view_mode: teaser
       fields:
-        vid:
-          id: vid
-          table: support_ticket
-          field: vid
+        stid:
+          id: stid
+          table: support_ticket_field_data
+          field: stid
           relationship: none
           group_type: group
           admin_label: ''
@@ -159,8 +159,8 @@ display:
           alter:
             alter_text: false
             text: ''
-            make_link: false
-            path: ''
+            make_link: true
+            path: 'support_ticket/{{ stid }}'
             absolute: false
             external: false
             replace_spaces: false
@@ -211,7 +211,7 @@ display:
           separator: ', '
           field_api_classes: false
           entity_type: support_ticket
-          entity_field: vid
+          entity_field: stid
           plugin_id: field
         title:
           id: title

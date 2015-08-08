@@ -7,6 +7,7 @@ dependencies:
     - field.field.support_ticket.ticket.field_assigned_to
     - field.field.support_ticket.ticket.field_priority
     - field.field.support_ticket.ticket.field_state
+    - field.field.support_ticket.ticket.field_watchers
     - support_ticket.type.ticket
   module:
     - options
@@ -42,4 +43,11 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: list_default
+  field_watchers:
+    weight: 5
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    type: entity_reference_label
 hidden: {  }

@@ -14,7 +14,7 @@ use Drupal\Core\Session\AccountInterface;
  * Makes a support ticket not locked.
  *
  * @Action(
- *   id = "support_ticket_make_unlock_action",
+ *   id = "support_ticket_unlock_action",
  *   label = @Translation("Unlock selected ticket"),
  *   type = "support_ticket"
  * )

@@ -14,7 +14,7 @@ use Drupal\Core\Session\AccountInterface;
  * Lock a support ticket.
  *
  * @Action(
- *   id = "support_ticket_make_lock_action",
+ *   id = "support_ticket_lock_action",
  *   label = @Translation("Lock selected support ticket"),
  *   type = "support_ticket"
  * )

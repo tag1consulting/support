@@ -4,7 +4,7 @@ description: Enables use of support tickets with optional time tracking.
 package: Support
 core: 8.x
 version: VERSION
-dependecies:
+dependencies:
   - text
   - entity_reference
 config_devel:

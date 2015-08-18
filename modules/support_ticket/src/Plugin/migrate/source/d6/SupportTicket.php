@@ -252,9 +252,12 @@ class SupportTicket extends DrupalSqlBase implements SourceEntityInterface {
    * {@inheritdoc}
    */
   public function getIds() {
-    $ids['nid']['type'] = 'integer';
-    $ids['nid']['alias'] = 'n';
-    return $ids;
+    return array(
+      'nid' => array(
+        'type' => 'integer',
+        'alias' => 'n',
+      ),
+    );
   }
 
   /**

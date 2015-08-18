@@ -1,0 +1,62 @@
+id: d6_support_ticket
+label: Drupal 6 support tickets
+migration_tags:
+  - Drupal 6
+source:
+  plugin: d6_support_ticket
+process:
+  stid: nid
+  vid: vid
+  type: type
+  langcode:
+    plugin: default_value
+    source: language
+    default_value: "und"
+  title: title
+  uid: node_uid
+    # @todo see node/migration_templates/node.yml -- we may not need this mapping
+    #       this also affects assigned field below
+    plugin: migration
+    migration: d6_user
+    source: node_uid
+  status: status
+  created: created
+  changed: changed
+  'body/format':
+    plugin: migration
+    migration: d6_filter_format
+    source: format
+  'body/value': body
+  'body/summary': teaser
+  revision_uid: revision_uid
+  revision_log: log
+  revision_timestamp: timestamp
+  # support_ticket specific
+  state: state_name
+  priority: priority_name
+  assigned: assigned
+    plugin: migration
+    migration: d6_user
+    source: assigned
+
+#  not yet done:
+#   message_id
+#   client
+
+#  unmapped d6 fields.
+#   comment
+#   moderate
+#   tnid
+#   translate
+
+destination:
+  plugin: entity:support_ticket
+migration_dependencies:
+  required:
+    - d6_user
+    - d6_node_type
+    - d6_node_settings
+    - d6_filter_format
+  optional:
+    - d6_field_instance_widget_settings
+    - d6_field_formatter_settings

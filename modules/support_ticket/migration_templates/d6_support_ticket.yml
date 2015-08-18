@@ -13,9 +13,7 @@ process:
     source: language
     default_value: "und"
   title: title
-  uid: node_uid
-    # @todo see node/migration_templates/node.yml -- we may not need this mapping
-    #       this also affects assigned field below
+  uid:
     plugin: migration
     migration: d6_user
     source: node_uid
@@ -31,10 +29,14 @@ process:
   revision_uid: revision_uid
   revision_log: log
   revision_timestamp: timestamp
+  # should this be configurable?
+  support_ticket_type:
+    plugin: default_value
+    default_value: "ticket"
   # support_ticket specific
   state: state_name
   priority: priority_name
-  assigned: assigned
+  assigned:
     plugin: migration
     migration: d6_user
     source: assigned

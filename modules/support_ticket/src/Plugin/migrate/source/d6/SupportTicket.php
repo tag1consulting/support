@@ -189,7 +189,7 @@ class SupportTicket extends DrupalSqlBase implements SourceEntityInterface {
     $query->addField('sp', 'priority', 'priority_name');
     $query->innerJoin('node', 'n', static::JOIN_NODE_REVISION);
     $query->innerJoin('support_ticket', 'st', static::JOIN_TICKET);
-    $query->innerJoin('support_state', 'ss', static::JOIN_STATE);
+    $query->innerJoin('support_states', 'ss', static::JOIN_STATE);
     $query->innerJoin('support_priority', 'sp', static::JOIN_PRIORITY);
     // @todo: get client name from appropriate table
 

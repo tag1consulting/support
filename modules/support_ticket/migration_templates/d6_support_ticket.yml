@@ -29,17 +29,16 @@ process:
   revision_uid: revision_uid
   revision_log: log
   revision_timestamp: timestamp
-  # should this be configurable?
+  # support_ticket specific:
   support_ticket_type:
     plugin: default_value
     default_value: "ticket"
-  # support_ticket specific
-  state: state_name
-  priority: priority_name
-  assigned:
+  field_assigned_to:
     plugin: migration
     migration: d6_user
     source: assigned
+  field_priority: priority_name
+  field_state: state_name
 
 #  not yet done:
 #   message_id

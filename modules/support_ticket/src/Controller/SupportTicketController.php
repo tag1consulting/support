@@ -105,7 +105,7 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
    */
   public function add(SupportTicketTypeInterface $support_ticket_type) {
     $support_ticket = $this->entityManager()->getStorage('support_ticket')->create(array(
-      'type' => $support_ticket_type->id(),
+      'support_ticket_type' => $support_ticket_type->id(),
     ));
 
     $form = $this->entityFormBuilder()->getForm($support_ticket);

@@ -406,7 +406,7 @@ function template_preprocess_support_ticket(&$variables) {
   }
 
   // Display post information only on certain support ticket types.
-  $support_ticket_type = $support_ticket->type->entity;
+  $support_ticket_type = $support_ticket->support_ticket_type->entity;
   // Used by RDF to add attributes around the author and date submitted.
   $variables['author_attributes'] = new Attribute();
   $variables['display_submitted'] = $support_ticket_type->displaySubmitted();

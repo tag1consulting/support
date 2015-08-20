@@ -313,7 +313,7 @@ function support_ticket_is_page(SupportTicketInterface $support_ticket) {
 /**
  * Prepares variables for list of available support ticket type templates.
  *
- * Default template: support_ticket-add-list.html.twig.
+ * Default template: support-ticket-add-list.html.twig.
  *
  * @param array $variables
  *   An associative array containing:
@@ -365,10 +365,10 @@ function support_ticket_theme_suggestions_support_ticket(array $variables) {
 /**
  * Prepares variables for support ticket templates.
  *
- * Default template: support_ticket.html.twig.
+ * Default template: support-ticket.html.twig.
  *
- * Themes can use their own copy of support_ticket.html.twig. The default is located
- * inside "support/modules/support_ticket/templates/support_ticket.html.twig". Look in there
+ * Themes can use their own copy of support-ticket.html.twig. The default is located
+ * inside "support/modules/support_ticket/templates/support-ticket.html.twig". Look in there
  * for the full list of variables.
  *
  * @param array $variables

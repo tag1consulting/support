@@ -40,8 +40,10 @@ process:
   field_priority: priority_name
   field_state: state_name
 
-#  not yet done:
+#  @todo: migrate these when there's somewhere to store them
+#  Depends on OG Mailinglist:
 #   message_id
+#  Depends on OG:
 #   client
 
 #  unmapped d6 fields.

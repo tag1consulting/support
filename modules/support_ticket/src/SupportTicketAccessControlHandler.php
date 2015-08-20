@@ -111,7 +111,7 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
       if ($account->hasPermission('administer support tickets')) {
         return AccessResult::allowed()->cachePerPermissions();
       }
-      return AccessResult::allowedIf($items->getEntity()->type->entity->isNewRevision())->cachePerPermissions();
+      return AccessResult::allowedIf($items->getEntity()->support_ticket_type->entity->isNewRevision())->cachePerPermissions();
     }
     return parent::checkFieldAccess($operation, $field_definition, $account, $items);
   }

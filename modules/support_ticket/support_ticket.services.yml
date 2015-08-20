@@ -25,12 +25,6 @@ services:
     tags:
       - { name: paramconverter }
     lazy: true
-  support_ticket.page_cache_response_policy.deny_support_ticket_preview:
-    class: Drupal\support_ticket\PageCache\DenySupportTicketPreview
-    arguments: ['@current_route_match']
-    public: false
-    tags:
-      - { name: page_cache_response_policy }
   support_ticket.support_ticket_route_context:
     class: Drupal\support_ticket\ContextProvider\SupportTicketRouteContext
     arguments: ['@current_route_match']

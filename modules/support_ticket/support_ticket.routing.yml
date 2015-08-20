@@ -36,6 +36,7 @@ entity.support_ticket.preview:
   requirements:
     _support_ticket_preview_access: '{support_ticket_preview}'
   options:
+    no_cache: TRUE
     parameters:
       support_ticket_preview:
         type: 'support_ticket_preview'

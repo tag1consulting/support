@@ -63,7 +63,16 @@
  * @ingroup themeable
  */
 #}
-<article{{ attributes }}>
+{%
+  set classes = [
+    'support-ticket',
+    'support-ticket--type-' ~ support-ticket.bundle|clean_class,
+    support-ticket.isLocked() ? 'support-ticket--locked',
+    not support-ticket.isPublished() ? 'support-ticket--unpublished',
+    view_mode ? 'support-ticket--view-mode-' ~ view_mode|clean_class,
+  ]
+%}
+<article{{ attributes.addClass(classes) }}>
 
   {{ title_prefix }}
   {% if not page %}
@@ -74,17 +83,23 @@
   {{ title_suffix }}
 
   {% if display_submitted %}
-    <footer>
+    <footer class="support_ticket__meta">
       {{ author_picture }}
-      <div{{ author_attributes }}>
+      <div{{ author_attributes.addClass('support_ticket__submitted') }}>
         {% trans %}Submitted by {{ author_name }} on {{ date }}{% endtrans %}
         {{ metadata }}
       </div>
     </footer>
   {% endif %}
 
-  <div{{ content_attributes }}>
-    {{ content }}
+  <div{{ content_attributes.addClass('support_ticket__content') }}>
+    {{ content|without('links') }}
   </div>
+
+  {% if content.links %}
+    <div class="support_ticket__links">
+      {{ content.links }}
+    </div>
+  {% endif %}
 
 </article>

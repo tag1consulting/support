@@ -78,7 +78,12 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
       return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
     }
 
-    return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+    if ($operation === 'view') {
+      return AccessResult::allowedIf($status)->cacheUntilEntityChanges($support_ticket);
+    }
+
+    // No opinion.
+    return AccessResult::neutral();
   }
 
   /**

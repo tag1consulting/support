@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * @file
+ * A dummy module for testing support_ticket related hooks.
+ *
+ * This is a dummy module that implements support_ticket related hooks to test API
+ * interaction with the Support ticket module.
+ */
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\support_ticket\SupportTicketInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for support_ticket entities.
+ */
+function support_ticket_test_support_ticket_view(array &$build, SupportTicketInterface $support_ticket, EntityViewDisplayInterface $display, $view_mode) {
+  if ($view_mode == 'rss') {
+    // Add RSS elements and namespaces when building the RSS feed.
+    $support_ticket->rss_elements[] = array(
+      'key' => 'testElement',
+      'value' => t('Value of testElement RSS element for support_ticket !nid.', array('!nid' => $support_ticket->id())),
+    );
+
+    // Add content that should be displayed only in the RSS feed.
+    $build['extra_feed_content'] = array(
+      '#markup' => '<p>' . t('Extra data that should appear only in the RSS feed for support_ticket !nid.', array('!nid' => $support_ticket->id())) . '</p>',
+      '#weight' => 10,
+    );
+  }
+
+  if ($view_mode != 'rss') {
+    // Add content that should NOT be displayed in the RSS feed.
+    $build['extra_non_feed_content'] = array(
+      '#markup' => '<p>' . t('Extra data that should appear everywhere except the RSS feed for support_ticket !nid.', array('!nid' => $support_ticket->id())) . '</p>',
+    );
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_build_defaults_alter() for support_ticket entities.
+ */
+function support_ticket_test_support_ticket_build_defaults_alter(array &$build, SupportTicketInterface &$support_ticket, $view_mode = 'full', $langcode = NULL) {
+  if ($view_mode == 'rss') {
+    $support_ticket->rss_namespaces['xmlns:drupaltest'] = 'http://example.com/test-namespace';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for support_ticket entities.
+ */
+function support_ticket_test_support_ticket_presave(SupportTicketInterface $support_ticket) {
+  if ($support_ticket->getTitle() == 'testing_support_ticket_presave') {
+    // Sun, 19 Nov 1978 05:00:00 GMT
+    $support_ticket->setCreatedTime(280299600);
+    // Drupal 1.0 release.
+    $support_ticket->changed = 979534800;
+  }
+  // Determine changes.
+  if (!empty($support_ticket->original) && $support_ticket->original->getTitle() == 'test_changes') {
+    if ($support_ticket->original->getTitle() != $support_ticket->getTitle()) {
+      $support_ticket->title->value .= '_presave';
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for support_ticket entities.
+ */
+function support_ticket_test_support_ticket_update(SupportTicketInterface $support_ticket) {
+  // Determine changes on update.
+  if (!empty($support_ticket->original) && $support_ticket->original->getTitle() == 'test_changes') {
+    if ($support_ticket->original->getTitle() != $support_ticket->getTitle()) {
+      $support_ticket->title->value .= '_update';
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ */
+function support_ticket_test_entity_view_mode_alter(&$view_mode, Drupal\Core\Entity\EntityInterface $entity, $context) {
+  // Only alter the view mode if we are on the test callback.
+  $change_view_mode = \Drupal::state()->get( 'support_ticket_test_change_view_mode') ?: '';
+  if ($change_view_mode) {
+    $view_mode = $change_view_mode;
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for support_ticket entities.
+ *
+ * This tests saving a support_ticket on support_ticket insert.
+ *
+ * @see \Drupal\support_ticket\Tests\SupportTicketSaveTest::testSupportTicketSaveOnInsert()
+ */
+function support_ticket_test_support_ticket_insert(SupportTicketInterface $support_ticket) {
+  // Set the support_ticket title to the support_ticket ID and save.
+  if ($support_ticket->getTitle() == 'new') {
+    $support_ticket->setTitle('Support ticket '. $support_ticket->id());
+    $support_ticket->setNewRevision(FALSE);
+    $support_ticket->save();
+  }
+}

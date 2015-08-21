@@ -53,7 +53,7 @@ class SupportTicketAddAccessCheck implements AccessInterface {
   public function access(AccountInterface $account, SupportTicketTypeInterface $support_ticket_type = NULL) {
     $access_control_handler = $this->entityManager->getAccessControlHandler('support_ticket');
     // If checking whether a support_ticket of a particular type may be created.
-    if ($account->hasPermission('administer support tickets types')) {
+    if ($account->hasPermission('administer support ticket types')) {
       return AccessResult::allowed()->cachePerPermissions();
     }
     if ($support_ticket_type) {

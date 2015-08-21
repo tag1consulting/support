@@ -166,5 +166,48 @@ abstract class SupportTicketTestBase extends WebTestBase {
     return $returned_ticket;
   }
 
+  /**
+   * Creates a support_ticket based on default settings.
+   *
+   * @param array $settings
+   *   (optional) An associative array of settings for the support_ticket, as used in
+   *   entity_create(). Override the defaults by specifying the key and value
+   *   in the array, for example:
+   *   @code
+   *     $this->drupalCreateNode(array(
+   *       'title' => t('Hello, world!'),
+   *       'type' => 'article',
+   *     ));
+   *   @endcode
+   *   The following defaults are provided:
+   *   - body: Random string using the default filter format:
+   *     @code
+   *       $settings['body'][0] = array(
+   *         'value' => $this->randomMachineName(32),
+   *         'format' => filter_default_format(),
+   *       );
+   *     @endcode
+   *   - title: Random string.
+   *   - type: 'page'.
+   *   - uid: The currently logged in user, or anonymous.
+   *
+   * @return \Drupal\support_ticket\Entity\SupportTicket
+   *   The created support ticket.
+   */
+  protected function drupalCreateSupportTicket(array $settings = array()) {
+    // Populate defaults array.
+    $settings += array(
+      'body'      => array(array(
+        'value' => $this->randomMachineName(32),
+        'format' => filter_default_format(),
+      )),
+      'title'     => $this->randomMachineName(8),
+      'support_ticket_type'      => 'ticket',
+      'uid'       => \Drupal::currentUser()->id(),
+    );
+    $support_ticket = entity_create('support_ticket', $settings);
+    $support_ticket->save();
 
+    return $support_ticket;
+  }
 }

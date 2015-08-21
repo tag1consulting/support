@@ -1,0 +1,22 @@
+drupal.support_ticket:
+  version: VERSION
+  js:
+    support_ticket.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.form
+
+drupal.support_ticket.preview:
+  version: VERSION
+  css:
+    theme:
+      css/support_ticket.preview.css: {}
+  js:
+    support_ticket.preview.js: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.once
+    - core/drupal
+    - core/drupal.form

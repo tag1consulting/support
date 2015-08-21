@@ -1,0 +1,10 @@
+support_ticket.type_add:
+  route_name: support_ticket.type_add
+  title: 'Add support ticket type'
+  appears_on:
+    - entity.support_ticket_type.collection
+support_ticket.add_page:
+  route_name: support_ticket.add_page
+  title: 'Add support ticket'
+  appears_on:
+    - support.admin_support_tickets

@@ -1,0 +1,33 @@
+{#
+/**
+ * @file
+ * Default theme implementation to list support ticket types available for adding
+ * tickets.
+ *
+ * This list is displayed on the Add support ticket admin page.
+ *
+ * Available variables:
+ * - types: A list of support ticket types, each with the following properties:
+ *   - add_link: Link to create a ticket of this type.
+ *   - description: Description of this ticket type.
+ *
+ * @see template_preprocess_support_ticket_add_list()
+ *
+ * @ingroup themeable
+ */
+#}
+{% if types is not empty %}
+  <dl>
+    {% for type in types %}
+      <dt>{{ type.add_link }}</dt>
+      <dd>{{ type.description }}</dd>
+    {% endfor %}
+  </dl>
+{% else %}
+  <p>
+    {% set create_tickets = path('support_ticket.type_add') %}
+    {% trans %}
+      You have not created any support ticket types yet. Go to the <a href="{{ create_tickets }}">support ticket type creation page</a> to add a new ticket type.
+    {% endtrans %}
+  </p>
+{% endif %}

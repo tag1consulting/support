@@ -1,0 +1,26 @@
+entity.support_ticket.canonical:
+  route_name: entity.support_ticket.canonical
+  base_route: entity.support_ticket.canonical
+  title: 'View'
+entity.support_ticket.edit_form:
+  route_name: entity.support_ticket.edit_form
+  base_route: entity.support_ticket.canonical
+  title: Edit
+entity.support_ticket.delete_form:
+  route_name: entity.support_ticket.delete_form
+  base_route: entity.support_ticket.canonical
+  title: Delete
+  weight: 10
+entity.support_ticket.version_history:
+  route_name: entity.support_ticket.version_history
+  base_route: entity.support_ticket.canonical
+  title: 'Revisions'
+  weight: 20
+entity.support_ticket.edit_form:
+  title: 'Edit'
+  route_name: entity.support_ticket_type.edit_form
+  base_route: entity.support_ticket_type.edit_form
+entity.support_ticket_type.collection:
+  title: List
+  route_name: entity.support_ticket_type.collection
+  base_route: entity.support_ticket_type.collection

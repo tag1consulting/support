@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - support_ticket
+    - text
+id: support_ticket.body
+field_name: body
+entity_type: support_ticket
+type: text_with_summary
+settings: {  }
+module: text
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false

@@ -1,0 +1,13 @@
+name: Support ticket
+type: module
+description: Enables use of support tickets with optional time tracking.
+package: Support
+core: 8.x
+version: VERSION
+dependencies:
+  - text
+  - entity_reference
+config_devel:
+  - support_ticket.support_ticket.default
+  - field.storage.support_ticket.body
+  - field.field.support_ticket.default.body

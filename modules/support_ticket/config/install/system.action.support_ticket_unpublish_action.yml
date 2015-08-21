@@ -1,0 +1,9 @@
+id: support_ticket_unpublish_action
+label: 'Unpublish support ticket'
+status: true
+langcode: en
+type: support_ticket
+plugin: support_ticket_unpublish_action
+dependencies:
+  module:
+    - support_ticket

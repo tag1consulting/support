@@ -1,0 +1,9 @@
+id: support_ticket_unlock_action
+label: 'Unlock support ticket'
+status: true
+langcode: en
+type: support_ticket
+plugin: support_ticket_unlock_action
+dependencies:
+  module:
+    - support_ticket

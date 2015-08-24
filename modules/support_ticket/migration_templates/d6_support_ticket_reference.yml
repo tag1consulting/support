@@ -4,14 +4,11 @@ migration_tags:
   - Drupal 6
 source:
   plugin: d6_support_ticket_reference
-  #constants:
-  #  entity_type: node
 process:
   stid:
     plugin: migration
     migration: d6_support_ticket
     source: nid
-  #stid: nid
   field_related: rnid
 destination:
   plugin: entity:support_ticket

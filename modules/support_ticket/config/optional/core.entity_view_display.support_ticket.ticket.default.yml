@@ -5,6 +5,7 @@ dependencies:
     - field.field.support_ticket.ticket.body
     - field.field.support_ticket.ticket.field_assigned_to
     - field.field.support_ticket.ticket.field_priority
+    - field.field.support_ticket.ticket.field_related
     - field.field.support_ticket.ticket.field_state
     - field.field.support_ticket.ticket.field_watchers
     - support_ticket.type.ticket
@@ -20,30 +21,37 @@ content:
   body:
     label: hidden
     type: text_default
-    weight: 1
+    weight: 0
     settings: {  }
     third_party_settings: {  }
   field_assigned_to:
-    weight: 4
+    weight: 3
     label: above
     settings:
       link: true
     third_party_settings: {  }
     type: entity_reference_label
   field_priority:
+    weight: 1
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    type: list_default
+  field_related:
+    type: entity_reference_label
+    weight: 5
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+  field_state:
     weight: 2
     label: above
     settings: {  }
     third_party_settings: {  }
     type: list_default
-  field_state:
-    weight: 3
-    label: above
-    settings: {  }
-    third_party_settings: {  }
-    type: list_default
   field_watchers:
-    weight: 5
+    weight: 4
     label: above
     settings:
       link: true

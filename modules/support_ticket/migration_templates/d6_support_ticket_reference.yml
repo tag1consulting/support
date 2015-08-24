@@ -7,12 +7,12 @@ source:
   #constants:
   #  entity_type: node
 process:
-  #nid:
-  #  plugin: migration
-  #  migration: d6_support_ticket
-  #  source: nid
-  stid: nid
-  field_other: rnid
+  stid:
+    plugin: migration
+    migration: d6_support_ticket
+    source: nid
+  #stid: nid
+  field_related: rnid
 destination:
   plugin: entity:support_ticket
 migration_dependencies:

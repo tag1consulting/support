@@ -177,7 +177,7 @@ class SupportTicketType extends ConfigEntityBundleBase implements SupportTicketT
     parent::postSave($storage, $update);
 
     if ($update && $this->getOriginalId() != $this->id()) {
-      $update_count = support_ticket_type_update_tickets($this->getOriginalId(), $this->id()); // @todo: implement function
+      $update_count = support_ticket_type_update_support_tickets($this->getOriginalId(), $this->id());
       if ($update_count) {
         drupal_set_message(\Drupal::translation()->formatPlural($update_count,
           'Changed the support ticket type of 1 ticket from %old-type to %type.',

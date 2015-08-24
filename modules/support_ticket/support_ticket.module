@@ -220,7 +220,7 @@ function support_ticket_type_update_support_tickets($old_id, $new_id) {
 }
 
 /**
- * Loads support tciket entities from the database.
+ * Loads support ticket entities from the database.
  *
  * This function should be used whenever you need to load more than one support ticket
  * from the database. Support tickets are loaded into memory and will not require

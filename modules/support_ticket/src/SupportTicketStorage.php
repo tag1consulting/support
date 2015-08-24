@@ -51,8 +51,8 @@ class SupportTicketStorage extends SqlContentEntityStorage implements SupportTic
    */
   public function updateType($old_type, $new_type) {
     return $this->database->update('support_ticket')
-      ->fields(array('type' => $new_type))
-      ->condition('type', $old_type)
+      ->fields(array('support_ticket_type' => $new_type))
+      ->condition('support_ticket_type', $old_type)
       ->execute();
   }
 

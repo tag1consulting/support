@@ -9,6 +9,8 @@ namespace Drupal\support_ticket\Tests;
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\simpletest\WebTestBase;
+use Drupal\Component\Utility\SafeMarkup;
+use Drupal\support_ticket\Entity\SupportTicketType;
 
 /**
  * Sets up ticket type.

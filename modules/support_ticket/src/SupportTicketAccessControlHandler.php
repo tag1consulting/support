@@ -39,6 +39,10 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
   public function access(EntityInterface $entity, $operation, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
+    if ($account->hasPermission('administer support tickets')) {
+      $result = AccessResult::allowed()->cachePerPermissions();
+      return $return_as_object ? $result : $result->isAllowed();
+    }
     if (!$account->hasPermission('access support tickets')) {
       $result = AccessResult::forbidden()->cachePerPermissions();
       return $return_as_object ? $result : $result->isAllowed();

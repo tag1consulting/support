@@ -1,0 +1,9 @@
+id: support_ticket_publish_action
+label: 'Publish support ticket'
+status: true
+langcode: en
+type: support_ticket
+plugin: support_ticket_publish_action
+dependencies:
+  module:
+    - support_ticket

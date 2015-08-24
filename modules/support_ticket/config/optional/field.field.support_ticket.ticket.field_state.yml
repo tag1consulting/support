@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.support_ticket.field_state
+    - support_ticket.type.ticket
+  module:
+    - options
+id: support_ticket.ticket.field_state
+field_name: field_state
+entity_type: support_ticket
+bundle: ticket
+label: State
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    value: new
+default_value_callback: ''
+settings: {  }
+field_type: list_string

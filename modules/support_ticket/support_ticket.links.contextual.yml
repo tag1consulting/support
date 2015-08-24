@@ -1,0 +1,10 @@
+entity.support_ticket.edit_form:
+  route_name: entity.support_ticket.edit_form
+  group: support_ticket
+  title: Edit
+
+entity.support_ticket.delete_form:
+  route_name: entity.support_ticket.delete_form
+  group: support_ticket
+  title: Delete
+  weight: 10

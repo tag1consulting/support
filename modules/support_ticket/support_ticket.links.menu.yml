@@ -1,0 +1,8 @@
+entity.support_ticket_type.collection:
+  title: 'Support ticket types'
+  parent: system.admin_structure
+  description: 'Manage support ticket types, including default status, front page promotion, comment settings, etc.'
+  route_name: entity.support_ticket_type.collection
+support_ticket.add_page:
+  title: 'Add support ticket'
+  route_name: support_ticket.add_page

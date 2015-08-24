@@ -1,0 +1,522 @@
+<?php
+
+/**
+ * @file
+ * Enables use of support tickets with optional time tracking.
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Render\Element;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Template\Attribute;
+use Drupal\Core\Url;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\support_ticket\Entity\SupportTicket;
+use Drupal\support_ticket\Entity\SupportTicketType;
+use Drupal\support_ticket\SupportTicketInterface;
+use Drupal\support_ticket\SupportTicketTypeInterface;
+
+
+/**
+ * Denotes that the support ticket is not published.
+ */
+const SUPPORT_TICKET_NOT_PUBLISHED = 0;
+
+/**
+ * Denotes that the support ticket is published.
+ */
+const SUPPORT_TICKET_PUBLISHED = 1;
+
+/**
+ * Denotes that the support ticket is not locked.
+ */
+const SUPPORT_TICKET_NOT_LOCKED = 0;
+
+/**
+ * Denotes that the support ticket is locked.
+ */
+const SUPPORT_TICKET_LOCKED = 1;
+
+/**
+ * Implements hook_help().
+ */
+function support_ticket_help($route_name, RouteMatchInterface $route_match) {
+
+  switch ($route_name) {
+    case 'help.page.support_ticket':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Support Ticket module provides a support ticket types with optional time tracking.') . '</p>';
+      // @todo write useful documentation.
+      return $output;
+  }
+
+}
+
+/**
+ * Implements hook_theme().
+ */
+function support_ticket_theme() {
+  return array(
+    'support_ticket' => array(
+      'render element' => 'elements',
+    ),
+    'support_ticket_add_list' => array(
+      'variables' => array('content' => NULL),
+    ),
+    'support_ticket_edit_form' => array(
+      'render element' => 'form',
+    ),
+    'field__support_ticket__title' => array(
+      'base hook' => 'field',
+    ),
+    'field__support_ticket__uid' => array(
+      'base hook' => 'field',
+    ),
+    'field__support_ticket__created' => array(
+      'base hook' => 'field',
+    ),
+  );
+}
+
+/**
+ * Returns a list of all the available support ticket types.
+ *
+ * This list can include types that are queued for addition or deletion.
+ *
+ * @return \Drupal\support_ticket\SupportTicketTypeInterface[]
+ *   An array of support ticket type entities, keyed by ID.
+ *
+ * @see \Drupal\support_ticket\Entity\SupportTicketType::load()
+ */
+function support_ticket_type_get_types() {
+  return SupportTicketType::loadMultiple();
+}
+
+/**
+ * Returns a list of available support ticket type names.
+ *
+ * This list can include types that are queued for addition or deletion.
+ *
+ * @return string[]
+ *   An array of support ticket type labels, keyed by the support ticket type name.
+ */
+function support_ticket_type_get_names() {
+  return array_map(function ($bundle_info) {
+    return $bundle_info['label'];
+  }, \Drupal::entityManager()->getBundleInfo('support_ticket'));
+}
+
+/**
+ * Returns the support ticket type label for the passed support ticket.
+ *
+ * @param \Drupal\support_ticket\SupportTicketInterface $support_ticket
+ *   A support ticket entity to return the support ticket type's label for.
+ *
+ * @return string|false
+ *   The support ticket type label or FALSE if the support ticket type is not found.
+ */
+function support_ticket_get_type_label(SupportTicketInterface $support_ticket) {
+  $type = SupportTicketType::load($support_ticket->bundle());
+  return $type ? $type->label() : FALSE;
+}
+
+/**
+ * Description callback: Returns the support ticket type description.
+ *
+ * @param \Drupal\support_ticket\SupportTicketTypeInterface $support_ticket_type
+ *   The support ticket type object.
+ *
+ * @return string
+ *   The support ticket type description.
+ */
+function support_ticket_type_get_description(SupportTicketTypeInterface $support_ticket_type) {
+  return $support_ticket_type->getDescription();
+}
+
+/**
+ * Menu argument loader: Loads a support ticket type by string.
+ *
+ * @param $name
+ *   The machine name of a support ticket type to load.
+ *
+ * @return \Drupal\support_ticket\SupportTicketTypeInterface
+ *   A support ticket type object or NULL if $name does not exist.
+ *
+function support_ticket_type_load($name) {
+  return SupportTicketType::load($name);
+}
+
+/**
+ * Adds the default body field to a support ticket type.
+ *
+ * @param \Drupal\support_ticket\SupportTicketTypeInterface $type
+ *   A support ticket type object.
+ * @param string $label
+ *   (optional) The label for the body instance.
+ *
+ * @return \Drupal\field\Entity\FieldConfig Ticket body field.
+ */
+function support_ticket_add_body_field(SupportTicketTypeInterface $type, $label = 'Ticket body') {
+   // Add or remove the body field, as needed.
+  $field_storage = FieldStorageConfig::loadByName('support_ticket', 'body');
+  $field = FieldConfig::loadByName('support_ticket', $type->id(), 'body');
+  if (empty($field)) {
+    $field = entity_create('field_config', array(
+      'field_storage' => $field_storage,
+      'bundle' => $type->id(),
+      'label' => $label,
+      'settings' => array('display_summary' => TRUE),
+    ));
+    $field->save();
+
+    // Assign widget settings for the 'default' form mode.
+    entity_get_form_display('support_ticket', $type->id(), 'default')
+      ->setComponent('body', array(
+        'type' => 'text_textarea_with_summary',
+      ))
+      ->save();
+
+    // Assign display settings for the 'default' and 'teaser' view modes.
+    entity_get_display('support_ticket', $type->id(), 'default')
+      ->setComponent('body', array(
+        'label' => 'hidden',
+        'type' => 'text_default',
+      ))
+      ->save();
+
+    // The teaser view mode is created by the Standard profile and therefore
+    // might not exist.
+    // @TODO: Does this affect Support Tickets, or only Nodes?
+    $view_modes = \Drupal::entityManager()->getViewModes('support_ticket');
+    if (isset($view_modes['teaser'])) {
+      entity_get_display('support_ticket', $type->id(), 'teaser')
+        ->setComponent('body', array(
+          'label' => 'hidden',
+          'type' => 'text_summary_or_trimmed',
+        ))
+        ->save();
+    }
+  }
+
+  return $field;
+}
+
+/**
+ * Updates all support tickets of one type to be of another type.
+ *
+ * @param string $old_id
+ *   The current support ticket type of the support tickets.
+ * @param string $new_id
+ *   The new support ticket type of the support tickets.
+ *
+ * @return
+ *   The number of support tickets whose support ticket type field was modified.
+ */
+function support_ticket_type_update_support_tickets($old_id, $new_id) {
+  return \Drupal::entityManager()->getStorage('support_ticket')->updateType($old_id, $new_id);
+}
+
+/**
+ * Loads support tciket entities from the database.
+ *
+ * This function should be used whenever you need to load more than one support ticket
+ * from the database. Support tickets are loaded into memory and will not require
+ * database access if loaded again during the same page request.
+ *
+ * @param array $stid
+ *   (optional) An array of entity IDs. If omitted, all entities are loaded.
+ * @param bool $reset
+ *   (optional) Whether to reset the internal support_ticket_load() cache.  Defaults
+ *   to FALSE.
+ *
+ * @return \Drupal\support_ticket\SupportTicketInterface[]
+ *   An array of support ticket entities indexed by nid.
+ *
+ * @see entity_load_multiple()
+ * @see \Drupal\Core\Entity\Query\EntityQueryInterface
+ */
+function support_ticket_load_multiple(array $stid = NULL, $reset = FALSE) {
+  if ($reset) {
+    \Drupal::entityManager()->getStorage('support_ticket')->resetCache($stid);
+  }
+  return SupportTicket::loadMultiple($stid);
+}
+
+/**
+ * Loads a support ticket entity from the database.
+ *
+ * @param int $nid
+ *   The support ticket ID.
+ * @param bool $reset
+ *   (optional) Whether to reset the support_ticket_load_multiple() cache. Defaults to
+ *   FALSE.
+ *
+ * @return \Drupal\support_ticket\SupportTicketInterface|null
+ *   A fully-populated support ticket entity, or NULL if the support ticket is not
+ *   found.
+ */
+function support_ticket_load($nid = NULL, $reset = FALSE) {
+  if ($reset) {
+    \Drupal::entityManager()->getStorage('support_ticket')->resetCache(array($nid));
+  }
+  return SupportTicket::load($nid);
+}
+
+/**
+ * Loads a support ticket revision from the database.
+ *
+ * @param int $vid
+ *   The support ticket revision id.
+ *
+ * @return \Drupal\support_ticket\SupportTicketInterface|null
+ *   A fully-populated support ticket entity, or NULL if the support ticket is not
+ *   found.
+ */
+function support_ticket_revision_load($vid = NULL) {
+  return entity_revision_load('support_ticket', $vid);
+}
+
+/**
+ * Deletes a support_ticket revision.
+ *
+ * @param $revision_id
+ *   The revision ID to delete.
+ *
+ * @return
+ *   TRUE if the revision deletion was successful; otherwise, FALSE.
+ */
+function support_ticket_revision_delete($revision_id) {
+  entity_revision_delete('support_ticket', $revision_id);
+}
+
+/**
+ * Checks whether the current page is the full page view of the passed-in support
+ * ticket.
+ *
+ * @param \Drupal\support_ticket\SupportTicketInterface $support_ticket
+ *   A support ticket entity.
+ *
+ * @return
+ *   The ID of the support ticket if this is a full page view, otherwise FALSE.
+ */
+function support_ticket_is_page(SupportTicketInterface $support_ticket) {
+  $route_match = \Drupal::routeMatch();
+  if ($route_match->getRouteName() == 'entity.support_ticket.canonical') {
+    $page_support_ticket = $route_match->getParameter('support_ticket');
+  }
+  return (!empty($page_support_ticket) ? $page_support_ticket->id() == $support_ticket->id() : FALSE);
+}
+
+/**
+ * Prepares variables for list of available support ticket type templates.
+ *
+ * Default template: support-ticket-add-list.html.twig.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - content: An array of content types.
+ */
+function template_preprocess_support_ticket_add_list(&$variables) {
+  $variables['types'] = array();
+  if (!empty($variables['content'])) {
+    foreach ($variables['content'] as $type) {
+      $variables['types'][$type->id()] = array(
+        'type' => $type->id(),
+        'add_link' => \Drupal::l($type->label(), new Url('support_ticket.add', array('support_ticket_type' => $type->id()))),
+        'description' => array(
+          '#markup' => $type->getDescription(),
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for HTML document templates.
+ */
+function support_ticket_preprocess_html(&$variables) {
+  // If on an individual support ticket page, add the support ticket type to body
+  // classes.
+  if (($support_ticket = \Drupal::routeMatch()->getParameter('support_ticket')) && $support_ticket instanceof SupportTicketInterface) {
+    $variables['support_ticket_type'] = $support_ticket->getType();
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK().
+ */
+function support_ticket_theme_suggestions_support_ticket(array $variables) {
+  $suggestions = array();
+  $support_ticket = $variables['elements']['#support_ticket'];
+  $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
+
+  $suggestions[] = 'support_ticket__' . $sanitized_view_mode;
+  $suggestions[] = 'support_ticket__' . $support_ticket->bundle();
+  $suggestions[] = 'support_ticket__' . $support_ticket->bundle() . '__' . $sanitized_view_mode;
+  $suggestions[] = 'support_ticket__' . $support_ticket->id();
+  $suggestions[] = 'support_ticket__' . $support_ticket->id() . '__' . $sanitized_view_mode;
+
+  return $suggestions;
+}
+
+/**
+ * Prepares variables for support ticket templates.
+ *
+ * Default template: support-ticket.html.twig.
+ *
+ * Themes can use their own copy of support-ticket.html.twig. The default is located
+ * inside "support/modules/support_ticket/templates/support-ticket.html.twig". Look in there
+ * for the full list of variables.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - elements: An array of elements to display in view mode.
+ *   - support_ticket: The support ticket object.
+ *   - view_mode: View mode; e.g., 'full', 'teaser', etc.
+ */
+function template_preprocess_support_ticket(&$variables) {
+  $variables['view_mode'] = $variables['elements']['#view_mode'];
+  // Provide a distinct $teaser boolean.
+  $variables['teaser'] = $variables['view_mode'] == 'teaser';
+  $variables['support_ticket'] = $variables['elements']['#support_ticket'];
+  /** @var \Drupal\support_ticket\SupportTicketInterface $support_ticket */
+  $support_ticket = $variables['support_ticket'];
+  $variables['date'] = drupal_render($variables['elements']['created']);
+  unset($variables['elements']['created']);
+  $variables['author_name'] = drupal_render($variables['elements']['uid']);
+  unset($variables['elements']['uid']);
+
+  $variables['url'] = $support_ticket->url('canonical', array(
+    'language' => $support_ticket->language(),
+  ));
+  $variables['label'] = $variables['elements']['title'];
+  unset($variables['elements']['title']);
+  // The 'page' variable is set to TRUE in two occasions:
+  //   - The view mode is 'full' and we are on the 'support_ticket.view' route.
+  //   - The support ticket is in preview and view mode is either 'full' or 'default'.
+  $variables['page'] = ($variables['view_mode'] == 'full' && (support_ticket_is_page($support_ticket)) || (isset($support_ticket->in_preview) && in_array($support_ticket->preview_view_mode, array('full', 'default'))));
+
+  // Helpful $content variable for templates.
+  $variables += array('content' => array());
+  foreach (Element::children($variables['elements']) as $key) {
+    $variables['content'][$key] = $variables['elements'][$key];
+  }
+
+  // Display post information only on certain support ticket types.
+  $support_ticket_type = $support_ticket->type->entity;
+  // Used by RDF to add attributes around the author and date submitted.
+  $variables['author_attributes'] = new Attribute();
+  $variables['display_submitted'] = $support_ticket_type->displaySubmitted();
+}
+
+/**
+ * Finds the most recently changed support tickets that are available to the current
+ * user.
+ *
+ * @param $number
+ *   (optional) The maximum number of support tickets to find. Defaults to 10.
+ *
+ * @return
+ *   An array of support ticket entities or an empty array if there are no recent
+ *   support tickets visible to the current user.
+ */
+function support_ticket_get_recent($number = 10) {
+  $account = \Drupal::currentUser();
+  $query = \Drupal::entityQuery('support_ticket');
+
+  // If the user is able to view their own unpublished support tickets, allow them
+  // to see these in addition to published support tickets. Check that they actually
+  // have some unpublished support tickets to view before adding the condition.
+  $access_query =  \Drupal::entityQuery('support_ticket')
+    ->condition('uid', $account->id())
+    ->condition('status', SUPPORT_TICKET_NOT_PUBLISHED);
+  if ($account->hasPermission('view own unpublished support tickets') && ($own_unpublished = $access_query->execute())) {
+    $query->orConditionGroup()
+      ->condition('status', SUPPORT_TICKET_PUBLISHED)
+      ->condition('stid', $own_unpublished, 'IN');
+  }
+  else {
+    // If not, restrict the query to published support tickets.
+    $query->condition('status', SUPPORT_TICKET_PUBLISHED);
+  }
+  $stids = $query
+    ->sort('changed', 'DESC')
+    ->range(0, $number)
+    ->addTag('support_ticket_access')
+    ->execute();
+
+  $support_tickets = SupportTicket::loadMultiple($stids);
+
+  return $support_tickets ? $support_tickets : array();
+}
+
+/**
+ * Generates an array for rendering the given support ticket.
+ *
+ * @param \Drupal\support_ticket\SupportTicketInterface $support_ticket
+ *   A support ticket entity.
+ * @param $view_mode
+ *   (optional) View mode, e.g., 'full', 'teaser', etc. Defaults to 'full.'
+ * @param $langcode
+ *   (optional) A language code to use for rendering. Defaults to NULL which is
+ *   the global content language of the current request.
+ *
+ * @return
+ *   An array as expected by drupal_render().
+ */
+function support_ticket_view(SupportTicketInterface $support_ticket, $view_mode = 'full', $langcode = NULL) {
+  return entity_view($support_ticket, $view_mode, $langcode);
+}
+
+/**
+ * Constructs a drupal_render() style array from an array of loaded support tickets.
+ *
+ * @param $support_tickets
+ *   An array of support tickets as returned by SupportTicket::loadMultiple().
+ * @param $view_mode
+ *   (optional) View mode, e.g., 'full', 'teaser', etc. Defaults to 'teaser.'
+ * @param $langcode
+ *   (optional) A language code to use for rendering. Defaults to the global
+ *   content language of the current request.
+ *
+ * @return
+ *   An array in the format expected by drupal_render().
+ */
+function support_ticket_view_multiple($support_tickets, $view_mode = 'teaser', $langcode = NULL) {
+  return entity_view_multiple($support_tickets, $view_mode, $langcode);
+}
+
+/**
+ * Implements hook_support_ticket_access().
+ */
+function support_ticket_support_ticket_access(SupportTicketInterface $support_ticket, $op, $account) {
+  $type = $support_ticket->bundle();
+
+  switch ($op) {
+    case 'create':
+      return AccessResult::allowedIfHasPermission($account, 'create ' . $type . ' ticket');
+
+    case 'update':
+      if ($account->hasPermission('edit any ' . $type . ' ticket', $account)) {
+        return AccessResult::allowed()->cachePerPermissions();
+      }
+      else {
+        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' ticket', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+      }
+
+    case 'delete':
+      if ($account->hasPermission('delete any ' . $type . ' ticket', $account)) {
+        return AccessResult::allowed()->cachePerPermissions();
+      }
+      else {
+        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' ticket', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+      }
+
+    default:
+      // No opinion.
+      return AccessResult::neutral();
+  }
+}

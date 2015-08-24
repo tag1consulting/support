@@ -11,7 +11,7 @@ process:
   #  plugin: migration
   #  migration: d6_support_ticket
   #  source: nid
-  nid: nid
+  stid: nid
   field_other: rnid
 destination:
   plugin: entity:support_ticket

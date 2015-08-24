@@ -5,6 +5,7 @@ dependencies:
     - field.field.support_ticket.ticket.body
     - field.field.support_ticket.ticket.field_assigned_to
     - field.field.support_ticket.ticket.field_priority
+    - field.field.support_ticket.ticket.field_related
     - field.field.support_ticket.ticket.field_state
     - field.field.support_ticket.ticket.field_watchers
     - support_ticket.type.ticket
@@ -41,6 +42,14 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: options_select
+  field_related:
+    weight: 31
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    type: entity_reference_autocomplete
   field_state:
     weight: 28
     settings: {  }

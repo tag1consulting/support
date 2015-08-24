@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - entity_reference
+    - support_ticket
+id: support_ticket.field_related
+field_name: field_related
+entity_type: support_ticket
+type: entity_reference
+settings:
+  target_type: support_ticket
+module: entity_reference
+locked: false
+cardinality: -1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false

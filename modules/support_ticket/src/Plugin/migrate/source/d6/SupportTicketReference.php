@@ -36,6 +36,7 @@ class SupportTicketReference extends DrupalSqlBase implements SourceEntityInterf
   public function query() {
     // Select support ticket / node in its last revision.
     $query = $this->select('support_reference', 'sr')
+      ->distinct()
       ->fields('sr', array(
         'nid',
         'rnid',
@@ -59,7 +60,7 @@ class SupportTicketReference extends DrupalSqlBase implements SourceEntityInterf
    * {@inheritdoc}
    */
   public function prepareRow(Row $row) {
-    // Select tickets related to the selected ticket
+    // Select all related tickets (rnid) to the current ticket (nid)
     $query = $this->select('support_reference', 'sr')
       ->fields('sr', array('rnid'))
       ->condition('sr.nid', $row->getSourceProperty('nid'));

@@ -58,6 +58,18 @@ class SupportTicketReference extends DrupalSqlBase implements SourceEntityInterf
   /**
    * {@inheritdoc}
    */
+  public function prepareRow(Row $row) {
+    // Select tickets related to the selected ticket
+    $query = $this->select('support_reference', 'sr')
+      ->fields('sr', array('rnid'))
+      ->condition('sr.nid', $row->getSourceProperty('nid'));
+    $row->setSourceProperty('rnid', $query->execute()->fetchCol());
+    return parent::prepareRow($row);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getIds() {
     return array(
       'nid' => array(

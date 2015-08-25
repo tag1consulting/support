@@ -5,18 +5,16 @@ migration_tags:
 source:
   plugin: d6_support_ticket_reference
 process:
-  stid: nid
-  field_related: rnid
-  #stid:
-  #  plugin: migration
-  #  migration: d6_support_ticket
-  #  source:
-  #   - nid
-  #field_related:
-  #  plugin: migration
-  #  migration: d6_support_ticket
-  #  source:
-  #   - rnid
+  #stid: nid
+  #field_related: rnid
+  stid:
+    plugin: migration
+    migration: d6_support_ticket
+    source: nid
+  field_related:
+    plugin: migration
+    migration: d6_support_ticket
+    source: rnid
 destination:
   plugin: entity:support_ticket
 migration_dependencies:

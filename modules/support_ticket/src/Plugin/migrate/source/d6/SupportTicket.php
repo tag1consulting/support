@@ -24,38 +24,6 @@ describe support_ticket;
 | assigned   | int(10) unsigned | NO   |     | 0       |       |
 +------------+------------------+------+-----+---------+-------+
 
-describe support_ticket_timer;
-+---------+------------------+------+-----+---------+-------+
-| Field   | Type             | Null | Key | Default | Extra |
-+---------+------------------+------+-----+---------+-------+
-| nid     | int(10) unsigned | NO   | PRI | 0       |       |
-| time    | varchar(255)     | NO   |     |         |       |
-| date    | int(10) unsigned | NO   |     | 0       |       |
-| summary | varchar(255)     | NO   |     |         |       |
-+---------+------------------+------+-----+---------+-------+
-
-describe support_ticket_comment;
-+------------+------------------+------+-----+---------+-------+
-| Field      | Type             | Null | Key | Default | Extra |
-+------------+------------------+------+-----+---------+-------+
-| cid        | int(11)          | NO   | PRI | NULL    |       |
-| message_id | varchar(255)     | YES  | MUL | NULL    |       |
-| state      | int(3) unsigned  | NO   |     | 0       |       |
-| priority   | int(3) unsigned  | NO   |     | 0       |       |
-| client     | int(10) unsigned | NO   |     | 0       |       |
-| assigned   | int(10) unsigned | NO   |     | 0       |       |
-+------------+------------------+------+-----+---------+-------+
-
-describe support_ticket_comment_timer;
-+---------+------------------+------+-----+---------+-------+
-| Field   | Type             | Null | Key | Default | Extra |
-+---------+------------------+------+-----+---------+-------+
-| cid     | int(10) unsigned | NO   | PRI | 0       |       |
-| time    | varchar(255)     | NO   |     | 0       |       |
-| date    | int(10) unsigned | NO   |     | 0       |       |
-| summary | varchar(255)     | NO   |     |         |       |
-+---------+------------------+------+-----+---------+-------+
-
 describe support_states;
 +-----------+------------------+------+-----+---------+----------------+
 | Field     | Type             | Null | Key | Default | Extra          |
@@ -129,7 +97,7 @@ class SupportTicket extends DrupalSqlBase implements SourceEntityInterface {
   /**
    * The join options between the node and the support_ticket table.
    */
-  const JOIN_TICKET = 'n.vid = st.nid';
+  const JOIN_TICKET = 'n.nid = st.nid';
 
   /**
    * The join options between the support_ticket and state table.
@@ -156,6 +124,7 @@ class SupportTicket extends DrupalSqlBase implements SourceEntityInterface {
     $query = $this->select('node_revisions', 'nr')
       ->fields('n', array(
         'nid',
+        'vid',
         'type',
         'language',
         'status',
@@ -192,10 +161,6 @@ class SupportTicket extends DrupalSqlBase implements SourceEntityInterface {
     $query->innerJoin('support_states', 'ss', static::JOIN_STATE);
     $query->innerJoin('support_priority', 'sp', static::JOIN_PRIORITY);
     // @todo: get client name from appropriate table
-
-    if (isset($this->configuration['node_type'])) {
-      $query->condition('type', $this->configuration['node_type']);
-    }
 
     return $query;
   }

@@ -1,0 +1,27 @@
+id: d6_support_ticket_comment_entity_display
+label: Drupal 6 support ticket comment display configuration
+migration_tags:
+  - Drupal 6
+source:
+  plugin: d6_comment_variable
+  constants:
+    entity_type: support_ticket
+    field_name: comment
+    view_mode: default
+    options:
+      label: hidden
+      type: comment_default
+      weight: 20
+process:
+  entity_type: 'constants/entity_type'
+  field_name: 'constants/field_name'
+  view_mode: 'constants/view_mode'
+  options: 'constants/options'
+  bundle:
+    plugin: default_value
+    default_value: "ticket"
+destination:
+  plugin: component_entity_display
+migration_dependencies:
+  required:
+    - d6_support_ticket_comment_field_instance

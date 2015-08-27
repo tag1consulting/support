@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.support_ticket_update
+    - field.field.comment.support_ticket_update.comment_body
+  module:
+    - text
+id: comment.support_ticket_update.default
+targetEntityType: comment
+bundle: support_ticket_update
+mode: default
+content:
+  comment_body:
+    label: hidden
+    type: text_default
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+  links:
+    weight: 100
+hidden: {  }

@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.support_ticket_update
+    - field.storage.comment.comment_body
+  module:
+    - text
+id: comment.support_ticket_update.comment_body
+field_name: comment_body
+entity_type: comment
+bundle: support_ticket_update
+label: Comment
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text_long

@@ -1,0 +1,19 @@
+uuid: 48ad79c6-f900-4e8a-bb49-73ba444d7ecf
+langcode: en
+status: true
+dependencies:
+  module:
+    - comment
+    - support_ticket
+id: support_ticket.field_ticket_updates
+field_name: field_ticket_updates
+entity_type: support_ticket
+type: comment
+settings:
+  comment_type: support_ticket_update
+module: comment
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false

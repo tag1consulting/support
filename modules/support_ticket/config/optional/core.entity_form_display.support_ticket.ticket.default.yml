@@ -1,3 +1,4 @@
+uuid: 0464ab65-017f-42d5-a933-51ccc5ed78fc
 langcode: en
 status: true
 dependencies:
@@ -7,9 +8,11 @@ dependencies:
     - field.field.support_ticket.ticket.field_priority
     - field.field.support_ticket.ticket.field_related
     - field.field.support_ticket.ticket.field_state
+    - field.field.support_ticket.ticket.field_ticket_updates
     - field.field.support_ticket.ticket.field_watchers
     - support_ticket.type.ticket
   module:
+    - comment
     - text
 id: support_ticket.ticket.default
 targetEntityType: support_ticket
@@ -55,6 +58,11 @@ content:
     settings: {  }
     third_party_settings: {  }
     type: options_select
+  field_ticket_updates:
+    weight: 32
+    settings: {  }
+    third_party_settings: {  }
+    type: comment_default
   field_watchers:
     weight: 30
     settings:

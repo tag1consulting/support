@@ -7,7 +7,7 @@
 
 namespace Drupal\support_ticket\Controller;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Xss;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatter;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
@@ -193,7 +193,7 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
           '#context' => [
             'date' => $link,
             'username' => $this->renderer->renderPlain($username),
-            'message' => SafeMarkup::xssFilter($revision->revision_log->value),
+            'message' => ['#markup' => $revision->revision_log->value, '#allowed_tags' => Xss::getHtmlTagList()],
           ],
         ],
       ];
@@ -204,7 +204,11 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
       if ($vid == $support_ticket->getRevisionId()) {
         $row[0]['class'] = ['revision-current'];
         $row[] = [
-          'data' => SafeMarkup::placeholder($this->t('current revision')),
+          'data' => [
+            '#prefix' => '<em>',
+            '#markup' => $this->t('current revision'),
+            '#suffix' => '</em>',
+          ],
           'class' => ['revision-current'],
         ];
       }

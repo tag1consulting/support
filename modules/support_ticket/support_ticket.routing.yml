@@ -1,5 +1,5 @@
 support_ticket.multiple_delete_confirm:
-  path: '/admin/support/ticket/delete'
+  path: '/admin/support_ticket/ticket/delete'
   defaults:
     _form: '\Drupal\support_ticket\Form\DeleteMultiple'
   requirements:
@@ -80,7 +80,7 @@ support_ticket.revision_delete_confirm:
     _support_ticket_operation_route: TRUE
 
 entity.support_ticket_type.collection:
-  path: '/admin/support/ticket-types'
+  path: '/admin/structure/support_ticket/ticket-types'
   defaults:
     _controller: '\Drupal\Core\Entity\Controller\EntityListController::listing'
     entity_type: 'support_ticket_type'
@@ -89,7 +89,7 @@ entity.support_ticket_type.collection:
     _permission: 'administer support ticket types'
 
 support_ticket.type_add:
-  path: '/admin/support/ticket-types/add'
+  path: '/admin/structure/support_ticket/ticket-types/add'
   defaults:
     _entity_form: 'support_ticket_type.add'
     _title: 'Add support ticket type'
@@ -97,14 +97,14 @@ support_ticket.type_add:
     _permission: 'administer support ticket types'
 
 entity.support_ticket_type.edit_form:
-  path: '/admin/support/ticket-types/manage/{support_ticket_type}'
+  path: '/admin/structure/support_ticket/ticket-types/manage/{support_ticket_type}'
   defaults:
     _entity_form: 'support_ticket_type.edit'
   requirements:
     _permission: 'administer support ticket types'
 
 entity.support_ticket_type.delete_form:
-  path: '/admin/support/ticket-types/manage/{support_ticket_type}/delete'
+  path: '/admin/structure/support_ticket/ticket-types/manage/{support_ticket_type}/delete'
   defaults:
     _entity_form: 'support_ticket_type.delete'
     _title: 'Delete'

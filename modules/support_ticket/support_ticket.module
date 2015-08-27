@@ -144,7 +144,7 @@ function support_ticket_type_get_description(SupportTicketTypeInterface $support
  *
  * @return \Drupal\support_ticket\SupportTicketTypeInterface
  *   A support ticket type object or NULL if $name does not exist.
- *
+ */
 function support_ticket_type_load($name) {
   return SupportTicketType::load($name);
 }

@@ -13,7 +13,9 @@ source:
       weight: 10
 process:
   entity_type: 'constants/entity_type'
-  field_name: 'constants/field_name'
+  field_name:
+    plugin: default_value
+    default_value: "field_ticket_update"
   form_mode: 'constants/form_mode'
   options: 'constants/options'
   hidden:

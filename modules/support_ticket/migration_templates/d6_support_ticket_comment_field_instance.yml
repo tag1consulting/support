@@ -13,11 +13,8 @@ process:
   label: 'constants/label'
   required: 'constants/required'
   field_name:
-    plugin: static_map
-    source: comment_subject_field
-    default_value: comment
-    map:
-      0: comment_no_subject
+    plugin: default_value
+    default_value: "field_ticket_update"
   bundle:
     plugin: default_value
     default_value: "ticket"

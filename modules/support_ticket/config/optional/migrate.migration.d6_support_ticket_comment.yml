@@ -12,7 +12,6 @@ id: d6_support_ticket_comment
 migration_tags:
   - 'Drupal 6'
 label: 'Drupal 6 support ticket comments'
-load: {  }
 source:
   plugin: d6_comment
   constants:

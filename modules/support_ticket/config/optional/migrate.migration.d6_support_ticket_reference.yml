@@ -9,7 +9,6 @@ id: d6_support_ticket_reference
 migration_tags:
   - 'Drupal 6'
 label: 'Drupal 6 support ticket references'
-load: {  }
 source:
   plugin: d6_support_ticket_reference
 process:

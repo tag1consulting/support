@@ -7,7 +7,6 @@
 
 namespace Drupal\support_ticket\Controller;
 
-use Drupal\Component\Utility\Xss;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatter;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
@@ -193,7 +192,7 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
           '#context' => [
             'date' => $link,
             'username' => $this->renderer->renderPlain($username),
-            'message' => ['#markup' => $revision->revision_log->value, '#allowed_tags' => Xss::getHtmlTagList()],
+            'message' => ['#markup' => $revision->revision_log->value],
           ],
         ],
       ];

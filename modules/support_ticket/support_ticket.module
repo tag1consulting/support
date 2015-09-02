@@ -282,12 +282,14 @@ function support_ticket_entity_update($support_ticket) {
         $compare_original = $original->getTranslation($langcode)->get($name)->filterEmptyItems();
         if (!$compare->equals($compare_original)) {
           $markup = array();
-          $markup[] = "<span class='metadata-change-label'>" . $field->getFieldDefinition()->getLabel() ."</span>";
-          $value_original = $original->getTranslation($langcode)->get($name)->view();
+          $view_builder = \Drupal::entityManager()->getViewBuilder($support_ticket->getEntityTypeId());
+          // @todo: expose and/or set sane display_mode
+          $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name));
           if ($rendered = drupal_render($value_original)) {
             $markup[] = "<span class='metadata-change-original'>-$rendered</span>";
           }
-          $value = $support_ticket->getTranslation($langcode)->get($name)->view();
+          // @todo: expose and/or set sane display_mode
+          $value = $view_builder->viewfield($support_ticket->getTranslation($langcode)->get($name));
           if ($rendered = drupal_render($value)) {
             $markup[] = "<span class='metadata-change-changed'>+$rendered</span>";
           }

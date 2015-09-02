@@ -259,30 +259,43 @@ function support_ticket_load($nid = NULL, $reset = FALSE) {
  *   The support ticket entity object.
  */
 function support_ticket_entity_update($support_ticket) {
-  $original = $support_ticket->original;
-  $fields_original = $support_ticket->original->getFields();
-  $fields_updated = $support_ticket->getFields();
+  if (!method_exists($support_ticket, 'getFields')) {
+    return;
+  }
+
+  $fields = $support_ticket->getFields();
+  $langcodes = array_keys($support_ticket->getTranslationLanguages());
+  $original = !empty($support_ticket->original) ? $support_ticket->original: NULL;
 
   // Don't log changes to the following fields when the support_ticket is updated.
   // @todo: What's the cleanest way to expose this and make it configurable?
   $ignore = array(
-    'field' => array('stid', 'uuid', 'vid', 'uid', 'langcode', 'changed', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected'),
-    'type' => array('comment')
+    'field' => array('stid', 'uuid', 'vid', 'langcode', 'changed', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected'),
+    'type' => array('comment'),
   );
   $items = array();
-  foreach ($fields_updated as $name => $field) {
+  foreach ($fields as $name => $field) {
     $type = $field->getFieldDefinition()->getType();
     if (!in_array($name, $ignore['field']) && !in_array($type, $ignore['type'])) {
-      $updated_value = $field->getValue();
-      $original_value = isset($fields_original[$name]) ? $fields_original[$name]->getValue() : FALSE;
-      foreach ($updated_value as $number => $values) {
-        foreach ($values as $key => $value) {
-          if ($original_value && isset($original_value[$number][$key]) && $value != $original_value[$number][$key]) {
-            $items[] = array(
-              '#wrapper_attributes' => array('class' => "metadata-change-$name"),
-              '#markup' => "<span class='metadata-change-name'>$name:</span> <span class='metadata-change-original'>-" . $original_value[$number][$key] ."</span> <span class='metadata-change-changed'>+$value</span>",
-            );
+      foreach ($langcodes as $langcode) {
+        $compare = $support_ticket->getTranslation($langcode)->get($name)->filterEmptyItems();
+        $compare_original = $original->getTranslation($langcode)->get($name)->filterEmptyItems();
+        if (!$compare->equals($compare_original)) {
+          $markup = array();
+          $markup[] = "<span class='metadata-change-label'>" . $field->getFieldDefinition()->getLabel() ."</span>";
+          $value_original = $original->getTranslation($langcode)->get($name)->view();
+          if ($rendered = drupal_render($value_original)) {
+            $markup[] = "<span class='metadata-change-original'>-$rendered</span>";
           }
+          $value = $support_ticket->getTranslation($langcode)->get($name)->view();
+          if ($rendered = drupal_render($value)) {
+            $markup[] = "<span class='metadata-change-changed'>+$rendered</span>";
+          }
+          $items[] = array(
+            '#wrapper_attributes' => array('class' => "metadata-change-$name"),
+            '#markup' => implode(' ', $markup),
+          );
+
         }
       }
     }

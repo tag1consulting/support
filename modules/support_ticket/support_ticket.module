@@ -266,11 +266,14 @@ function support_ticket_entity_update($support_ticket) {
   $comment = '';
 
   // Don't log changes to the following fields when the support_ticket is updated.
-  // @todo: "field_ticket_update" is a configurable comment field; I think we can simply
-  //        ignore any comment field.
-  $ignore = array('stid', 'uuid', 'vid', 'uid', 'langcode', 'changed', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected', 'field_ticket_update');
+  // @todo: What's the cleanest way to expose this and make it configurable?
+  $ignore = array(
+    'field' => array('stid', 'uuid', 'vid', 'uid', 'langcode', 'changed', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected'),
+    'type' => array('comment')
+  );
   foreach ($fields_updated as $name => $field) {
-    if (!in_array($name, $ignore)) {
+    $type = $field->getFieldDefinition()->getType();
+    if (!in_array($name, $ignore['field']) && !in_array($type, $ignore['type'])) {
       $updated_value = $field->getValue();
       $original_value = isset($fields_original[$name]) ? $fields_original[$name]->getValue() : FALSE;
       foreach ($updated_value as $number => $values) {

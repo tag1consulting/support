@@ -263,14 +263,13 @@ function support_ticket_entity_update($support_ticket) {
   $fields_original = $support_ticket->original->getFields();
   $fields_updated = $support_ticket->getFields();
 
-  $comment = '';
-
   // Don't log changes to the following fields when the support_ticket is updated.
   // @todo: What's the cleanest way to expose this and make it configurable?
   $ignore = array(
     'field' => array('stid', 'uuid', 'vid', 'uid', 'langcode', 'changed', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected'),
     'type' => array('comment')
   );
+  $items = array();
   foreach ($fields_updated as $name => $field) {
     $type = $field->getFieldDefinition()->getType();
     if (!in_array($name, $ignore['field']) && !in_array($type, $ignore['type'])) {
@@ -279,15 +278,19 @@ function support_ticket_entity_update($support_ticket) {
       foreach ($updated_value as $number => $values) {
         foreach ($values as $key => $value) {
           if ($original_value && isset($original_value[$number][$key]) && $value != $original_value[$number][$key]) {
-            $old_value = $original_value[$number][$key];
-            $comment .= "  <div class=\"metadata-change-$name\">$name: '$old_value' => '$value'</div>\n";
+            $items[] = "  <div class=\"metadata-change-$name\">$name: '" . $original_value[$number][$key] ."' => '$value'</div>\n";
           }
         }
       }
     }
   }
 
-  if (!empty($comment)) {
+  if (!empty($items)) {
+    $item_list = array(
+      '#theme' => 'item_list',
+      '#title' => '',
+      '#items' => $items,
+    );
     // @todo: need to set text format (configurable?)
     $update_comment = entity_create('comment', array(
       'cid' => NULL,
@@ -295,7 +298,7 @@ function support_ticket_entity_update($support_ticket) {
       'entity_type' => 'support_ticket',
       'field_name' => 'field_ticket_update', // @todo
       'pid' => 0,
-      'comment_body' => "<div class=\"metadata-change\">\n" . $comment . "</div>\n",
+      'comment_body' => drupal_render($item_list),
       'comment_type' => 'support_ticket_update', // @todo: this can't be hard coded.
     ));
     $update_comment->save();

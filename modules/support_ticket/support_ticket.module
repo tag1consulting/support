@@ -278,7 +278,10 @@ function support_ticket_entity_update($support_ticket) {
       foreach ($updated_value as $number => $values) {
         foreach ($values as $key => $value) {
           if ($original_value && isset($original_value[$number][$key]) && $value != $original_value[$number][$key]) {
-            $items[] = "  <div class=\"metadata-change-$name\">$name: '" . $original_value[$number][$key] ."' => '$value'</div>\n";
+            $items[] = array(
+              '#wrapper_attributes' => array('class' => "metadata-change-$name"),
+              '#markup' => "<span class='metadata-change-name'>$name:</span> <span class='metadata-change-original'>-" . $original_value[$number][$key] ."</span> <span class='metadata-change-changed'>+$value</span>",
+            );
           }
         }
       }
@@ -287,9 +290,10 @@ function support_ticket_entity_update($support_ticket) {
 
   if (!empty($items)) {
     $item_list = array(
-      '#theme' => 'item_list',
+      '#theme' => 'item_list__support_ticket_changes',
       '#title' => '',
       '#items' => $items,
+      '#attributes' => array('class' => 'metadata-change'),
     );
     // @todo: need to set text format (configurable?)
     $update_comment = entity_create('comment', array(

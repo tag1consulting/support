@@ -18,6 +18,10 @@ use Drupal\support_ticket\Entity\SupportTicketType;
 use Drupal\support_ticket\SupportTicketInterface;
 use Drupal\support_ticket\SupportTicketTypeInterface;
 
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\comment\Entity\CommentType;
+
+
 
 /**
  * Denotes that the support ticket is not published.
@@ -267,29 +271,27 @@ function support_ticket_entity_update($support_ticket) {
   $langcodes = array_keys($support_ticket->getTranslationLanguages());
   $original = !empty($support_ticket->original) ? $support_ticket->original: NULL;
 
-  // Don't log changes to the following fields when the support_ticket is updated.
-  // @todo: What's the cleanest way to expose this and make it configurable?
-  $ignore = array(
-    'field' => array('stid', 'uuid', 'vid', 'langcode', 'changed', 'revision_timestamp', 'revision_uid', 'revision_log', 'revision_translation_affected'),
-    'type' => array('comment'),
-  );
+  // Load 'support_ticket_metadata_changes' support_ticket display mode
+  // @todo: prevent this view mode from getting deleted
+  $displays = EntityViewDisplay::collectRenderDisplay($support_ticket, 'support_ticket_metadata_changes');
+  foreach ($displays->getComponents() as $name => $options) {
+    $display[] = $name;
+  }
+
   $items = array();
   foreach ($fields as $name => $field) {
-    $type = $field->getFieldDefinition()->getType();
-    if (!in_array($name, $ignore['field']) && !in_array($type, $ignore['type'])) {
+    if (in_array($name, $display)) {
       foreach ($langcodes as $langcode) {
         $compare = $support_ticket->getTranslation($langcode)->get($name)->filterEmptyItems();
         $compare_original = $original->getTranslation($langcode)->get($name)->filterEmptyItems();
         if (!$compare->equals($compare_original)) {
           $markup = array();
           $view_builder = \Drupal::entityManager()->getViewBuilder($support_ticket->getEntityTypeId());
-          // @todo: expose and/or set sane display_mode
-          $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name));
+          $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name), 'support_ticket_metadata_changes');
           if ($rendered = drupal_render($value_original)) {
             $markup[] = "<span class='metadata-change-original'>-$rendered</span>";
           }
-          // @todo: expose and/or set sane display_mode
-          $value = $view_builder->viewfield($support_ticket->getTranslation($langcode)->get($name));
+          $value = $view_builder->viewField($support_ticket->getTranslation($langcode)->get($name), 'support_ticket_metadata_changes');
           if ($rendered = drupal_render($value)) {
             $markup[] = "<span class='metadata-change-changed'>+$rendered</span>";
           }
@@ -300,6 +302,14 @@ function support_ticket_entity_update($support_ticket) {
 
         }
       }
+    }
+
+    // @todo: handle multiple comment fields
+    $type = $field->getFieldDefinition()->getType();
+    if ($type == 'comment') {
+      $field_name = $field->getFieldDefinition()->getName();
+      // @todo: get this from [fieldStorage:protected][settings:protected][comment_type]
+      $comment_type = 'support_ticket_update';
     }
   }
 
@@ -315,10 +325,10 @@ function support_ticket_entity_update($support_ticket) {
       'cid' => NULL,
       'entity_id' => $support_ticket->id(),
       'entity_type' => 'support_ticket',
-      'field_name' => 'field_ticket_update', // @todo
+      'field_name' => $field_name,
       'pid' => 0,
       'comment_body' => drupal_render($item_list),
-      'comment_type' => 'support_ticket_update', // @todo: this can't be hard coded.
+      'comment_type' => $comment_type,
     ));
     $update_comment->save();
   }

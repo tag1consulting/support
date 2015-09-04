@@ -39,6 +39,10 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
   public function access(EntityInterface $entity, $operation, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
+    if ($account->hasPermission('administer support tickets')) {
+      $result = AccessResult::allowed()->cachePerPermissions();
+      return $return_as_object ? $result : $result->isAllowed();
+    }
     if (!$account->hasPermission('access support tickets')) {
       $result = AccessResult::forbidden()->cachePerPermissions();
       return $return_as_object ? $result : $result->isAllowed();
@@ -78,7 +82,12 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
       return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
     }
 
-    return AccessResult::allowed()->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+    if ($operation === 'view') {
+      return AccessResult::allowedIf($status)->cacheUntilEntityChanges($support_ticket);
+    }
+
+    // No opinion.
+    return AccessResult::neutral();
   }
 
   /**
@@ -111,7 +120,7 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
       if ($account->hasPermission('administer support tickets')) {
         return AccessResult::allowed()->cachePerPermissions();
       }
-      return AccessResult::allowedIf($items->getEntity()->type->entity->isNewRevision())->cachePerPermissions();
+      return AccessResult::allowedIf($items->getEntity()->support_ticket_type->entity->isNewRevision())->cachePerPermissions();
     }
     return parent::checkFieldAccess($operation, $field_definition, $account, $items);
   }

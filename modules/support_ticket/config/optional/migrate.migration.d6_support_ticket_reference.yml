@@ -1,0 +1,29 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - migrate.migration.d6_support_ticket
+  module:
+    - support_ticket
+id: d6_support_ticket_reference
+migration_tags:
+  - 'Drupal 6'
+label: 'Drupal 6 support ticket references'
+source:
+  plugin: d6_support_ticket_reference
+process:
+  stid:
+    plugin: migration
+    migration: d6_support_ticket
+    source: nid
+  field_related:
+    plugin: migration
+    migration: d6_support_ticket
+    source: rnid
+destination:
+  plugin: 'entity:support_ticket'
+template: null
+migration_dependencies:
+  required:
+    - d6_support_ticket
+migration_group: null

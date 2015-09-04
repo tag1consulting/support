@@ -49,7 +49,7 @@ use Drupal\user\UserInterface;
  *   entity_keys = {
  *     "id" = "stid",
  *     "revision" = "vid",
- *     "bundle" = "type",
+ *     "bundle" = "support_ticket_type",
  *     "label" = "title",
  *     "langcode" = "langcode",
  *     "uuid" = "uuid",
@@ -320,11 +320,10 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 
-    $fields['type'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Type'))
+    $fields['support_ticket_type'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Support Ticket Type'))
       ->setDescription(t('The support ticket type.'))
-      ->setSetting('target_type', 'support_ticket_type')
-      ->setReadOnly(TRUE);
+      ->setSetting('target_type', 'support_ticket_type');
 
     $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language'))

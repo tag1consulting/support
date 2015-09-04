@@ -59,13 +59,13 @@ class SupportTicketTypeForm extends EntityForm {
       $fields = $this->entityManager->getBaseFieldDefinitions('support_ticket');
       // Create a support ticket with a fake bundle using the type's UUID so that we can
       // get the default values for workflow settings.
-      $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('type' => $type->uuid()));
+      $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('support_ticket_type' => $type->uuid()));
     }
     else {
       $form['#title'] = $this->t('Edit %label support ticket type', array('%label' => $type->label()));
       $fields = $this->entityManager->getFieldDefinitions('support_ticket', $type->id());
       // Create a support_ticket to get the current values for workflow settings fields.
-      $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('type' => $type->id()));
+      $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('support_ticket_type' => $type->id()));
     }
 
     $form['name'] = array(
@@ -241,7 +241,7 @@ class SupportTicketTypeForm extends EntityForm {
       $title_field->getConfig($type->id())->setLabel($title_label)->save();
     }
     // Update workflow options.
-    $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('type' => $type->id()));
+    $support_ticket = $this->entityManager->getStorage('support_ticket')->create(array('support_ticket_type' => $type->id()));
     foreach (array('status', 'locked')  as $field_name) {
       $value = (bool) $form_state->getValue(['options', $field_name]);
       if ($support_ticket->$field_name->value != $value) {

@@ -102,7 +102,7 @@ class SupportTicketForm extends ContentEntityForm {
     $support_ticket = $this->entity;
 
     if ($this->operation == 'edit') {
-      $form['#title'] = $this->t('<em>Edit @type</em> @title', array('@type' => support_ticket_get_type_label($support_ticket), '@title' => $support_ticket->label()));
+      $form['#title'] = $this->t('<em>Edit @support_ticket_type</em> @title', array('@support_ticket_type' => support_ticket_get_type_label($support_ticket), '@title' => $support_ticket->label()));
     }
 
     $current_user = $this->currentUser();
@@ -141,7 +141,7 @@ class SupportTicketForm extends ContentEntityForm {
     $form['revision'] = array(
       '#type' => 'checkbox',
       '#title' => t('Create new revision'),
-      '#default_value' => $support_ticket->type->entity->isNewRevision(),
+      '#default_value' => $support_ticket->support_ticket_type->entity->isNewRevision(),
       '#access' => $current_user->hasPermission('administer support tickets'),
       '#group' => 'revision_information',
     );
@@ -231,7 +231,7 @@ class SupportTicketForm extends ContentEntityForm {
   protected function actions(array $form, FormStateInterface $form_state) {
     $element = parent::actions($form, $form_state);
     $support_ticket = $this->entity;
-    $preview_mode = $support_ticket->type->entity->getPreviewMode();
+    $preview_mode = $support_ticket->support_ticket_type->entity->getPreviewMode();
 
     $element['submit']['#access'] = $preview_mode != DRUPAL_REQUIRED || $this->hasBeenPreviewed;
 
@@ -368,16 +368,16 @@ class SupportTicketForm extends ContentEntityForm {
     $insert = $support_ticket->isNew();
     $support_ticket->save();
     $support_ticket_link = $support_ticket->link($this->t('View'));
-    $context = array('@type' => $support_ticket->getType(), '%title' => $support_ticket->label(), 'link' => $support_ticket_link);
-    $t_args = array('@type' => support_ticket_get_type_label($support_ticket), '%title' => $support_ticket->label());
+    $context = array('@support_ticket_type' => $support_ticket->getType(), '%title' => $support_ticket->label(), 'link' => $support_ticket_link);
+    $t_args = array('@support_ticket_type' => support_ticket_get_type_label($support_ticket), '%title' => $support_ticket->label());
 
     if ($insert) {
-      $this->logger('content')->notice('@type: added %title.', $context);
-      drupal_set_message(t('@type %title has been created.', $t_args));
+      $this->logger('content')->notice('@support_ticket_type: added %title.', $context);
+      drupal_set_message(t('@support_ticket_type %title has been created.', $t_args));
     }
     else {
-      $this->logger('content')->notice('@type: updated %title.', $context);
-      drupal_set_message(t('@type %title has been updated.', $t_args));
+      $this->logger('content')->notice('@support_ticket_type: updated %title.', $context);
+      drupal_set_message(t('@support_ticket_type %title has been updated.', $t_args));
     }
 
     if ($support_ticket->id()) {

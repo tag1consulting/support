@@ -1,0 +1,7 @@
+langcode: en
+status: true
+dependencies: {  }
+id: support_ticket_update
+label: 'Support ticket updates'
+target_entity_type_id: support_ticket
+description: 'Allows commenting on support tickets'

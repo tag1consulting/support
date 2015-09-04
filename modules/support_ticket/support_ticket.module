@@ -137,19 +137,6 @@ function support_ticket_type_get_description(SupportTicketTypeInterface $support
 }
 
 /**
- * Menu argument loader: Loads a support ticket type by string.
- *
- * @param $name
- *   The machine name of a support ticket type to load.
- *
- * @return \Drupal\support_ticket\SupportTicketTypeInterface
- *   A support ticket type object or NULL if $name does not exist.
- *
-function support_ticket_type_load($name) {
-  return SupportTicketType::load($name);
-}
-
-/**
  * Adds the default body field to a support ticket type.
  *
  * @param \Drupal\support_ticket\SupportTicketTypeInterface $type
@@ -406,7 +393,7 @@ function template_preprocess_support_ticket(&$variables) {
   }
 
   // Display post information only on certain support ticket types.
-  $support_ticket_type = $support_ticket->type->entity;
+  $support_ticket_type = $support_ticket->support_ticket_type->entity;
   // Used by RDF to add attributes around the author and date submitted.
   $variables['author_attributes'] = new Attribute();
   $variables['display_submitted'] = $support_ticket_type->displaySubmitted();

@@ -1,0 +1,32 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.support_ticket.field_ticket_update
+    - support_ticket.type.ticket
+  module:
+    - comment
+id: support_ticket.ticket.field_ticket_update
+field_name: field_ticket_update
+entity_type: support_ticket
+bundle: ticket
+label: 'Ticket updates'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    status: 2
+    cid: 0
+    last_comment_timestamp: 0
+    last_comment_name: null
+    last_comment_uid: 0
+    comment_count: 0
+default_value_callback: ''
+settings:
+  default_mode: 0
+  per_page: 100
+  anonymous: 0
+  form_location: true
+  preview: 1
+field_type: comment

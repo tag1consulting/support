@@ -1,0 +1,54 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - migrate.migration.d6_filter_format
+    - migrate.migration.d6_support_ticket
+    - migrate.migration.d6_user
+  module:
+    - comment
+    - support_ticket
+id: d6_support_ticket_comment
+migration_tags:
+  - 'Drupal 6'
+label: 'Drupal 6 support ticket comments'
+source:
+  plugin: d6_comment
+  constants:
+    entity_type: support_ticket
+    field_name: field_ticket_update
+    comment_type: support_ticket_update
+process:
+  cid: cid
+  pid:
+    plugin: migration
+    migration: d6_comment
+    source: pid
+  entity_id: nid
+  entity_type: constants/entity_type
+  field_name: constants/field_name
+  comment_type: constants/comment_type
+  subject: subject
+  uid: uid
+  name: name
+  mail: mail
+  homepage: homepage
+  hostname: hostname
+  created: timestamp
+  changed: timestamp
+  status: status
+  thread: thread
+  comment_body/value: comment
+  comment_body/format:
+    plugin: migration
+    migration: d6_filter_format
+    source: format
+destination:
+  plugin: 'entity:comment'
+template: null
+migration_dependencies:
+  required:
+    - d6_support_ticket
+    - d6_user
+    - d6_filter_format
+migration_group: null

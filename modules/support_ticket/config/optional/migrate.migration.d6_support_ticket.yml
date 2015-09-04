@@ -1,0 +1,63 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - migrate.migration.d6_filter_format
+    - migrate.migration.d6_node_settings
+    - migrate.migration.d6_node_type
+    - migrate.migration.d6_user
+  module:
+    - support_ticket
+id: d6_support_ticket
+migration_tags:
+  - 'Drupal 6'
+label: 'Drupal 6 support tickets'
+source:
+  plugin: d6_support_ticket
+  constants:
+    support_ticket_type: ticket
+process:
+  stid: nid
+  vid: vid
+  type: type
+  langcode:
+    plugin: default_value
+    source: language
+    default_value: und
+  title: title
+  uid:
+    plugin: migration
+    migration: d6_user
+    source: node_uid
+  status: status
+  created: created
+  changed: changed
+  body/format:
+    plugin: migration
+    migration: d6_filter_format
+    source: format
+  body/value: body
+  body/summary: teaser
+  revision_uid: revision_uid
+  revision_log: log
+  revision_timestamp: timestamp
+  support_ticket_type: constants/support_ticket_type
+  field_assigned_to:
+    plugin: migration
+    migration: d6_user
+    source: assigned
+  field_priority: priority_name
+  field_state: state_name
+destination:
+  plugin: 'entity:support_ticket'
+template: null
+migration_dependencies:
+  required:
+    - d6_user
+    - d6_node_type
+    - d6_node_settings
+    - d6_filter_format
+  optional:
+    - d6_field_instance_widget_settings
+    - d6_field_formatter_settings
+migration_group: null

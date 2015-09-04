@@ -350,6 +350,7 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
         'type' => 'string',
         'weight' => -5,
       ))
+      ->setDisplayConfigurable('view', TRUE)
       ->setDisplayOptions('form', array(
         'type' => 'string_textfield',
         'weight' => -5,
@@ -369,6 +370,7 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
         'type' => 'author',
         'weight' => 0,
       ))
+      ->setDisplayConfigurable('view', TRUE)
       ->setDisplayOptions('form', array(
         'type' => 'entity_reference_autocomplete',
         'weight' => 5,

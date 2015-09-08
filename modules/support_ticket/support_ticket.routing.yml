@@ -110,3 +110,13 @@ entity.support_ticket_type.delete_form:
     _title: 'Delete'
   requirements:
     _entity_access: 'support_ticket_type.delete'
+
+diff.revisions_diff:
+  path: '/support_ticket/{support_ticket}/revisions/view/{left_vid}/{right_vid}/{filter}'
+  defaults:
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketRevisionController::compareSupportTicketRevisions'
+    filter: 'raw'
+  requirements:
+    _access_support_ticket_revision: 'view'
+  options:
+    _admin_route: TRUE

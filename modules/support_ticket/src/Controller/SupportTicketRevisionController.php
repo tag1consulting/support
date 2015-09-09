@@ -5,13 +5,12 @@
  * Contains \Drupal\support_ticket\Controller\SupportTicketRevisionController.
  */
 
-namespace Drupal\diff\Controller;
+namespace Drupal\support_ticket\Controller;
 
 use Drupal\Core\Url;
 use Drupal\support_ticket\SupportTicketInterface;
 use Drupal\diff\EntityComparisonBase;
 use Drupal\Component\Utility\Xss;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Returns responses for Support Ticket Revision routes.

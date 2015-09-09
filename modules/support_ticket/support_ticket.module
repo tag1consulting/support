@@ -17,10 +17,10 @@ use Drupal\support_ticket\Entity\SupportTicket;
 use Drupal\support_ticket\Entity\SupportTicketType;
 use Drupal\support_ticket\SupportTicketInterface;
 use Drupal\support_ticket\SupportTicketTypeInterface;
-
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\comment\Entity\CommentType;
-
+use Drupal\Component\Diff\Diff;
+use Drupal\diff\DiffFormatter;
 
 
 /**
@@ -272,7 +272,7 @@ function support_ticket_entity_update($support_ticket) {
   $original = !empty($support_ticket->original) ? $support_ticket->original: NULL;
 
   // Load 'support_ticket_metadata_changes' support_ticket display mode
-  // @todo: prevent this view mode from getting deleted
+  // @todo: use default if not available
   $displays = EntityViewDisplay::collectRenderDisplay($support_ticket, 'support_ticket_metadata_changes');
   foreach ($displays->getComponents() as $name => $options) {
     $display[] = $name;
@@ -285,24 +285,24 @@ function support_ticket_entity_update($support_ticket) {
         $compare = $support_ticket->getTranslation($langcode)->get($name)->filterEmptyItems();
         $compare_original = $original->getTranslation($langcode)->get($name)->filterEmptyItems();
         if (!$compare->equals($compare_original)) {
-          $markup = array();
+          $field_label_row = array(
+            'data' => t('Changes to %name', array('%name' => $name)),
+            'colspan' => 4,
+            'class' => array('field-name'),
+          );
           $view_builder = \Drupal::entityManager()->getViewBuilder($support_ticket->getEntityTypeId());
           $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name), 'support_ticket_metadata_changes');
-          if ($rendered = drupal_render($value_original)) {
-            $markup[] = "<span class='metadata-change-original'>-$rendered</span>";
-          }
+          $rendered_original = drupal_render($value_original);
           $value = $view_builder->viewField($support_ticket->getTranslation($langcode)->get($name), 'support_ticket_metadata_changes');
-          if ($rendered = drupal_render($value)) {
-            $markup[] = "<span class='metadata-change-changed'>+$rendered</span>";
-          }
-          $items[] = array(
-            '#wrapper_attributes' => array('class' => "metadata-change-$name"),
-            '#markup' => implode(' ', $markup),
-          );
-
+          $rendered = drupal_render($value);
+          $field_diff_rows = _support_ticket_getRows($rendered_original, $rendered);
+          $diff_rows[] = array($field_label_row);
+          // Add field diff rows to the table rows.
+          $diff_rows = array_merge($diff_rows, $field_diff_rows);
         }
       }
     }
+
 
     // @todo: handle multiple comment fields
     $type = $field->getFieldDefinition()->getType();
@@ -313,26 +313,57 @@ function support_ticket_entity_update($support_ticket) {
     }
   }
 
-  if (!empty($items)) {
-    $item_list = array(
-      '#theme' => 'item_list__support_ticket_changes',
-      '#title' => '',
-      '#items' => $items,
-      '#attributes' => array('class' => 'metadata-change'),
-    );
-    // @todo: need to set text format (configurable?)
-    $update_comment = entity_create('comment', array(
-      'cid' => NULL,
-      'entity_id' => $support_ticket->id(),
-      'entity_type' => 'support_ticket',
-      'field_name' => $field_name,
-      'pid' => 0,
-      'comment_body' => drupal_render($item_list),
-      'comment_type' => $comment_type,
-    ));
-    $update_comment->save();
-  }
+  // Add the CSS for the diff.
+  $build['#attached']['library'][] = 'diff/diff.github';
+  $build['diff'] = array(
+    '#type' => 'table',
+    //'#header' => $diff_header,
+    '#rows' => $diff_rows,
+    '#empty' => t('No visible changes'),
+    '#attributes' => array(
+      'class' => array('diff'),
+    ),
+  );
+
+  // @todo: need to set text format (configurable?)
+  $update_comment = entity_create('comment', array(
+    'cid' => NULL,
+    'entity_id' => $support_ticket->id(),
+    'entity_type' => 'support_ticket',
+    'field_name' => $field_name,
+    'pid' => 0,
+    'comment_body' => drupal_render($build['diff']),
+    'comment_type' => $comment_type,
+  ));
+  $update_comment->save();
 }
+
+// From diff/src/EntityComparisonBase.php
+function _support_ticket_getRows($a, $b, $show_header = FALSE, &$line_stats = NULL) {
+  $a = is_array($a) ? $a : explode("\n", $a);
+  $b = is_array($b) ? $b : explode("\n", $b);
+
+  // Temporary workaround: when comparing with an empty string, Diff Component
+  // returns a change OP instead of an add OP.
+  if (count($a) == 1 && $a[0] == "") {
+    $a = array();
+  }
+
+  if (!isset($line_stats)) {
+    $line_stats = array(
+      'counter' => array('x' => 0, 'y' => 0),
+      'offset' => array('x' => 0, 'y' => 0),
+    );
+  }
+  $diffFormatter = \Drupal::service('diff.diff.formatter');
+
+  // Header is the line counter.
+  $diffFormatter->show_header = $show_header;
+  $diff = new Diff($a, $b);
+
+  return $diffFormatter->format($diff);
+}
+
 
 
 /**

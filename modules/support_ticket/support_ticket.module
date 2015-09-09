@@ -18,10 +18,10 @@ use Drupal\support_ticket\Entity\SupportTicketType;
 use Drupal\support_ticket\SupportTicketInterface;
 use Drupal\support_ticket\SupportTicketTypeInterface;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\comment\Entity\CommentType;
 use Drupal\Component\Diff\Diff;
 use Drupal\diff\DiffFormatter;
-
 
 /**
  * Denotes that the support ticket is not published.
@@ -177,19 +177,6 @@ function support_ticket_add_body_field(SupportTicketTypeInterface $type, $label 
         'type' => 'text_default',
       ))
       ->save();
-
-    // The teaser view mode is created by the Standard profile and therefore
-    // might not exist.
-    // @TODO: Does this affect Support Tickets, or only Nodes?
-    $view_modes = \Drupal::entityManager()->getViewModes('support_ticket');
-    if (isset($view_modes['teaser'])) {
-      entity_get_display('support_ticket', $type->id(), 'teaser')
-        ->setComponent('body', array(
-          'label' => 'hidden',
-          'type' => 'text_summary_or_trimmed',
-        ))
-        ->save();
-    }
   }
 
   return $field;
@@ -620,4 +607,52 @@ function support_ticket_support_ticket_access(SupportTicketInterface $support_ti
       // No opinion.
       return AccessResult::neutral();
   }
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormStateInterface $form_state) {
+  $type = $form_state->getFormObject()->getEntity();
+  if ($type->id()) {
+    $config = \Drupal::configFactory()->get('support_ticket.settings');
+
+    $form['diff'] = array(
+      '#title' => t('Compare revisions'),
+      '#type' => 'details',
+      '#group' => 'additional_settings',
+      '#tree' => FALSE,
+    );
+
+    $options = array();
+    // Get all view modes for support ticket entity type.
+    $support_ticket_view_modes = \Drupal::entityManager()->getViewModes('support_ticket');
+    foreach ($support_ticket_view_modes as $view_mode => $view_mode_info) {
+      $options[$view_mode] = $view_mode_info['label'];
+    }
+
+    $form['diff']['view_mode'] = array(
+      '#type' => 'select',
+      '#title' => t('Standard comparison preview'),
+      '#description' => t('Governs the <em>Current revision</em> view mode when doing comparisons.'),
+      '#options' => $options,
+      '#weight' => 13,
+      '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode'),
+      '#empty_value' => '',
+    );
+
+    $form['actions']['submit']['#submit'][] = 'support_ticket_form_support_ticket_type_form_submit';
+  }
+}
+
+/**
+ * Submit handler for forms with menu options.
+ *
+ * @see support_ticket_form_support_ticket_type_edit_form_alter().
+ */
+function support_ticket_form_support_ticket_type_form_submit(&$form, $form_state) {
+  $type = $form_state->getFormObject()->getEntity();
+  \Drupal::configFactory()->getEditable('support_ticket.settings')
+    ->set('support_ticket_type_settings.' . $type->id() . '.view_mode', $form_state->getValue('view_mode'))
+    ->save();
 }

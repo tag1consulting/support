@@ -27,7 +27,7 @@ class SupportTicketRevisionController extends EntityComparisonBase {
    *   Render array containing the revisions table for $support_ticket.
    */
   public function revisionOverview(SupportTicketInterface $support_ticket) {
-    return $this->formBuilder()->getForm('Drupal\diff\Form\RevisionOverviewForm', $support_ticket);
+    return $this->formBuilder()->getForm('Drupal\support_ticket\Form\RevisionOverviewForm', $support_ticket);
   }
 
   /**
@@ -226,7 +226,7 @@ class SupportTicketRevisionController extends EntityComparisonBase {
       $row[] = array(
         'data' => $this->l(
           $this->t('< Previous difference'),
-          Url::fromRoute('diff.revisions_diff',
+          Url::fromRoute('support_ticket.revisions_diff',
           array(
             'support_ticket' => $stid,
             'left_vid' => $vids[$i - 1],
@@ -253,7 +253,7 @@ class SupportTicketRevisionController extends EntityComparisonBase {
       $row[] = array(
         'data' => $this->l(
           $this->t('Next difference >'),
-          Url::fromRoute('diff.revisions_diff',
+          Url::fromRoute('support_ticket.revisions_diff',
           array(
             'support_ticket' => $stid,
             'left_vid' => $right_vid,
@@ -285,7 +285,7 @@ class SupportTicketRevisionController extends EntityComparisonBase {
 
     $links['raw'] = array(
       'title' => $this->t('Standard'),
-      'url' => Url::fromRoute('diff.revisions_diff', array(
+      'url' => Url::fromRoute('support_ticket.revisions_diff', array(
         'support_ticket' => $stid,
         'left_vid' => $left_vid,
         'right_vid' => $right_vid,
@@ -293,7 +293,7 @@ class SupportTicketRevisionController extends EntityComparisonBase {
     );
     $links['raw_plain'] = array(
       'title' => $this->t('Markdown'),
-      'url' => Url::fromRoute('diff.revisions_diff', array(
+      'url' => Url::fromRoute('support_ticket.revisions_diff', array(
         'support_ticket' => $stid,
         'left_vid' => $left_vid,
         'right_vid' => $right_vid,

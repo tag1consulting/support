@@ -45,7 +45,7 @@ entity.support_ticket.version_history:
   path: '/support_ticket/{support_ticket}/revisions'
   defaults:
     _title: 'Revisions'
-    _controller: '\Drupal\support_ticket\Controller\SupportTicketController::revisionOverview'
+    _controller: '\Drupal\support_ticket\Controller\SupportTicketRevisionController::revisionOverview'
   requirements:
     _access_support_ticket_revision: 'view'
   options:
@@ -111,7 +111,7 @@ entity.support_ticket_type.delete_form:
   requirements:
     _entity_access: 'support_ticket_type.delete'
 
-diff.revisions_diff:
+support_ticket.revisions_diff:
   path: '/support_ticket/{support_ticket}/revisions/view/{left_vid}/{right_vid}/{filter}'
   defaults:
     _controller: '\Drupal\support_ticket\Controller\SupportTicketRevisionController::compareSupportTicketRevisions'

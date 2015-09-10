@@ -250,7 +250,7 @@ function support_ticket_load($nid = NULL, $reset = FALSE) {
  *   The support ticket entity object.
  */
 function support_ticket_entity_update($support_ticket) {
-  if (!method_exists($support_ticket, 'getFields')) {
+  if (!($support_ticket instanceof SupportTicketInterface) || !method_exists($support_ticket, 'getFields')) {
     return;
   }
 

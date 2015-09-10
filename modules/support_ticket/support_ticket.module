@@ -21,6 +21,7 @@ use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\comment\Entity\CommentType;
 use Drupal\Component\Diff\Diff;
+use Drupal\support_ticket\Controller\SupportTicketRevisionController;
 
 /**
  * Denotes that the support ticket is not published.
@@ -249,83 +250,96 @@ function support_ticket_load($nid = NULL, $reset = FALSE) {
  *   The support ticket entity object.
  */
 function support_ticket_entity_update($support_ticket) {
-  if (!($support_ticket instanceof SupportTicketInterface) || !method_exists($support_ticket, 'getFields')) {
-    return;
-  }
+  if ($support_ticket instanceof SupportTicketInterface && method_exists($support_ticket, 'getFields') && !empty($support_ticket->original)) {
+    $original = $support_ticket->original;
+    $config = \Drupal::configFactory()->get('support_ticket.settings');
 
-  $fields = $support_ticket->getFields();
-  $langcodes = array_keys($support_ticket->getTranslationLanguages());
-  $original = !empty($support_ticket->original) ? $support_ticket->original: NULL;
+    $type = SupportTicketType::load($support_ticket->bundle());
+    $view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode');
+    $filter_format = $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format');
 
-  $config = \Drupal::configFactory()->get('support_ticket.settings');
-  $type = SupportTicketType::load($support_ticket->bundle());
-  $view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode');
-  $filter_format = $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format');
-
-  $displays = EntityViewDisplay::collectRenderDisplay($support_ticket, $view_mode);
-  foreach ($displays->getComponents() as $name => $options) {
-    $display[] = $name;
-  }
-
-  $items = array();
-  foreach ($fields as $name => $field) {
-    if (in_array($name, $display)) {
-      foreach ($langcodes as $langcode) {
-        $compare = $support_ticket->getTranslation($langcode)->get($name)->filterEmptyItems();
-        $compare_original = $original->getTranslation($langcode)->get($name)->filterEmptyItems();
-        if (!$compare->equals($compare_original)) {
-          $field_label_row = array(
-            'data' => t('Changes to %label', array('%label' => $field->getFieldDefinition()->getLabel())),
-            'colspan' => 4,
-            'class' => array('field-name'),
-          );
-          $view_builder = \Drupal::entityManager()->getViewBuilder($support_ticket->getEntityTypeId());
-          $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name), $view_mode);
-          $rendered_original = drupal_render($value_original);
-          $value = $view_builder->viewField($support_ticket->getTranslation($langcode)->get($name), $view_mode);
-          $rendered = drupal_render($value);
-          $field_diff_rows = _support_ticket_getRows($rendered_original, $rendered);
-          $diff_rows[] = array($field_label_row);
-          // Add field diff rows to the table rows.
-          $diff_rows = array_merge($diff_rows, $field_diff_rows);
-        }
+    $diffFormatter = \Drupal::service('diff.diff.formatter');
+    $dateFormatter = \Drupal::service('date.formatter');
+    $pluginManager = \Drupal::service('plugin.manager.diff.builder');
+    $diffEntityParser = \Drupal::service('diff.entity_parser');
+    $revisionController = new \Drupal\support_ticket\Controller\SupportTicketRevisionController($diffFormatter, $dateFormatter, $pluginManager, $diffEntityParser);
+    $fields = $revisionController->compareRevisions($original, $support_ticket);
+    $base_fields = \Drupal::entityManager()->getBaseFieldDefinitions('support_ticket');
+    foreach ($fields as $field_name => $field) {
+      // If no view mode is selected use the default view mode.
+      if ($view_mode == NULL) {
+        $view_mode = 'default';
+      }
+      $visible = entity_get_display('support_ticket', $support_ticket->getType(), $view_mode)->getComponent($field_name);
+      if ($visible == NULL && !array_key_exists($field_name, $base_fields)) {
+        unset($fields[$field_name]);
       }
     }
 
+    $diff_rows = array();
 
-    // @todo: handle multiple comment fields
-    $type = $field->getFieldDefinition()->getType();
-    if ($type == 'comment') {
-      $field_name = $field->getFieldDefinition()->getName();
-      // @todo: get this from [fieldStorage:protected][settings:protected][comment_type]
-      $comment_type = 'support_ticket_update';
+    // Build the diff rows for each field and append the field rows
+    // to the table rows.
+    foreach ($fields as $field) {
+      $field_label_row = '';
+      if (!empty($field['#name'])) {
+        $field_label_row = array(
+          'data' => t('Changes to %name', array('%name' => $field['#name'])),
+          'colspan' => 4,
+          'class' => array('field-name'),
+        );
+      }
+      $field_diff_rows = _support_ticket_getRows(
+        $field['#states']['raw']['#left'],
+        $field['#states']['raw']['#right']
+      );
+
+      // Add the field label to the table only if there are changes to that field.
+      if (!empty($field_diff_rows) && !empty($field_label_row)) {
+        $diff_rows[] = array($field_label_row);
+      }
+
+      // Add field diff rows to the table rows.
+      $diff_rows = array_merge($diff_rows, $field_diff_rows);
+
     }
+
+    $fields = $support_ticket->getFields();
+    foreach ($fields as $field) {
+      // @todo: handle multiple comment fields
+      $type = $field->getFieldDefinition()->getType();
+      if ($type == 'comment') {
+        $field_name = $field->getFieldDefinition()->getName();
+        $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
+        $comment_type = $field_storage->getSetting('comment_type');
+      }
+    }
+
+    // Add the CSS for the diff.
+    $build['#attached']['library'][] = 'diff/diff.github';
+    $build['diff'] = array(
+      '#type' => 'table',
+      '#rows' => $diff_rows,
+      '#empty' => t('No visible changes'),
+      '#attributes' => array(
+        'class' => array('diff'),
+      ),
+    );
+
+    $update_comment = entity_create('comment', array(
+      'cid' => NULL,
+      'entity_id' => $support_ticket->id(),
+      'entity_type' => 'support_ticket',
+      'field_name' => $field_name,
+      'pid' => 0,
+      'comment_body' => array(
+        'value' => drupal_render($build['diff']),
+        'format' => $filter_format,
+      ),
+      'comment_type' => $comment_type,
+    ));
+    $update_comment->save();
   }
-
-  // Add the CSS for the diff.
-  $build['#attached']['library'][] = 'diff/diff.github';
-  $build['diff'] = array(
-    '#type' => 'table',
-    '#rows' => $diff_rows,
-    '#empty' => t('No visible changes'),
-    '#attributes' => array(
-      'class' => array('diff'),
-    ),
-  );
-
-  $update_comment = entity_create('comment', array(
-    'cid' => NULL,
-    'entity_id' => $support_ticket->id(),
-    'entity_type' => 'support_ticket',
-    'field_name' => $field_name,
-    'pid' => 0,
-    'comment_body' => array(
-      'value' => drupal_render($build['diff']),
-      'format' => $filter_format,
-    ),
-    'comment_type' => $comment_type,
-  ));
-  $update_comment->save();
 }
 
 // From diff/src/EntityComparisonBase.php

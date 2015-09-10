@@ -21,7 +21,6 @@ use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\comment\Entity\CommentType;
 use Drupal\Component\Diff\Diff;
-use Drupal\diff\DiffFormatter;
 
 /**
  * Denotes that the support ticket is not published.
@@ -258,9 +257,12 @@ function support_ticket_entity_update($support_ticket) {
   $langcodes = array_keys($support_ticket->getTranslationLanguages());
   $original = !empty($support_ticket->original) ? $support_ticket->original: NULL;
 
-  // Load 'support_ticket_metadata_changes' support_ticket display mode
-  // @todo: use default if not available
-  $displays = EntityViewDisplay::collectRenderDisplay($support_ticket, 'support_ticket_metadata_changes');
+  $config = \Drupal::configFactory()->get('support_ticket.settings');
+  $type = SupportTicketType::load($support_ticket->bundle());
+  $view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode');
+  $filter_format = $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format');
+
+  $displays = EntityViewDisplay::collectRenderDisplay($support_ticket, $view_mode);
   foreach ($displays->getComponents() as $name => $options) {
     $display[] = $name;
   }
@@ -273,14 +275,14 @@ function support_ticket_entity_update($support_ticket) {
         $compare_original = $original->getTranslation($langcode)->get($name)->filterEmptyItems();
         if (!$compare->equals($compare_original)) {
           $field_label_row = array(
-            'data' => t('Changes to %name', array('%name' => $name)),
+            'data' => t('Changes to %label', array('%label' => $field->getFieldDefinition()->getLabel())),
             'colspan' => 4,
             'class' => array('field-name'),
           );
           $view_builder = \Drupal::entityManager()->getViewBuilder($support_ticket->getEntityTypeId());
-          $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name), 'support_ticket_metadata_changes');
+          $value_original = $view_builder->viewField($original->getTranslation($langcode)->get($name), $view_mode);
           $rendered_original = drupal_render($value_original);
-          $value = $view_builder->viewField($support_ticket->getTranslation($langcode)->get($name), 'support_ticket_metadata_changes');
+          $value = $view_builder->viewField($support_ticket->getTranslation($langcode)->get($name), $view_mode);
           $rendered = drupal_render($value);
           $field_diff_rows = _support_ticket_getRows($rendered_original, $rendered);
           $diff_rows[] = array($field_label_row);
@@ -304,7 +306,6 @@ function support_ticket_entity_update($support_ticket) {
   $build['#attached']['library'][] = 'diff/diff.github';
   $build['diff'] = array(
     '#type' => 'table',
-    //'#header' => $diff_header,
     '#rows' => $diff_rows,
     '#empty' => t('No visible changes'),
     '#attributes' => array(
@@ -312,21 +313,23 @@ function support_ticket_entity_update($support_ticket) {
     ),
   );
 
-  // @todo: need to set text format (configurable?)
   $update_comment = entity_create('comment', array(
     'cid' => NULL,
     'entity_id' => $support_ticket->id(),
     'entity_type' => 'support_ticket',
     'field_name' => $field_name,
     'pid' => 0,
-    'comment_body' => drupal_render($build['diff']),
+    'comment_body' => array(
+      'value' => drupal_render($build['diff']),
+      'format' => $filter_format,
+    ),
     'comment_type' => $comment_type,
   ));
   $update_comment->save();
 }
 
 // From diff/src/EntityComparisonBase.php
-function _support_ticket_getRows($a, $b, $show_header = FALSE, &$line_stats = NULL) {
+function _support_ticket_getRows($a, $b) {
   $a = is_array($a) ? $a : explode("\n", $a);
   $b = is_array($b) ? $b : explode("\n", $b);
 
@@ -336,18 +339,16 @@ function _support_ticket_getRows($a, $b, $show_header = FALSE, &$line_stats = NU
     $a = array();
   }
 
-  if (!isset($line_stats)) {
-    $line_stats = array(
-      'counter' => array('x' => 0, 'y' => 0),
-      'offset' => array('x' => 0, 'y' => 0),
-    );
-  }
-  $diffFormatter = \Drupal::service('diff.diff.formatter');
+  $line_stats = array(
+    'counter' => array('x' => 0, 'y' => 0),
+    'offset' => array('x' => 0, 'y' => 0),
+  );
 
-  // Header is the line counter.
-  $diffFormatter->show_header = $show_header;
+
   $diff = new Diff($a, $b);
 
+  $diffFormatter = \Drupal::service('diff.formatter');
+  $diffFormatter->show_header = FALSE;
   return $diffFormatter->format($diff);
 }
 
@@ -641,6 +642,22 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       '#empty_value' => '',
     );
 
+    $options = array();
+    $formats = filter_formats();
+    foreach ($formats as $name => $format) {
+      $options[$format->id()] = $name;
+    }
+
+    $form['diff']['filter_format'] = array(
+      '#type' => 'select',
+      '#title' => t('Comment filter format'),
+      '#description' => t('Which filter format to apply to comparison comments.'),
+      '#options' => $options,
+      '#weight' => 16,
+      '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format'),
+      '#empty_value' => '',
+    );
+
     $form['actions']['submit']['#submit'][] = 'support_ticket_form_support_ticket_type_form_submit';
   }
 }
@@ -654,5 +671,8 @@ function support_ticket_form_support_ticket_type_form_submit(&$form, $form_state
   $type = $form_state->getFormObject()->getEntity();
   \Drupal::configFactory()->getEditable('support_ticket.settings')
     ->set('support_ticket_type_settings.' . $type->id() . '.view_mode', $form_state->getValue('view_mode'))
+    ->save();
+  \Drupal::configFactory()->getEditable('support_ticket.settings')
+    ->set('support_ticket_type_settings.' . $type->id() . '.filter_format', $form_state->getValue('filter_format'))
     ->save();
 }

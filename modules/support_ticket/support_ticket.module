@@ -251,10 +251,19 @@ function support_ticket_load($nid = NULL, $reset = FALSE) {
  */
 function support_ticket_entity_update($support_ticket) {
   if ($support_ticket instanceof SupportTicketInterface && method_exists($support_ticket, 'getFields') && !empty($support_ticket->original)) {
+    $type = SupportTicketType::load($support_ticket->bundle());
+    if (!$field_name = _support_ticket_revision_comment_field($type->id())) {
+      // There's no field to write revision diffs into, so skip calculating a diff.
+      return;
+    }
+    $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
+    $comment_type = $field_storage->getSetting('comment_type');
+
+    $revision_id = $support_ticket->getRevisionId();
+drupal_set_message("revisionID($revision_id)");
     $original = $support_ticket->original;
     $config = \Drupal::configFactory()->get('support_ticket.settings');
 
-    $type = SupportTicketType::load($support_ticket->bundle());
     $view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode');
     $filter_format = $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format');
 
@@ -265,14 +274,14 @@ function support_ticket_entity_update($support_ticket) {
     $revisionController = new \Drupal\support_ticket\Controller\SupportTicketRevisionController($diffFormatter, $dateFormatter, $pluginManager, $diffEntityParser);
     $fields = $revisionController->compareRevisions($original, $support_ticket);
     $base_fields = \Drupal::entityManager()->getBaseFieldDefinitions('support_ticket');
-    foreach ($fields as $field_name => $field) {
+    foreach ($fields as $name => $field) {
       // If no view mode is selected use the default view mode.
-      if ($view_mode == NULL) {
+      if ($view_mode === NULL) {
         $view_mode = 'default';
       }
-      $visible = entity_get_display('support_ticket', $support_ticket->getType(), $view_mode)->getComponent($field_name);
-      if ($visible == NULL && !array_key_exists($field_name, $base_fields)) {
-        unset($fields[$field_name]);
+      $visible = entity_get_display('support_ticket', $support_ticket->getType(), $view_mode)->getComponent($name);
+      if ($visible === NULL && !array_key_exists($name, $base_fields)) {
+        unset($fields[$name]);
       }
     }
 
@@ -302,17 +311,6 @@ function support_ticket_entity_update($support_ticket) {
       // Add field diff rows to the table rows.
       $diff_rows = array_merge($diff_rows, $field_diff_rows);
 
-    }
-
-    $fields = $support_ticket->getFields();
-    foreach ($fields as $field) {
-      // @todo: handle multiple comment fields
-      $type = $field->getFieldDefinition()->getType();
-      if ($type == 'comment') {
-        $field_name = $field->getFieldDefinition()->getName();
-        $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
-        $comment_type = $field_storage->getSetting('comment_type');
-      }
     }
 
     // Add the CSS for the diff.
@@ -633,10 +631,46 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     $config = \Drupal::configFactory()->get('support_ticket.settings');
 
     $form['diff'] = array(
-      '#title' => t('Compare revisions'),
+      '#title' => t('Revision comparisons'),
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => FALSE,
+    );
+
+    $options = array();
+    $fields = \Drupal::entityManager()->getFieldDefinitions('support_ticket', $type->id());
+    foreach ($fields as $field) {
+      if ($field->getType() == 'comment') {
+        $field_name = $field->getName();
+        $options[$field_name] = $field->getLabel();
+      }
+    }
+    $comment_field = _support_ticket_revision_comment_field($type->id());
+    $form['diff']['comment_field'] = array(
+      '#type' => 'select',
+      '#title' => t('Comment field'),
+      '#description' => t('Where to write comparison comments.'),
+      '#options' => $options,
+      '#weight' => 12,
+      '#default_value' => $comment_field,
+      '#empty_value' => '',
+    );
+    // @todo: if "- None -" is selected, disable the rest of the options
+
+    $options = array();
+    $formats = filter_formats();
+    foreach ($formats as $name => $format) {
+      $options[$format->id()] = $name;
+    }
+
+    $form['diff']['filter_format'] = array(
+      '#type' => 'select',
+      '#title' => t('Filter format'),
+      '#description' => t('Which filter format to apply to comparison comments.'),
+      '#options' => $options,
+      '#weight' => 16,
+      '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format'),
+      '#empty_value' => '',
     );
 
     $options = array();
@@ -648,32 +682,35 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
 
     $form['diff']['view_mode'] = array(
       '#type' => 'select',
-      '#title' => t('Standard comparison preview'),
-      '#description' => t('Governs the <em>Current revision</em> view mode when doing comparisons.'),
+      '#title' => t('View mode'),
+      '#description' => t('Which <em>view mode</em> to use when making revision comparisons.'),
       '#options' => $options,
-      '#weight' => 13,
+      '#weight' => 18,
       '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode'),
-      '#empty_value' => '',
-    );
-
-    $options = array();
-    $formats = filter_formats();
-    foreach ($formats as $name => $format) {
-      $options[$format->id()] = $name;
-    }
-
-    $form['diff']['filter_format'] = array(
-      '#type' => 'select',
-      '#title' => t('Comment filter format'),
-      '#description' => t('Which filter format to apply to comparison comments.'),
-      '#options' => $options,
-      '#weight' => 16,
-      '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format'),
       '#empty_value' => '',
     );
 
     $form['actions']['submit']['#submit'][] = 'support_ticket_form_support_ticket_type_form_submit';
   }
+}
+
+function _support_ticket_revision_comment_field($entity_type) {
+  $config = \Drupal::configFactory()->get('support_ticket.settings');
+  $default = $config->get('support_ticket_type_settings.' . $entity_type . '.comment_field');
+
+  if ($default === NULL) {
+    $fields = \Drupal::entityManager()->getFieldDefinitions('support_ticket', $entity_type);
+    foreach ($fields as $field) {
+      if ($field->getType() == 'comment') {
+        $default = $field->getName();
+        \Drupal::configFactory()->getEditable('support_ticket.settings')
+          ->set('support_ticket_type_settings.' . $entity_type . '.comment_field', $default)
+          ->save();
+        break;
+      }
+    }
+  }
+  return $default;
 }
 
 /**
@@ -685,8 +722,7 @@ function support_ticket_form_support_ticket_type_form_submit(&$form, $form_state
   $type = $form_state->getFormObject()->getEntity();
   \Drupal::configFactory()->getEditable('support_ticket.settings')
     ->set('support_ticket_type_settings.' . $type->id() . '.view_mode', $form_state->getValue('view_mode'))
-    ->save();
-  \Drupal::configFactory()->getEditable('support_ticket.settings')
     ->set('support_ticket_type_settings.' . $type->id() . '.filter_format', $form_state->getValue('filter_format'))
+    ->set('support_ticket_type_settings.' . $type->id() . '.comment_field', $form_state->getValue('comment_field'))
     ->save();
 }

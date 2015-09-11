@@ -4,6 +4,7 @@ dependencies:
   config:
     - comment.type.support_ticket_update
     - field.field.comment.support_ticket_update.comment_body
+    - field.field.comment.support_ticket_update.field_revision_reference
   module:
     - text
 id: comment.support_ticket_update.default
@@ -12,19 +13,22 @@ bundle: support_ticket_update
 mode: default
 content:
   author:
-    weight: -2
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
   comment_body:
     type: text_textarea
-    weight: 11
+    weight: 2
     settings:
       rows: 5
       placeholder: ''
     third_party_settings: {  }
   subject:
     type: string_textfield
-    weight: 10
+    weight: 1
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_revision_reference: true

@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.support_ticket_update
+    - field.storage.comment.field_revision_reference
+id: comment.support_ticket_update.field_revision_reference
+field_name: field_revision_reference
+entity_type: comment
+bundle: support_ticket_update
+label: 'Revision reference'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

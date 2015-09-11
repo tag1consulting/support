@@ -48,7 +48,7 @@ class SupportTicketTypeDeleteConfirm extends EntityDeleteForm {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $num_support_tickets = $this->queryFactory->get('support_ticket')
-      ->condition('type', $this->entity->id())
+      ->condition('support_ticket_type', $this->entity->id())
       ->count()
       ->execute();
     if ($num_support_tickets) {

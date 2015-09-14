@@ -250,33 +250,32 @@ function support_ticket_load($nid = NULL, $reset = FALSE) {
  *   The support ticket entity object.
  */
 function support_ticket_entity_update($support_ticket) {
-  if ($support_ticket instanceof SupportTicketInterface && method_exists($support_ticket, 'getFields') && !empty($support_ticket->original)) {
+  if ($support_ticket instanceof SupportTicketInterface && !empty($support_ticket->original)) {
     $type = SupportTicketType::load($support_ticket->bundle());
     if (!$field_name = _support_ticket_comment_diff_field($type->id())) {
       // There's no field to write revision diffs into, so skip calculating a diff.
       return;
     }
-    $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
-    $comment_type = $field_storage->getSetting('comment_type');
 
-    $original = $support_ticket->original;
+    // Load some variables we need to generate a properly formatted diff.
     $config = \Drupal::configFactory()->get('support_ticket.settings');
-
-    $view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode');
     $filter_format = $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format');
+    if (!$view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode')) {
+      $view_mode = 'default';
+    }
 
+    // Get a RevisionController to generate a diff.
     $diffFormatter = \Drupal::service('diff.diff.formatter');
     $dateFormatter = \Drupal::service('date.formatter');
     $pluginManager = \Drupal::service('plugin.manager.diff.builder');
     $diffEntityParser = \Drupal::service('diff.entity_parser');
     $revisionController = new \Drupal\support_ticket\Controller\SupportTicketRevisionController($diffFormatter, $dateFormatter, $pluginManager, $diffEntityParser);
+
+    // Compare the original entity with the current revision.
+    $original = $support_ticket->original;
     $fields = $revisionController->compareRevisions($original, $support_ticket);
     $base_fields = \Drupal::entityManager()->getBaseFieldDefinitions('support_ticket');
     foreach ($fields as $name => $field) {
-      // If no view mode is selected use the default view mode.
-      if ($view_mode === NULL) {
-        $view_mode = 'default';
-      }
       $visible = entity_get_display('support_ticket', $support_ticket->getType(), $view_mode)->getComponent($name);
       if ($visible === NULL && !array_key_exists($name, $base_fields)) {
         unset($fields[$name]);
@@ -284,9 +283,7 @@ function support_ticket_entity_update($support_ticket) {
     }
 
     $diff_rows = array();
-
-    // Build the diff rows for each field and append the field rows
-    // to the table rows.
+    // Format the differences as rows in a table.
     foreach ($fields as $field) {
       $field_label_row = '';
       if (!empty($field['#name'])) {
@@ -296,7 +293,7 @@ function support_ticket_entity_update($support_ticket) {
           'class' => array('field-name'),
         );
       }
-      $field_diff_rows = _support_ticket_getRows(
+      $field_diff_rows = _support_ticket_get_rows(
         $field['#states']['raw']['#left'],
         $field['#states']['raw']['#right']
       );
@@ -311,8 +308,7 @@ function support_ticket_entity_update($support_ticket) {
 
     }
 
-    // Add the CSS for the diff.
-    $build['#attached']['library'][] = 'diff/diff.github';
+    // Create our render array.
     $build['diff'] = array(
       '#type' => 'table',
       '#rows' => $diff_rows,
@@ -322,6 +318,9 @@ function support_ticket_entity_update($support_ticket) {
       ),
     );
 
+    // Store generated diff as a comment.
+    $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
+    $comment_type = $field_storage->getSetting('comment_type');
     $diff_comment = array(
       'cid' => NULL,
       'entity_id' => $support_ticket->id(),
@@ -334,7 +333,7 @@ function support_ticket_entity_update($support_ticket) {
       ),
       'comment_type' => $comment_type,
     );
-    // Optional field to store revision ID in
+    // Store revision ID if the field exists.
     if ($diff_revision_reference_field = _support_ticket_comment_diff_revision_reference($type->id(), $comment_type)) {
       $diff_comment[$diff_revision_reference_field] = $support_ticket->getRevisionId();
     }
@@ -342,8 +341,21 @@ function support_ticket_entity_update($support_ticket) {
   }
 }
 
-// From diff/src/EntityComparisonBase.php
-function _support_ticket_getRows($a, $b) {
+/**
+ * Prepare the tables rows for theme 'table'.
+ *
+ * Modified version of the function found in the Diff module,
+ * as getRows() in src/EntityComparisonBase.php.
+ *
+ * @param string $a
+ *   The source string to compare from.
+ * @param string $b
+ *   The target string to compare to.
+ *
+ * @return array
+ *   Array of rows usable with theme('table').
+ */
+function _support_ticket_get_rows($a, $b) {
   $a = is_array($a) ? $a : explode("\n", $a);
   $b = is_array($b) ? $b : explode("\n", $b);
 
@@ -722,7 +734,13 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
 }
 
 /**
- * @todo
+ * Determine comment field to write revision differences into.
+ *
+ * @param \Drupal\support_ticket\SupportTicketTypeInterface $entity_type
+ *   The support ticket entity type.
+ *
+ * @return string $default
+ *   The field name.
  */
 function _support_ticket_comment_diff_field($entity_type) {
   $config = \Drupal::configFactory()->get('support_ticket.settings');
@@ -744,7 +762,15 @@ function _support_ticket_comment_diff_field($entity_type) {
 }
 
 /**
- * @todo
+ * Determine comment field to write revision references into.
+ *
+ * @param \Drupal\support_ticket\SupportTicketTypeInterface $entity_type
+ *   The support ticket entity type.
+ * @param string $comment_type
+ *   The comment type.
+ *
+ * @return string $default
+ *   The field name.
  */
 function _support_ticket_comment_diff_revision_reference($entity_type, $comment_type) {
   $config = \Drupal::configFactory()->get('support_ticket.settings');

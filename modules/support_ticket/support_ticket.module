@@ -652,14 +652,18 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     );
 
     $options = array();
+    $comment_field = _support_ticket_comment_diff_field($type->id());
     $fields = \Drupal::entityManager()->getFieldDefinitions('support_ticket', $type->id());
     foreach ($fields as $field) {
       if ($field->getType() == 'comment') {
         $field_name = $field->getName();
-        $options[$field_name] = $field->getLabel();
+        $field_label = $field->getLabel();
+        $options[$field_name] = $field_label;
+        if ($field_name == $comment_field) {
+          $comment_field_label = $field_label;
+        }
       }
     }
-    $comment_field = _support_ticket_comment_diff_field($type->id());
     $form['diff']['comment_diff_field'] = array(
       '#type' => 'select',
       '#title' => t('Comment field'),
@@ -687,8 +691,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       $form['diff']['comment_diff_revision_reference'] = array(
         '#type' => 'select',
         '#title' => t('Revision field'),
-        // @todo: get comment field label
-        '#description' => t('Integer field in %comment_type_label to store revision ID that caused this comment.'),
+        '#description' => t('Integer field in %comment_field_label to store revision ID that caused this comment.', array('%comment_field_label' => $comment_field_label)),
         '#options' => $options,
         '#weight' => 14,
         '#default_value' => _support_ticket_comment_diff_revision_reference($type->id(), $comment_type),

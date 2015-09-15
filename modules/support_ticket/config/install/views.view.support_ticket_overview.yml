@@ -658,7 +658,7 @@ display:
           exposed: true
           expose:
             operator_id: uid_op
-            label: Author
+            label: 'Authored by'
             description: ''
             use_operator: false
             operator: uid_op
@@ -684,6 +684,47 @@ display:
             default_group_multiple: {  }
             group_items: {  }
           entity_type: support_ticket
+          entity_field: uid
+          plugin_id: user_name
+        uid_2:
+          id: uid_2
+          table: users_field_data
+          field: uid
+          relationship: field_assigned_to
+          group_type: group
+          admin_label: ''
+          operator: in
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: uid_2_op
+            label: 'Assigned to'
+            description: ''
+            use_operator: false
+            operator: uid_2_op
+            identifier: uid_2
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          entity_type: user
           entity_field: uid
           plugin_id: user_name
         support_ticket_type:
@@ -804,6 +845,15 @@ display:
           required: true
           entity_type: support_ticket
           entity_field: uid
+          plugin_id: standard
+        field_assigned_to:
+          id: field_assigned_to
+          table: support_ticket__field_assigned_to
+          field: field_assigned_to
+          relationship: none
+          group_type: group
+          admin_label: 'field_assigned_to: User'
+          required: false
           plugin_id: standard
       arguments: {  }
       display_extenders: {  }

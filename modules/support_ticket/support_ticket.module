@@ -244,12 +244,13 @@ function support_ticket_load($nid = NULL, $reset = FALSE) {
 }
 
 /**
- * Determines what fields have changed when the support ticket is updated.
+ * Implements hook_entity_update().
  *
  * @param object $support_ticket
  *   The support ticket entity object.
  */
 function support_ticket_entity_update($support_ticket) {
+  // Determines what fields have changed when the support ticket is updated.
   if ($support_ticket instanceof SupportTicketInterface && !empty($support_ticket->original)) {
     $type = SupportTicketType::load($support_ticket->bundle());
     if (!$field_name = _support_ticket_comment_diff_field($type->id())) {

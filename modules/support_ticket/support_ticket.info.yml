@@ -8,7 +8,4 @@ dependencies:
   - text
   - options
   - entity_reference
-config_devel:
-  - support_ticket.support_ticket.default
-  - field.storage.support_ticket.body
-  - field.field.support_ticket.default.body
+  - diff

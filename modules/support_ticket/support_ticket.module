@@ -329,7 +329,7 @@ function support_ticket_entity_update($support_ticket) {
       'field_name' => $field_name,
       'pid' => 0,
       'comment_body' => array(
-        'value' => drupal_render($build['diff']),
+        'value' => \Drupal::service('renderer')->renderPlain($build['diff']),
         'format' => $filter_format,
       ),
       'comment_type' => $comment_type,

@@ -9,3 +9,5 @@ dependencies:
   - options
   - entity_reference
   - diff
+  - comment
+  - views

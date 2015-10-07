@@ -370,8 +370,7 @@ display:
           hide_alter_empty: true
           click_sort_column: target_id
           type: author
-          settings:
-            link: 0
+          settings: {  }
           group_column: target_id
           group_columns: {  }
           group_rows: true

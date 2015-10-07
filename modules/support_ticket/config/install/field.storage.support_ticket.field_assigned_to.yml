@@ -2,7 +2,6 @@ langcode: en
 status: true
 dependencies:
   module:
-    - entity_reference
     - support_ticket
 id: support_ticket.field_assigned_to
 field_name: field_assigned_to
@@ -10,7 +9,7 @@ entity_type: support_ticket
 type: entity_reference
 settings:
   target_type: user
-module: entity_reference
+module: core
 locked: false
 cardinality: 1
 translatable: true

@@ -122,7 +122,7 @@ class Rss extends RssPluginBase {
       ),
       array(
         'key' => 'dc:creator',
-        'value' => $support_ticket->getOwner()->getUsername(),
+        'value' => $support_ticket->getOwner()->getDisplayName(),
       ),
       array(
         'key' => 'guid',

@@ -73,13 +73,22 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
    * @see support_ticket_menu()
    */
   public function addPage() {
+    $build = [
+      '#theme' => 'support_ticket_add_list',
+      '#cache' => [
+        'tags' => $this->entityManager()->getDefinition('support_ticket_type')->getListCacheTags(),
+      ],
+    ];
+
     $types = array();
 
     // Only use support ticket types the user has access to.
     foreach ($this->entityManager()->getStorage('support_ticket_type')->loadMultiple() as $type) {
-      if ($this->entityManager()->getAccessControlHandler('support_ticket')->createAccess($type->id())) {
+      $access = $this->entityManager()->getAccessControlHandler('support_ticket')->createAccess($type->id(), NULL, [], TRUE);
+      if ($access->isAllowed()) {
         $types[$type->id()] = $type;
       }
+      $this->renderer->addCacheableDependency($build, $access);
     }
 
     // Bypass the support_ticket/add listing if only one support ticket type is available.
@@ -87,10 +96,9 @@ class SupportTicketController extends ControllerBase implements ContainerInjecti
       $type = array_shift($types);
       return $this->redirect('support_ticket.add', array('support_ticket_type' => $type->id()));
     }
-    return array(
-      '#theme' => 'support_ticket_add_list',
-      '#content' => $types,
-    );
+    $build['#content'] = $types;
+
+    return $build;
   }
 
   /**

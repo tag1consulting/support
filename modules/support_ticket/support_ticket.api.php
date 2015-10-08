@@ -36,15 +36,13 @@ use Drupal\Core\Access\AccessResult;
  *   - "view"
  * @param \Drupal\Core\Session\AccountInterface $account
  *   The user object to perform the access check operation on.
- * @param string $langcode
- *   The language code to perform the access check operation on.
  *
  * @return \Drupal\Core\Access\AccessResultInterface
  *    The access result.
  *
  * @ingroup support_ticket_access
  */
-function hook_support_ticket_access(\Drupal\support_ticket\SupportTicketInterface $support_ticket, $op, \Drupal\Core\Session\AccountInterface $account, $langcode) {
+function hook_support_ticket_access(\Drupal\support_ticket\SupportTicketInterface $support_ticket, $op, \Drupal\Core\Session\AccountInterface $account) {
   $type = $support_ticket->bundle();
 
   switch ($op) {

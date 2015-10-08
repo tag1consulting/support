@@ -149,27 +149,7 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
 
     return \Drupal::entityManager()
       ->getAccessControlHandler($this->entityTypeId)
-      ->access($this, $operation, $this->prepareLangcode(), $account, $return_as_object);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function prepareLangcode() {
-    $langcode = $this->language()->getId();
-    // If the Language module is enabled, try to use the language from content
-    // negotiation.
-    if (\Drupal::moduleHandler()->moduleExists('language')) {
-      // Load languages the support ticket exists in.
-      $support_ticket_translations = $this->getTranslationLanguages();
-      // Load the language from content negotiation.
-      $content_negotiation_langcode = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
-      // If there is a translation available, use it.
-      if (isset($support_ticket_translations[$content_negotiation_langcode])) {
-        $langcode = $content_negotiation_langcode;
-      }
-    }
-    return $langcode;
+      ->access($this, $operation, $account, $return_as_object);
   }
 
   /**
@@ -200,13 +180,6 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
   public function setCreatedTime($timestamp) {
     $this->set('created', $timestamp);
     return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getChangedTime() {
-    return $this->get('changed')->value;
   }
 
   /**
@@ -436,6 +409,7 @@ class SupportTicket extends ContentEntityBase implements SupportTicketInterface 
       ->setDescription(t('Briefly describe the changes you have made.'))
       ->setRevisionable(TRUE)
       ->setTranslatable(TRUE)
+      ->setDefaultValue('')
       ->setDisplayOptions('form', array(
         'type' => 'string_textarea',
         'weight' => 25,

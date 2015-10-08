@@ -140,13 +140,4 @@ interface SupportTicketInterface extends ContentEntityInterface, EntityChangedIn
    *   The called support ticket entity.
    */
   public function setRevisionAuthorId($uid);
-
-  /**
-   * Prepares the langcode for a support ticket.
-   *
-   * @return string
-   *   The langcode for this support ticket.
-   */
-  public function prepareLangcode();
-
 }

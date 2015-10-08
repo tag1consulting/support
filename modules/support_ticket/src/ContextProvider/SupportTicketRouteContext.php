@@ -41,18 +41,20 @@ class SupportTicketRouteContext implements ContextProviderInterface {
    */
   public function getRuntimeContexts(array $unqualified_context_ids) {
     $result = [];
-    $context = new Context(new ContextDefinition('entity:support_ticket', NULL, FALSE));
+    $context_definition = new ContextDefinition('entity:support_ticket', NULL, FALSE);
+    $value = NULL;
     if (($route_object = $this->routeMatch->getRouteObject()) && ($route_contexts = $route_object->getOption('parameters')) && isset($route_contexts['support_ticket'])) {
-      if ($suppor_ticket = $this->routeMatch->getParameter('support_ticket')) {
-        $context->setContextValue($support_ticket);
+      if ($support_ticket = $this->routeMatch->getParameter('support_ticket')) {
+        $value = $support_ticket;
       }
     }
     elseif ($this->routeMatch->getRouteName() == 'support_ticket.add') {
       $support_ticket_type = $this->routeMatch->getParameter('support_ticket_type');
-      $context->setContextValue(SupportTicket::create(array('type' => $support_ticket_type->id())));
+      $value = SupportTicket::create(array('type' => $support_ticket_type->id()));
     }
     $cacheability = new CacheableMetadata();
     $cacheability->setCacheContexts(['route']);
+    $context = new Context($context_definition, $value);
     $context->addCacheableDependency($cacheability);
     $result['support_ticket'] = $context;
 

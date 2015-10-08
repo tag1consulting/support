@@ -21,13 +21,13 @@ class SupportTicketViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
+  public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
     /** @var \Drupal\support_ticket\SupportTicketInterface[] $entities */
     if (empty($entities)) {
       return;
     }
 
-    parent::buildComponents($build, $entities, $displays, $view_mode, $langcode);
+    parent::buildComponents($build, $entities, $displays, $view_mode);
 
     foreach ($entities as $id => $entity) {
       $bundle = $entity->bundle();
@@ -38,7 +38,7 @@ class SupportTicketViewBuilder extends EntityViewBuilder {
           '#lazy_builder' => [get_called_class() . '::renderLinks', [
             $entity->id(),
             $view_mode,
-            $langcode,
+            $entity->language()->getId(),
           ]],
           '#create_placeholder' => TRUE,
         );
@@ -131,9 +131,9 @@ class SupportTicketViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  protected function alterBuild(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode = NULL) {
+  protected function alterBuild(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
     /** @var \Drupal\support_ticket\SupportTicketInterface $entity */
-    parent::alterBuild($build, $entity, $display, $view_mode, $langcode);
+    parent::alterBuild($build, $entity, $display, $view_mode);
     if ($entity->id()) {
       $build['#contextual_links']['support_ticket'] = array(
         'route_parameters' =>array('support_ticket' => $entity->id()),

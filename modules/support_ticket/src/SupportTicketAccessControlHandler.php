@@ -36,7 +36,7 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $entity, $operation, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL, $return_as_object = FALSE) {
+  public function access(EntityInterface $entity, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
     if ($account->hasPermission('administer support tickets')) {
@@ -47,7 +47,7 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
       $result = AccessResult::forbidden()->cachePerPermissions();
       return $return_as_object ? $result : $result->isAllowed();
     }
-    $result = parent::access($entity, $operation, $langcode, $account, TRUE)->cachePerPermissions();
+    $result = parent::access($entity, $operation, $account, TRUE)->cachePerPermissions();
     return $return_as_object ? $result : $result->isAllowed();
   }
 
@@ -69,13 +69,11 @@ class SupportTicketAccessControlHandler extends EntityAccessControlHandler imple
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $support_ticket, $operation, $langcode, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $support_ticket, $operation, AccountInterface $account) {
     /** @var \Drupal\support_ticket\SupportTicketInterface $support_ticket */
-    /** @var \Drupal\support_ticket\SupportTicketInterface $translation */
-    $translation = $support_ticket->getTranslation($langcode);
     // Fetch information from the support_ticket object if possible.
-    $status = $translation->isPublished();
-    $uid = $translation->getOwnerId();
+    $status = $support_ticket->isPublished();
+    $uid = $support_ticket->getOwnerId();
 
     // Check if authors can view their own unpublished support tickets.
     if ($operation === 'view' && !$status && $account->hasPermission('view own unpublished support tickets') && $account->isAuthenticated() && $account->id() == $uid) {

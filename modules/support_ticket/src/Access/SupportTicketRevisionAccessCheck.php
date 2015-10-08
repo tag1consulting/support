@@ -93,15 +93,11 @@ class SupportTicketRevisionAccessCheck implements AccessInterface {
    *   performed.
    * @param string $op
    *   (optional) The specific operation being checked. Defaults to 'view.'
-   * @param string|null $langcode
-   *   (optional) Language code for the variant of the support_ticket. Different
-   *   language variants might have different permissions associated. If NULL, the
-   *   original langcode of the support_ticket is used. Defaults to NULL.
    *
    * @return bool
    *   TRUE if the operation may be performed, FALSE otherwise.
    */
-  public function checkAccess(SupportTicketInterface $support_ticket, AccountInterface $account, $op = 'view', $langcode = NULL) {
+  public function checkAccess(SupportTicketInterface $support_ticket, AccountInterface $account, $op = 'view') {
     $map = array(
       'view' => 'view all revisions',
       'update' => 'revert all revisions',
@@ -120,14 +116,9 @@ class SupportTicketRevisionAccessCheck implements AccessInterface {
       return FALSE;
     }
 
-    // If no language code was provided, default to the support_ticket revision's
-    // langcode.
-    if (empty($langcode)) {
-      $langcode = $support_ticket->language()->getId();
-    }
-
     // Statically cache access by revision ID, language code, user account ID,
     // and operation.
+    $langcode = $support_ticket->language()->getId();
     $cid = $support_ticket->getRevisionId() . ':' . $langcode . ':' . $account->id() . ':' . $op;
 
     if (!isset($this->access[$cid])) {
@@ -152,7 +143,7 @@ class SupportTicketRevisionAccessCheck implements AccessInterface {
         // First check the access to the default revision and finally, if the
         // support_ticket passed in is not the default revision then access to that,
         // too.
-        $this->access[$cid] = $this->supportTicketAccess->access($this->supportTicketStorage->load($support_ticket->id()), $op, $langcode, $account) && ($support_ticket->isDefaultRevision() || $this->supportTicketAccess->access($support_ticket, $op, $langcode, $account));
+        $this->access[$cid] = $this->supportTicketAccess->access($this->supportTicketStorage->load($support_ticket->id()), $op, $account) && ($support_ticket->isDefaultRevision() || $this->supportTicketAccess->access($support_ticket, $op, $account));
       }
     }
 

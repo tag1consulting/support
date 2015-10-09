@@ -731,48 +731,11 @@ display:
           required: true
           plugin_id: standard
       arguments:
-        uid:
-          id: uid
-          table: users_field_data
-          field: uid
-          relationship: field_assigned_to
-          group_type: group
-          admin_label: ''
-          default_action: 'not found'
-          exception:
-            value: all
-            title_enable: false
-            title: All
-          title_enable: true
-          title: '%1''s tickets'
-          default_argument_type: fixed
-          default_argument_options:
-            argument: ''
-          default_argument_skip_url: false
-          summary_options:
-            base_path: ''
-            count: true
-            items_per_page: 25
-            override: false
-          summary:
-            sort_order: asc
-            number_of_records: 0
-            format: default_summary
-          specify_validation: true
-          validate:
-            type: 'entity:user'
-            fail: 'access denied'
-          validate_options:
-            access: '1'
-            operation: view
-            multiple: '0'
-            restrict_roles: 0
-            roles: {  }
-          break_phrase: false
-          not: false
-          entity_type: user
-          entity_field: uid
-          plugin_id: user_uid
+        field_assigned_to_target_id:
+          id: field_assigned_to_target_id
+          table: support_ticket__field_assigned_to
+          field: field_assigned_to_target_id
+          plugin_id: numeric
       display_extenders: {  }
     cache_metadata:
       contexts:
@@ -782,41 +745,11 @@ display:
         - url.query_args
         - user.permissions
       cacheable: false
-  feed_1:
-    display_plugin: feed
-    id: feed_1
-    display_title: Feed
-    position: 2
-    display_options:
-      sitename_title: true
-      path: rss.xml
-      displays:
-        page_1: page_1
-        default: ''
-      pager:
-        type: some
-        options:
-          items_per_page: 10
-          offset: 0
-      style:
-        type: rss
-        options:
-          description: ''
-          grouping: {  }
-          uses_fields: false
-      row:
-        type: support_ticket_rss
-        options:
-          relationship: none
-          view_mode: rss
-      display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-        - user.permissions
-      cacheable: false
+      max-age: 0
+      tags:
+        - 'config:field.storage.support_ticket.field_assigned_to'
+        - 'config:field.storage.support_ticket.field_priority'
+        - 'config:field.storage.support_ticket.field_state'
   page_1:
     display_plugin: page
     id: page_1
@@ -842,3 +775,8 @@ display:
         - url.query_args
         - user.permissions
       cacheable: false
+      max-age: 0
+      tags:
+        - 'config:field.storage.support_ticket.field_assigned_to'
+        - 'config:field.storage.support_ticket.field_priority'
+        - 'config:field.storage.support_ticket.field_state'

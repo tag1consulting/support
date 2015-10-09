@@ -89,16 +89,10 @@ abstract class SupportTicketTestBase extends WebTestBase {
    *   The support ticket object to check.
    * @param \Drupal\Core\Session\AccountInterface $account
    *   The user account for which to check access.
-   * @param string|null $langcode
-   *   (optional) The language code indicating which translation of the support ticket
-   *   to check. If NULL, the untranslated (fallback) access is checked.
    */
-  function assertSupportTicketAccess(array $ops, $support_ticket, AccountInterface $account, $langcode = NULL) {
+  function assertSupportTicketAccess(array $ops, $support_ticket, AccountInterface $account) {
     foreach ($ops as $op => $result) {
-      if (empty($langcode)) {
-        $langcode = $support_ticket->prepareLangcode();
-      }
-      $this->assertEqual($result, $this->accessHandler->access($support_ticket, $op, $langcode, $account), $this->supportTicketAccessAssertMessage($op, $result, $langcode));
+      $this->assertEqual($result, $this->accessHandler->access($support_ticket, $op, $account), $this->supportTicketAccessAssertMessage($op, $result, $support_ticket->language()->getId()));
     }
   }
 

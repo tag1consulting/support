@@ -24,7 +24,7 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
    *
    * @var array
    */
-  public static $modules = array('support_ticket', 'filter', 'dblog');
+  public static $modules = array('support_ticket', 'filter');
 
   /**
    * {@inheritdoc}

@@ -732,41 +732,11 @@ display:
         - url.query_args
         - user.permissions
       cacheable: false
-  feed_1:
-    display_plugin: feed
-    id: feed_1
-    display_title: Feed
-    position: 2
-    display_options:
-      sitename_title: true
-      path: rss.xml
-      displays:
-        page_1: page_1
-        default: ''
-      pager:
-        type: some
-        options:
-          items_per_page: 10
-          offset: 0
-      style:
-        type: rss
-        options:
-          description: ''
-          grouping: {  }
-          uses_fields: false
-      row:
-        type: support_ticket_rss
-        options:
-          relationship: none
-          view_mode: rss
-      display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-        - user.permissions
-      cacheable: false
+      max-age: 0
+      tags:
+        - 'config:field.storage.support_ticket.field_assigned_to'
+        - 'config:field.storage.support_ticket.field_priority'
+        - 'config:field.storage.support_ticket.field_state'
   page_1:
     display_plugin: page
     id: page_1
@@ -792,3 +762,8 @@ display:
         - url.query_args
         - user.permissions
       cacheable: false
+      max-age: 0
+      tags:
+        - 'config:field.storage.support_ticket.field_assigned_to'
+        - 'config:field.storage.support_ticket.field_priority'
+        - 'config:field.storage.support_ticket.field_state'

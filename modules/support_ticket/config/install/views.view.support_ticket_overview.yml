@@ -820,6 +820,8 @@ display:
         - user
         - user.permissions
       cacheable: false
+      max-age: 0
+      tags: {  }
   page_1:
     display_plugin: page
     id: page_1
@@ -850,3 +852,5 @@ display:
         - user
         - user.permissions
       cacheable: false
+      max-age: 0
+      tags: {  }

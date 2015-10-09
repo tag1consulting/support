@@ -8,3 +8,5 @@ dependencies:
   - text
   - options
   - diff
+  - comment
+  - views

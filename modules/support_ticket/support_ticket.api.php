@@ -50,19 +50,19 @@ function hook_support_ticket_access(\Drupal\support_ticket\SupportTicketInterfac
       return AccessResult::allowedIfHasPermission($account, 'create ' . $type . ' ticket');
 
     case 'update':
-      if ($account->hasPermission('edit any ' . $type . ' ticket', $account)) {
+      if ($account->hasPermission('edit any ' . $type . ' ticket')) {
         return AccessResult::allowed()->cachePerPermissions();
       }
       else {
-        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' ticket', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' ticket') && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
       }
 
     case 'delete':
-      if ($account->hasPermission('delete any ' . $type . ' ticket', $account)) {
+      if ($account->hasPermission('delete any ' . $type . ' ticket')) {
         return AccessResult::allowed()->cachePerPermissions();
       }
       else {
-        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' ticket', $account) && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
+        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' ticket') && ($account->id() == $support_ticket->getOwnerId()))->cachePerPermissions()->cachePerUser()->cacheUntilEntityChanges($support_ticket);
       }
 
     default:

@@ -646,7 +646,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     $config = \Drupal::configFactory()->get('support_ticket.settings');
 
     $form['diff'] = array(
-      '#title' => t('Revision comparisons'),
+      '#title' => t('Revision changes'),
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => FALSE,
@@ -667,8 +667,8 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     }
     $form['diff']['comment_diff_field'] = array(
       '#type' => 'select',
-      '#title' => t('Comment field'),
-      '#description' => t('Where to write comparison comments.'),
+      '#title' => t('Support ticket comment field'),
+      '#description' => t('Support ticket comment field where to write change comments.'),
       '#options' => $options,
       '#weight' => 12,
       '#default_value' => $comment_field,
@@ -679,23 +679,35 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     // if '- None -' is selected above.
 
     if (!empty($comment_field)) {
-      $options = array();
+      $revision_reference_options = $revision_changes_options = array();
       $field_storage = FieldStorageConfig::loadByName('support_ticket', $comment_field);
       $comment_type = $field_storage->getSetting('comment_type');
       $fields = \Drupal::entityManager()->getFieldDefinitions('comment', $comment_type);
       foreach ($fields as $field) {
-        if ($field->getType() == 'integer' && ($field_name = $field->getName()) != 'cid') {
-          $options[$field_name] = $field->getLabel();
+        if ($field->getType() == 'integer' && ($revision_reference_field = $field->getName()) != 'cid') {
+          $revision_reference_options[$revision_reference_field] = $field->getLabel();
+        }
+        if ($field->getType() == 'text_long' && $revision_changes_field = $field->getName()) {
+          $revision_changes_options[$revision_changes_field] = $field->getLabel();
         }
       }
 
       $form['diff']['comment_diff_revision_reference'] = array(
         '#type' => 'select',
-        '#title' => t('Revision field'),
+        '#title' => t('Revision ID integer field'),
         '#description' => t('Integer field in %comment_field_label to store revision ID that caused this comment.', array('%comment_field_label' => $comment_field_label)),
-        '#options' => $options,
+        '#options' => $revision_reference_options,
         '#weight' => 14,
         '#default_value' => _support_ticket_comment_diff_revision_reference($type->id(), $comment_type),
+        '#empty_value' => '',
+      );
+      $form['diff']['comment_diff_revision_changes'] = array(
+        '#type' => 'select',
+        '#title' => t('Revision changes text field'),
+        '#description' => t('Long text field in %comment_field_label to store the revision changes comment.', array('%comment_field_label' => $comment_field_label)),
+        '#options' => $revision_changes_options,
+        '#weight' => 14,
+        '#default_value' => _support_ticket_comment_diff_revision_changes($type->id(), $comment_type),
         '#empty_value' => '',
       );
     }
@@ -709,7 +721,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     $form['diff']['filter_format'] = array(
       '#type' => 'select',
       '#title' => t('Filter format'),
-      '#description' => t('Which filter format to apply to comparison comments.'),
+      '#description' => t('Which filter format to apply to change comments.'),
       '#options' => $options,
       '#weight' => 16,
       '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format'),
@@ -766,7 +778,7 @@ function _support_ticket_comment_diff_field($entity_type) {
 }
 
 /**
- * Determine comment field to write revision references into.
+ * Determine integer comment field to write revision references into.
  *
  * @param \Drupal\support_ticket\SupportTicketTypeInterface $entity_type
  *   The support ticket entity type.
@@ -796,6 +808,38 @@ function _support_ticket_comment_diff_revision_reference($entity_type, $comment_
 }
 
 /**
+ * Determine text comment field to write revision changes into.
+ *
+ * @param \Drupal\support_ticket\SupportTicketTypeInterface $entity_type
+ *   The support ticket entity type.
+ * @param string $comment_type
+ *   The comment type.
+ *
+ * @return string $default
+ *   The field name.
+ */
+function _support_ticket_comment_diff_revision_changes($entity_type, $comment_type) {
+  $config = \Drupal::configFactory()->get('support_ticket.settings');
+  $default = $config->get('support_ticket_type_settings.' . $entity_type . '.comment_diff_revision_changes');
+
+  if ($default === NULL) {
+    $fields = \Drupal::entityManager()->getFieldDefinitions('comment', $comment_type);
+    foreach ($fields as $field) {
+      if ($field->getType() == 'text_long' && ($field_name = $field->getName()) != 'comment_body') {
+        $default = $field_name;
+        \Drupal::configFactory()->getEditable('support_ticket.settings')
+          ->set('support_ticket_type_settings.' . $entity_type . '.comment_diff_revision_changes', $default)
+          ->save();
+        break;
+      }
+    }
+  }
+  return $default;
+}
+
+
+
+/**
  * Submit handler for forms with menu options.
  *
  * @see support_ticket_form_support_ticket_type_edit_form_alter().
@@ -807,5 +851,6 @@ function support_ticket_form_support_ticket_type_form_submit(&$form, $form_state
     ->set('support_ticket_type_settings.' . $type->id() . '.filter_format', $form_state->getValue('filter_format'))
     ->set('support_ticket_type_settings.' . $type->id() . '.comment_diff_field', $form_state->getValue('comment_diff_field'))
     ->set('support_ticket_type_settings.' . $type->id() . '.comment_diff_revision_reference', $form_state->getValue('comment_diff_revision_reference'))
+    ->set('support_ticket_type_settings.' . $type->id() . '.comment_diff_revision_changes', $form_state->getValue('comment_diff_revision_changes'))
     ->save();
 }

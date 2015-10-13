@@ -4,6 +4,7 @@ dependencies:
   config:
     - comment.type.support_ticket_update
     - field.field.comment.support_ticket_update.comment_body
+    - field.field.comment.support_ticket_update.field_revision_changes
     - field.field.comment.support_ticket_update.field_revision_reference
   module:
     - text
@@ -18,8 +19,14 @@ content:
     weight: 0
     settings: {  }
     third_party_settings: {  }
-  links:
+  field_revision_changes:
     weight: 1
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    type: text_default
+  links:
+    weight: 2
     settings: {  }
     third_party_settings: {  }
 hidden:

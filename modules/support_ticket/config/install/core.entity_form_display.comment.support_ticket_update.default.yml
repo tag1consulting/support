@@ -4,6 +4,7 @@ dependencies:
   config:
     - comment.type.support_ticket_update
     - field.field.comment.support_ticket_update.comment_body
+    - field.field.comment.support_ticket_update.field_revision_changes
     - field.field.comment.support_ticket_update.field_revision_reference
   module:
     - text
@@ -23,6 +24,13 @@ content:
       rows: 5
       placeholder: ''
     third_party_settings: {  }
+  field_revision_changes:
+    weight: 3
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+    type: text_textarea
   subject:
     type: string_textfield
     weight: 1

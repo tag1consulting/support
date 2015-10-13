@@ -1,9 +1,10 @@
-id: support_ticket_lock_action
-label: 'Lock support ticket'
-status: true
 langcode: en
-type: support_ticket
-plugin: support_ticket_lock_action
+status: true
 dependencies:
   module:
     - support_ticket
+id: support_ticket_lock_action
+label: 'Lock support ticket'
+type: support_ticket
+plugin: support_ticket_lock_action
+configuration: {  }

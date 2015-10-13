@@ -1,9 +1,10 @@
-id: support_ticket_unlock_action
-label: 'Unlock support ticket'
-status: true
 langcode: en
-type: support_ticket
-plugin: support_ticket_unlock_action
+status: true
 dependencies:
   module:
     - support_ticket
+id: support_ticket_unlock_action
+label: 'Unlock support ticket'
+type: support_ticket
+plugin: support_ticket_unlock_action
+configuration: {  }

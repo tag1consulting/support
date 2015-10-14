@@ -257,6 +257,12 @@ function support_ticket_entity_update($support_ticket) {
       // There's no field to write revision diffs into, so skip calculating a diff.
       return;
     }
+    $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
+    $comment_type = $field_storage->getSetting('comment_type');
+    if (!$diff_revision_changes_field = _support_ticket_comment_diff_revision_changes($type->id(), $comment_type)) {
+      // There's no field to write revision diffs into, so skip calculating a diff.
+      return;
+    }
 
     // Load some variables we need to generate a properly formatted diff.
     $config = \Drupal::configFactory()->get('support_ticket.settings');
@@ -320,15 +326,18 @@ function support_ticket_entity_update($support_ticket) {
     );
 
     // Store generated diff as a comment.
-    $field_storage = FieldStorageConfig::loadByName('support_ticket', $field_name);
-    $comment_type = $field_storage->getSetting('comment_type');
     $diff_comment = array(
       'cid' => NULL,
+      'uid' => \Drupal::currentUser()->id(),
       'entity_id' => $support_ticket->id(),
       'entity_type' => 'support_ticket',
       'field_name' => $field_name,
       'pid' => 0,
       'comment_body' => array(
+        'value' => '<em>' . t('Automatically generated:') . '</em>',
+        'format' => $filter_format,
+      ),
+      $diff_revision_changes_field => array(
         'value' => \Drupal::service('renderer')->renderPlain($build['diff']),
         'format' => $filter_format,
       ),
@@ -667,8 +676,8 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     }
     $form['diff']['comment_diff_field'] = array(
       '#type' => 'select',
-      '#title' => t('Support ticket comment field'),
-      '#description' => t('Support ticket comment field where to write change comments.'),
+      '#title' => t('Comment field'),
+      '#description' => t('The comment field in the %type support ticket type where change comments will be written.', array('%type' => $type->label())),
       '#options' => $options,
       '#weight' => 12,
       '#default_value' => $comment_field,
@@ -695,7 +704,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       $form['diff']['comment_diff_revision_reference'] = array(
         '#type' => 'select',
         '#title' => t('Revision ID integer field'),
-        '#description' => t('Integer field in %comment_field_label to store revision ID that caused this comment.', array('%comment_field_label' => $comment_field_label)),
+        '#description' => t('Integer field in %comment_field_label comment field to store the revision ID that caused these revision changes.', array('%comment_field_label' => $comment_field_label)),
         '#options' => $revision_reference_options,
         '#weight' => 14,
         '#default_value' => _support_ticket_comment_diff_revision_reference($type->id(), $comment_type),
@@ -703,8 +712,8 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       );
       $form['diff']['comment_diff_revision_changes'] = array(
         '#type' => 'select',
-        '#title' => t('Revision changes text field'),
-        '#description' => t('Long text field in %comment_field_label to store the revision changes comment.', array('%comment_field_label' => $comment_field_label)),
+        '#title' => t('Revision changes long text field'),
+        '#description' => t('Long text field in %comment_field_label comment field to store the revision changes.', array('%comment_field_label' => $comment_field_label)),
         '#options' => $revision_changes_options,
         '#weight' => 14,
         '#default_value' => _support_ticket_comment_diff_revision_changes($type->id(), $comment_type),
@@ -721,7 +730,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     $form['diff']['filter_format'] = array(
       '#type' => 'select',
       '#title' => t('Filter format'),
-      '#description' => t('Which filter format to apply to change comments.'),
+      '#description' => t('Which filter format to apply to revision changes.'),
       '#options' => $options,
       '#weight' => 16,
       '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format'),

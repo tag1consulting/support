@@ -24,13 +24,6 @@ content:
       rows: 5
       placeholder: ''
     third_party_settings: {  }
-  field_revision_changes:
-    weight: 3
-    settings:
-      rows: 5
-      placeholder: ''
-    third_party_settings: {  }
-    type: text_textarea
   subject:
     type: string_textfield
     weight: 1
@@ -39,4 +32,5 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_revision_changes: true
   field_revision_reference: true

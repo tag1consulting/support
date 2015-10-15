@@ -1,9 +1,0 @@
-langcode: en
-status: true
-dependencies:
-  module:
-    - support_ticket
-id: support_ticket.support_ticket_metadata_changes
-label: 'Support ticket metadata changes'
-targetEntityType: support_ticket
-cache: true

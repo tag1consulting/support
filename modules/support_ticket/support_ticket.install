@@ -21,6 +21,6 @@ function support_ticket_install() {
       $value = 0;
     }
     $config->set('entity.support_ticket' . '.' . $field_key, $value);
-    $config->save();
   }
+  $config->save();
 }

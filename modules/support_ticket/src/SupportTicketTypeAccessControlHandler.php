@@ -22,16 +22,16 @@ class SupportTicketTypeAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     if ($operation == 'delete') {
       if ($entity->isLocked()) {
         return AccessResult::forbidden()->cacheUntilEntityChanges($entity);
       }
       else {
-        return parent::checkAccess($entity, $operation, $langcode, $account)->cacheUntilEntityChanges($entity);
+        return parent::checkAccess($entity, $operation, $account)->cacheUntilEntityChanges($entity);
       }
     }
-    return parent::checkAccess($entity, $operation, $langcode, $account);
+    return parent::checkAccess($entity, $operation, $account);
   }
 
 }

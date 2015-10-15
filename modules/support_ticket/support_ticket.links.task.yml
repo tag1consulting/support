@@ -24,3 +24,7 @@ entity.support_ticket_type.collection:
   title: List
   route_name: entity.support_ticket_type.collection
   base_route: entity.support_ticket_type.collection
+diff.support_ticket_entities:
+  route_name: diff.support_ticket_settings
+  title: Support Ticket
+  parent_id: diff.entities

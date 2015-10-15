@@ -7,6 +7,8 @@
 
 namespace Drupal\support_ticket\Tests;
 
+use Drupal\Component\Utility\Html;
+
 /**
  * Create a support_ticket with dangerous tags in its title and test that they are
  * escaped.
@@ -34,8 +36,8 @@ class SupportTicketTitleXSSTest extends SupportTicketTestBase {
     $support_ticket = $this->drupalCreateSupportTicket($settings);
 
     $this->drupalGet('support_ticket/' . $support_ticket->id());
-    // assertTitle() decodes HTML-entities inside the <title> element.
-    $this->assertTitle($title . ' | Drupal', 'Title is displayed when viewing a support_ticket.');
+    // Titles should be escaped.
+    $this->assertTitle(Html::escape($title) . ' | Drupal', 'Title is displayed when viewing a support_ticket.');
     $this->assertNoRaw($xss, 'Harmful tags are escaped when viewing a support_ticket.');
 
     $this->drupalGet('support_ticket/' . $support_ticket->id() . '/edit');

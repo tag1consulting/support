@@ -110,6 +110,6 @@ function support_ticket_test_support_ticket_insert(SupportTicketInterface $suppo
 function support_ticket_test_preprocess_field(&$variables) {
   // Add additional targeting for tests.
   if ($variables['entity_type'] == 'support_ticket' && $variables['field_name'] == 'title') {
-    $variables['attributes']['class'][] = 'field-name-title';
+    $variables['attributes']['class'][] = 'field--name-title';
   }
 }

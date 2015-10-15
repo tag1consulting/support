@@ -55,7 +55,7 @@ class SupportTicketViewTest extends SupportTicketTestBase {
     $this->assertTrue(mb_strlen($title, 'utf-8') < strlen($title), 'Title has multi-byte characters.');
     $support_ticket = $this->drupalCreateSupportTicket(array('title' => $title));
     $this->drupalGet($support_ticket->urlInfo());
-    $result = $this->xpath('//span[contains(@class, "field-name-title")]');
+    $result = $this->xpath('//span[contains(@class, "field--name-title")]');
     $this->assertEqual((string) $result[0], $title, 'The passed title was returned.');
   }
 

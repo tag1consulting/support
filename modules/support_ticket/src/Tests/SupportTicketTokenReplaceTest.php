@@ -7,9 +7,10 @@
 
 namespace Drupal\support_ticket\Tests;
 
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\system\Tests\System\TokenReplaceUnitTestBase;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Generates text using placeholders for dummy content to check support_ticket token
@@ -56,25 +57,25 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
       'tnid' => 0,
       'uid' => $account->id(),
       'title' => '<blink>Blinking Text</blink>',
-      'body' => array(array('value' => $this->randomMachineName(32), 'summary' => $this->randomMachineName(16), 'format' => 'plain_text')),
+      'body' => [['value' => 'Regular SUPPORT TICKET body for the test.', 'summary' => 'Fancy SUPPORT TICKET summary.', 'format' => 'plain_text']],
     ));
     $support_ticket->save();
 
-    // Generate and test sanitized tokens.
+    // Generate and test tokens.
     $tests = array();
     $tests['[support_ticket:stid]'] = $support_ticket->id();
     $tests['[support_ticket:vid]'] = $support_ticket->getRevisionId();
     $tests['[support_ticket:type]'] = 'test';
     $tests['[support_ticket:type-name]'] = 'Test';
-    $tests['[support_ticket:title]'] = SafeMarkup::checkPlain($support_ticket->getTitle());
+    $tests['[support_ticket:title]'] = Html::escape($support_ticket->getTitle());
     $tests['[support_ticket:body]'] = $support_ticket->body->processed;
     //$tests['[support_ticket:summary]'] = $support_ticket->body->summary_processed;
-    $tests['[support_ticket:langcode]'] = SafeMarkup::checkPlain($support_ticket->language()->getId());
+    $tests['[support_ticket:langcode]'] = $support_ticket->language()->getId();
     $tests['[support_ticket:url]'] = $support_ticket->url('canonical', $url_options);
     $tests['[support_ticket:edit-url]'] = $support_ticket->url('edit-form', $url_options);
-    $tests['[support_ticket:author]'] = SafeMarkup::checkPlain($account->getUsername());
+    $tests['[support_ticket:author]'] = $account->getUsername();
     $tests['[support_ticket:author:uid]'] = $support_ticket->getOwnerId();
-    $tests['[support_ticket:author:name]'] = SafeMarkup::checkPlain($account->getUsername());
+    $tests['[support_ticket:author:name]'] = $account->getUsername();
     $tests['[support_ticket:created:since]'] = \Drupal::service('date.formatter')->formatTimeDiffSince($support_ticket->getCreatedTime(), array('langcode' => $this->interfaceLanguage->getId()));
     $tests['[support_ticket:changed:since]'] = \Drupal::service('date.formatter')->formatTimeDiffSince($support_ticket->getChangedTime(), array('langcode' => $this->interfaceLanguage->getId()));
 
@@ -105,20 +106,8 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
     foreach ($tests as $input => $expected) {
       $bubbleable_metadata = new BubbleableMetadata();
       $output = $this->tokenService->replace($input, array('support_ticket' => $support_ticket), array('langcode' => $this->interfaceLanguage->getId()), $bubbleable_metadata);
-      $this->assertEqual($output, $expected, format_string('Sanitized support_ticket token %token replaced.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, format_string('Support_ticket token %token replaced.', ['%token' => $input]));
       $this->assertEqual($bubbleable_metadata, $metadata_tests[$input]);
-    }
-
-    // Generate and test unsanitized tokens.
-    $tests['[support_ticket:title]'] = $support_ticket->getTitle();
-    $tests['[support_ticket:body]'] = $support_ticket->body->value;
-    //$tests['[support_ticket:summary]'] = $support_ticket->body->summary;
-    $tests['[support_ticket:langcode]'] = $support_ticket->language()->getId();
-    $tests['[support_ticket:author:name]'] = $account->getUsername();
-
-    foreach ($tests as $input => $expected) {
-      $output = $this->tokenService->replace($input, array('support_ticket' => $support_ticket), array('langcode' => $this->interfaceLanguage->getId(), 'sanitize' => FALSE));
-      $this->assertEqual($output, $expected, format_string('Unsanitized support_ticket token %token replaced.', array('%token' => $input)));
     }
 
     // Repeat for a support_ticket without a summary.
@@ -126,11 +115,11 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
       'support_ticket_type' => 'test',
       'uid' => $account->id(),
       'title' => '<blink>Blinking Text</blink>',
-      'body' => array(array('value' => $this->randomMachineName(32), 'format' => 'plain_text')),
+      'body' => [['value' => 'A string that looks random like TR5c2I', 'format' => 'plain_text']],
     ));
     $support_ticket->save();
 
-    // Generate and test sanitized token - use full body as expected value.
+    // Generate and test token - use full body as expected value.
     $tests = array();
     // @todo: Find an appropriate way to do the rest of these tests.
     //$tests['[support_ticket:summary]'] = $support_ticket->body->processed;
@@ -140,15 +129,7 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
 
     foreach ($tests as $input => $expected) {
       $output = $this->tokenService->replace($input, array('support_ticket' => $support_ticket), array('language' => $this->interfaceLanguage));
-      $this->assertEqual($output, $expected, format_string('Sanitized support_ticket token %token replaced for support_ticket without a summary.', array('%token' => $input)));
-    }
-
-    // Generate and test unsanitized tokens.
-    //$tests['[support_ticket:summary]'] = $support_ticket->body->value;
-
-    foreach ($tests as $input => $expected) {
-      $output = $this->tokenService->replace($input, array('support_ticket' => $support_ticket), array('language' => $this->interfaceLanguage, 'sanitize' => FALSE));
-      $this->assertEqual($output, $expected, format_string('Unsanitized support_ticket token %token replaced for support_ticket without a summary.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, new FormattableMarkup('Support_ticket token %token replaced for support_ticket without a summary.', ['%token' => $input]));
     }
   }
 

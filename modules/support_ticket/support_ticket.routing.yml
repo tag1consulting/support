@@ -120,3 +120,11 @@ support_ticket.revisions_diff:
     _access_support_ticket_revision: 'view'
   options:
     _admin_route: TRUE
+
+diff.support_ticket_settings:
+  path: '/admin/config/content/diff/entities/support_ticket'
+  defaults:
+    _form: '\Drupal\support_ticket\Form\SupportTicketEntitySettingsForm'
+    _title: Diff Entities Settings
+  requirements:
+    _permission: 'administer site configuration'

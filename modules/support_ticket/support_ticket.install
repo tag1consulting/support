@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the support ticket module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function support_ticket_install() {
+  // Store default settings for support ticket diffs. We do it manually as this configuration
+  // lives in diff.settings, a configuration file we don't manage.
+  $config = \Drupal::configFactory()->getEditable('diff.settings');
+  $base_fields = \Drupal::entityManager()->getBaseFieldDefinitions('support_ticket');
+  foreach ($base_fields as $field_key => $field) {
+    // If anything in the following array changes between support ticket revisions, a diff
+    // will be generated.
+    if (in_array($field_key, array('stid', 'support_ticket_type', 'langcode', 'title', 'uid', 'status', 'locked', 'created'))) {
+      $compare = 1;
+    }
+    else {
+      $compare = 0;
+    }
+    $config->set('entity.support_ticket' . '.' . $field_key, $compare);
+  }
+  $config->save();
+}

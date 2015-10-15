@@ -267,9 +267,6 @@ function support_ticket_entity_update($support_ticket) {
     // Load some variables we need to generate a properly formatted diff.
     $config = \Drupal::configFactory()->get('support_ticket.settings');
     $filter_format = $config->get('support_ticket_type_settings.' . $type->id() . '.filter_format');
-    if (!$view_mode = $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode')) {
-      $view_mode = 'default';
-    }
 
     // Get a RevisionController to generate a diff.
     $diffFormatter = \Drupal::service('diff.diff.formatter');
@@ -281,13 +278,6 @@ function support_ticket_entity_update($support_ticket) {
     // Compare the original entity with the current revision.
     $original = $support_ticket->original;
     $fields = $revisionController->compareRevisions($original, $support_ticket);
-    $base_fields = \Drupal::entityManager()->getBaseFieldDefinitions('support_ticket');
-    foreach ($fields as $name => $field) {
-      $visible = entity_get_display('support_ticket', $support_ticket->getType(), $view_mode)->getComponent($name);
-      if ($visible === NULL && !array_key_exists($name, $base_fields)) {
-        unset($fields[$name]);
-      }
-    }
 
     $diff_rows = array();
     // Format the differences as rows in a table.
@@ -737,23 +727,6 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       '#empty_value' => '',
     );
 
-    $options = array();
-    // Get all view modes for support ticket entity type.
-    $support_ticket_view_modes = \Drupal::entityManager()->getViewModes('support_ticket');
-    foreach ($support_ticket_view_modes as $view_mode => $view_mode_info) {
-      $options[$view_mode] = $view_mode_info['label'];
-    }
-
-    $form['diff']['view_mode'] = array(
-      '#type' => 'select',
-      '#title' => t('View mode'),
-      '#description' => t('Which <em>view mode</em> to use when making revision comparisons.'),
-      '#options' => $options,
-      '#weight' => 18,
-      '#default_value' => $config->get('support_ticket_type_settings.' . $type->id() . '.view_mode'),
-      '#empty_value' => '',
-    );
-
     $form['actions']['submit']['#submit'][] = 'support_ticket_form_support_ticket_type_form_submit';
   }
 }
@@ -856,7 +829,6 @@ function _support_ticket_comment_diff_revision_changes($entity_type, $comment_ty
 function support_ticket_form_support_ticket_type_form_submit(&$form, $form_state) {
   $type = $form_state->getFormObject()->getEntity();
   \Drupal::configFactory()->getEditable('support_ticket.settings')
-    ->set('support_ticket_type_settings.' . $type->id() . '.view_mode', $form_state->getValue('view_mode'))
     ->set('support_ticket_type_settings.' . $type->id() . '.filter_format', $form_state->getValue('filter_format'))
     ->set('support_ticket_type_settings.' . $type->id() . '.comment_diff_field', $form_state->getValue('comment_diff_field'))
     ->set('support_ticket_type_settings.' . $type->id() . '.comment_diff_revision_reference', $form_state->getValue('comment_diff_revision_reference'))

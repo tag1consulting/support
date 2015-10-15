@@ -4,3 +4,4 @@ support_ticket_type_settings:
     comment_diff_revision_reference: field_revision_reference
     view_mode: support_ticket_metadata_changes
     filter_format: full_html
+    comment_diff_revision_changes: field_revision_changes

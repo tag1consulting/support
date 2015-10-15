@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.support_ticket_update
+    - field.storage.comment.field_revision_changes
+  module:
+    - text
+id: comment.support_ticket_update.field_revision_changes
+field_name: field_revision_changes
+entity_type: comment
+bundle: support_ticket_update
+label: 'Revision changes'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text_long

@@ -4,6 +4,7 @@ dependencies:
   config:
     - comment.type.support_ticket_update
     - field.field.comment.support_ticket_update.comment_body
+    - field.field.comment.support_ticket_update.field_revision_changes
     - field.field.comment.support_ticket_update.field_revision_reference
   module:
     - text
@@ -31,4 +32,5 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_revision_changes: true
   field_revision_reference: true

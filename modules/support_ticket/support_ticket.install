@@ -14,13 +14,15 @@ function support_ticket_install() {
   $config = \Drupal::configFactory()->getEditable('diff.settings');
   $base_fields = \Drupal::entityManager()->getBaseFieldDefinitions('support_ticket');
   foreach ($base_fields as $field_key => $field) {
+    // If anything in the following array changes between support ticket revisions, a diff
+    // will be generated.
     if (in_array($field_key, array('stid', 'support_ticket_type', 'langcode', 'title', 'uid', 'status', 'locked', 'created'))) {
-      $value = 1;
+      $compare = 1;
     }
     else {
-      $value = 0;
+      $compare = 0;
     }
-    $config->set('entity.support_ticket' . '.' . $field_key, $value);
+    $config->set('entity.support_ticket' . '.' . $field_key, $compare);
   }
   $config->save();
 }

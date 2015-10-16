@@ -7,6 +7,29 @@ support_ticket.settings:
     use_admin_theme:
       type: boolean
       label: 'Use admin theme when editing or creating tickets'
+    support_ticket_type_settings:
+      type: sequence
+      label: 'Support ticket type settings'
+      sequence:
+        type: support_ticket_type_settings_base
+        label: 'Support ticket type'
+
+support_ticket_type_settings_base:
+  type: config_entity
+  label: 'Support ticket type settings'
+  mapping:
+    comment_diff_field:
+      type: string
+      label: 'Diff field'
+    comment_diff_revision_reference:
+      type: string
+      label: 'Diff revision reference field'
+    filter_format:
+      type: string
+      label: 'Filter format for support ticket type.'
+    comment_diff_revision_changes:
+      type: string
+      label: 'Diff revision changes field'
 
 support_ticket.type.*:
   type: config_entity

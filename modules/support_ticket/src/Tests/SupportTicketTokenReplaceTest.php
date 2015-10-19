@@ -25,7 +25,7 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
    *
    * @var array
    */
-  public static $modules = array('support_ticket', 'filter');
+  public static $modules = ['field', 'text', 'comment', 'views', 'filter', 'options', 'support_ticket'];
 
   /**
    * {@inheritdoc}
@@ -33,6 +33,7 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
   protected function setUp() {
     parent::setUp();
     $this->installConfig(SupportTicketTokenReplaceTest::$modules);
+    $this->installEntitySchema('comment');
     $this->installEntitySchema('support_ticket');
 
     $support_ticket_type = entity_create('support_ticket_type', array('type' => 'test', 'name' => 'Test'));
@@ -54,7 +55,6 @@ class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
     /* @var $support_ticket \Drupal\support_ticket\SupportTicketInterface */
     $support_ticket = entity_create('support_ticket', array(
       'support_ticket_type' => 'test',
-      'tnid' => 0,
       'uid' => $account->id(),
       'title' => '<blink>Blinking Text</blink>',
       'body' => [['value' => 'Regular SUPPORT TICKET body for the test.', 'summary' => 'Fancy SUPPORT TICKET summary.', 'format' => 'plain_text']],

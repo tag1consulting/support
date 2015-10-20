@@ -5,7 +5,6 @@
  * Builds placeholder replacement tokens for support_ticket-related data.
  */
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Datetime\Entity\DateFormat;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\BubbleableMetadata;
@@ -96,7 +95,6 @@ function support_ticket_tokens($type, $tokens, array $data, array $options, Bubb
   else {
     $langcode = LanguageInterface::LANGCODE_DEFAULT;
   }
-  $sanitize = !empty($options['sanitize']);
 
   $replacements = array();
 
@@ -116,16 +114,16 @@ function support_ticket_tokens($type, $tokens, array $data, array $options, Bubb
           break;
 
         case 'type':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($support_ticket->getType()) : $support_ticket->getType();
+          $replacements[$original] = $support_ticket->getType();
           break;
 
         case 'type-name':
           $type_name = support_ticket_get_type_label($support_ticket);
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($type_name) : $type_name;
+          $replacements[$original] = $type_name;
           break;
 
         case 'title':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($support_ticket->getTitle()) : $support_ticket->getTitle();
+          $replacements[$original] = $support_ticket->getTitle();
           break;
 
         case 'body':
@@ -133,14 +131,13 @@ function support_ticket_tokens($type, $tokens, array $data, array $options, Bubb
           $translation = \Drupal::entityManager()->getTranslationFromContext($support_ticket, $langcode, array('operation' => 'support_ticket_tokens'));
           if ($translation->hasField('body') && ($items = $translation->get('body')) && !$items->isEmpty()) {
             $item = $items[0];
-            $field_definition = \Drupal::entityManager()->getFieldDefinitions('support_ticket', $support_ticket->bundle())['body'];
             // If the summary was requested and is not empty, use it.
             if ($name == 'summary' && !empty($item->summary)) {
-              $output = $sanitize ? $item->summary_processed : $item->summary;
+              $output = $item->summary_processed;
             }
             // Attempt to provide a suitable version of the 'body' field.
             else {
-              $output = $sanitize ? $item->processed : $item->value;
+              $output = $item->processed;
               // A summary was requested.
               if ($name == 'summary') {
                 // Generate an optionally trimmed summary of the body field.
@@ -159,12 +156,14 @@ function support_ticket_tokens($type, $tokens, array $data, array $options, Bubb
                 $output = text_summary($output, $item->format, $length);
               }
             }
+            // "processed" returns a \Drupal\Component\Render\MarkupInterface
+            // via check_markup().
             $replacements[$original] = $output;
           }
           break;
 
         case 'langcode':
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($support_ticket->language()->getId()) : $support_ticket->language()->getId();
+          $replacements[$original] = $support_ticket->language()->getId();
           break;
 
         case 'url':
@@ -179,7 +178,7 @@ function support_ticket_tokens($type, $tokens, array $data, array $options, Bubb
         case 'author':
           $account = $support_ticket->getOwner() ? $support_ticket->getOwner() : User::load(0);
           $bubbleable_metadata->addCacheableDependency($account);
-          $replacements[$original] = $sanitize ? SafeMarkup::checkPlain($account->label()) : $account->label();
+          $replacements[$original] = $account->label();
           break;
 
         case 'created':

@@ -197,9 +197,7 @@ display:
           hide_alter_empty: true
           click_sort_column: value
           type: number_unformatted
-          settings:
-            thousand_separator: ''
-            prefix_suffix: 0
+          settings: {  }
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -329,9 +327,7 @@ display:
           click_sort_column: value
           type: timestamp_ago
           settings:
-            date_format: medium
-            custom_date_format: ''
-            timezone: ''
+            granularity: 2
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -341,13 +337,10 @@ display:
           delta_first_last: false
           multi_type: separator
           separator: ', '
-          field_api_classes: 0
-          date_format: 'time ago'
-          custom_date_format: ''
-          timezone: ''
+          field_api_classes: false
           entity_type: support_ticket
           entity_field: changed
-          plugin_id: date
+          plugin_id: field
         field_assigned_to:
           id: field_assigned_to
           table: support_ticket__field_assigned_to
@@ -398,8 +391,7 @@ display:
           hide_alter_empty: true
           click_sort_column: target_id
           type: author
-          settings:
-            view_mode: default
+          settings: {  }
           group_column: target_id
           group_columns: {  }
           group_rows: true

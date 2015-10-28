@@ -25,12 +25,12 @@ class SupportTicketCreationTest extends SupportTicketTestBase {
    *
    * @var array
    */
-  public static $modules = array('support_ticket_test_exception', 'dblog', 'test_page_test');
+  public static $modules = ['support_ticket_test_exception', 'dblog'];
 
   protected function setUp() {
     parent::setUp();
 
-    $web_user = $this->drupalCreateUser(array('access support tickets', 'create ticket ticket', 'edit own ticket ticket'));
+    $web_user = $this->drupalCreateUser(['access support tickets', 'create ticket ticket', 'edit own ticket ticket']);
     $this->drupalLogin($web_user);
   }
 
@@ -41,39 +41,39 @@ class SupportTicketCreationTest extends SupportTicketTestBase {
     $ticket_type_storage = \Drupal::entityManager()->getStorage('support_ticket_type');
 
     // Test /support_ticket/add page with only one content type.
-//    $ticket_type_storage->load('article')->delete();
     $this->drupalGet('support_ticket/add');
     $this->assertResponse(200);
     $this->assertUrl('support_ticket/add/ticket');
+
     // Create a ticket.
     $edit = array();
     $edit['title[0][value]'] = $this->randomMachineName(8);
     $edit['body[0][value]'] = $this->randomMachineName(16);
-    //$edit['field_priority[value]'] = 'high';
+    $edit['field_priority'] = 'high';
+    $edit['field_state'] = 'inactive';
     $this->drupalPostForm('support_ticket/add/ticket', $edit, t('Save'));
 
-    // Check that the Basic page has been created.
+    // Check that the ticket has been created.
     $this->assertRaw(t('@post %title has been created.', array('@post' => 'Ticket', '%title' => $edit['title[0][value]'])), 'Ticket created.');
 
     // Check that the support_ticket exists in the database.
     $ticket = $this->supportTicketGetTicketByTitle($edit['title[0][value]']);
     $this->assertTrue($ticket, 'Ticket found in database.');
 
-    // Verify that pages do not show submitted information by default.
-    // @todo Should the opposite be true for support tickets?
+    // View ticket to test single ticket output.
     $this->drupalGet('support_ticket/' . $ticket->id());
-//    $this->assertNoText($ticket->getOwner()->getUsername());
-//    $this->assertNoText(format_date($ticket->getCreatedTime()));
 
-    // Change the support_ticket type setting to show submitted by information.
-    /** @var \Drupal\support_ticket\SupportTicketTypeInterface $ticket_type */
-    $ticket_type = $ticket_type_storage->load('ticket');
-    $ticket_type->setDisplaySubmitted(TRUE);
-    $ticket_type->save();
-
-    $this->drupalGet('support_ticket/' . $ticket->id());
+    // Base "Submitted by..." heading.
     $this->assertText($ticket->getOwner()->getUsername());
     $this->assertText(format_date($ticket->getCreatedTime()));
+
+    // Check field display output for basic ticket fields.
+    $elements = $this->cssSelect("div.field--name-field-priority div.field__item:contains('high')");
+    $this->assertEqual(count($elements), 1, 'Priority was set correctly.');
+
+    $elements = $this->cssSelect("div.field--name-field-state div.field__item:contains('inactive')");
+    $this->assertEqual(count($elements), 1, 'State was set correctly.');
+
   }
 
   /**

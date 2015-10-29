@@ -1,0 +1,16 @@
+langcode: en
+status: true
+dependencies: {  }
+name: 'Support ticket diff'
+format: support_ticket_diff
+weight: 0
+filters:
+  filter_html:
+    id: filter_html
+    provider: filter
+    status: true
+    weight: -10
+    settings:
+      allowed_html: '<em class> <span class> <table class data-striping> <tbody> <tr class> <td colspan class>'
+      filter_html_help: false
+      filter_html_nofollow: false

@@ -1,0 +1,6 @@
+name: 'Support ticket exception tests'
+type: module
+description: 'Support module for support ticket related exception testing.'
+package: Testing
+version: VERSION
+core: 8.x

@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @file
+ * A module implementing support ticket related hooks to test API interaction.
+ */
+
+use Drupal\support_ticket\SupportTicketInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for support_ticket entities.
+ */
+function support_ticket_test_exception_support_ticket_insert(SupportTicketInterface $support_ticket) {
+  if ($support_ticket->getTitle() == 'testing_transaction_exception') {
+    throw new Exception('Test exception for rollback.');
+  }
+}

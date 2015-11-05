@@ -2,5 +2,5 @@ support_ticket_type_settings:
   ticket:
     comment_diff_field: field_ticket_update
     comment_diff_revision_reference: field_revision_reference
-    filter_format: full_html
+    filter_format: support_ticket_diff
     comment_diff_revision_changes: field_revision_changes

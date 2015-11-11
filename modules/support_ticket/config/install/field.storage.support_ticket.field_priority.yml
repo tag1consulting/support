@@ -11,22 +11,22 @@ type: list_string
 settings:
   allowed_values:
     -
-      value: lowest
+      value: '105'
       label: lowest
     -
-      value: low
+      value: '110'
       label: low
     -
-      value: normal
+      value: '115'
       label: normal
     -
-      value: high
+      value: '120'
       label: high
     -
-      value: urgent
+      value: '125'
       label: urgent
     -
-      value: critical
+      value: '130'
       label: critical
   allowed_values_function: ''
 module: options

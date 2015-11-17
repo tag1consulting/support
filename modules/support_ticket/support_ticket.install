@@ -24,5 +24,8 @@ function support_ticket_install() {
     }
     $config->set('entity.support_ticket' . '.' . $field_key, $compare);
   }
+  // The Priority field is a list_string configured as "key => label", we need
+  // to compare the "label" to see human readable changes.
+  $config->set('field_types.list_string.settings.compare', 'label');
   $config->save();
 }

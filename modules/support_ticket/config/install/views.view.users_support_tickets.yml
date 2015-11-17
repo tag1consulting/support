@@ -656,12 +656,12 @@ display:
           admin_label: ''
           operator: or
           value:
-            lowest: lowest
-            low: low
-            normal: normal
-            high: high
-            urgent: urgent
-            critical: critical
+            105: '105'
+            110: '110'
+            115: '115'
+            120: '120'
+            125: '125'
+            130: '130'
           group: 1
           exposed: true
           expose:

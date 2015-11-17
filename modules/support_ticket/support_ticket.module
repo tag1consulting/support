@@ -5,7 +5,10 @@
  * Enables use of support tickets with optional time tracking.
  */
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -22,6 +25,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\comment\Entity\CommentType;
 use Drupal\Component\Diff\Diff;
 use Drupal\support_ticket\Controller\SupportTicketRevisionController;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Denotes that the support ticket is not published.
@@ -651,8 +655,11 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       '#tree' => FALSE,
     );
 
+    // Generate a unique wrapper HTML ID.
+    $ajax_wrapper_id = Html::getUniqueId('ajax-wrapper');
+
     $options = array();
-    $comment_field = _support_ticket_comment_diff_field($type->id());
+    $comment_field = $form_state->getValue('comment_diff_field', _support_ticket_comment_diff_field($type->id()));
     $fields = \Drupal::entityManager()->getFieldDefinitions('support_ticket', $type->id());
     foreach ($fields as $field) {
       if ($field->getType() == 'comment') {
@@ -664,7 +671,24 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
         }
       }
     }
-    $form['diff']['comment_diff_field'] = array(
+
+    // Prefix and suffix used for Ajax replacement.
+    $form['diff']['comment_field'] = array(
+      '#type' => 'container',
+      '#prefix' => '<div id="' . $ajax_wrapper_id . '">',
+      '#suffix' => '</div>',
+      '#attached' => [
+        'drupalSettings' => [
+          'ajax' => [
+            'edit-comment-diff-field' => [
+              'wrapper' => $ajax_wrapper_id,
+            ]
+          ],
+        ],
+      ],
+    );
+
+    $form['diff']['comment_field']['comment_diff_field'] = array(
       '#type' => 'select',
       '#title' => t('Comment field'),
       '#description' => t('The comment field in the %type support ticket type where change comments will be written.', array('%type' => $type->label())),
@@ -672,6 +696,12 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       '#weight' => 12,
       '#default_value' => $comment_field,
       '#empty_value' => '',
+      '#ajax' => [
+        'callback' => '_support_ticket_comment_diff_ajax_callback',
+        'wrapper' => $ajax_wrapper_id,
+        'effect' => 'fade',
+        'selector' => '[data-drupal-selector="edit-comment-diff-field"]',
+      ],
     );
 
     // @todo: reload options below when above is changed; disable below
@@ -691,7 +721,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
         }
       }
 
-      $form['diff']['comment_diff_revision_reference'] = array(
+      $form['diff']['comment_field']['comment_diff_revision_reference'] = array(
         '#type' => 'select',
         '#title' => t('Revision ID integer field'),
         '#description' => t('Integer field in %comment_field_label comment field to store the revision ID that caused these revision changes.', array('%comment_field_label' => $comment_field_label)),
@@ -700,7 +730,7 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
         '#default_value' => _support_ticket_comment_diff_revision_reference($type->id(), $comment_type),
         '#empty_value' => '',
       );
-      $form['diff']['comment_diff_revision_changes'] = array(
+      $form['diff']['comment_field']['comment_diff_revision_changes'] = array(
         '#type' => 'select',
         '#title' => t('Revision changes long text field'),
         '#description' => t('Long text field in %comment_field_label comment field to store the revision changes.', array('%comment_field_label' => $comment_field_label)),
@@ -730,6 +760,29 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
     $form['actions']['submit']['#submit'][] = 'support_ticket_form_support_ticket_type_form_submit';
   }
 }
+
+/**
+ * #ajax callback for the support ticket diff settings.
+ *
+ * @param array $form
+ *   The build form.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ * @param \Symfony\Component\HttpFoundation\Request $request
+ *   The current request.
+ *
+ * @return \Drupal\Core\Ajax\AjaxResponse
+ *   The ajax response of the ajax upload.
+ */
+function _support_ticket_comment_diff_ajax_callback(&$form, FormStateInterface &$form_state, Request $request) {
+  /** @var \Drupal\Core\Render\RendererInterface $renderer */
+  $renderer = \Drupal::service('renderer');
+  $response = new AjaxResponse();
+  $response->setAttachments($form['diff']['comment_field']['#attached']);
+  $output = $renderer->renderRoot($form['diff']['comment_field']);
+  return $response->addCommand(new ReplaceCommand(NULL, $output));
+}
+
 
 /**
  * Determine comment field to write revision differences into.

@@ -704,9 +704,6 @@ function support_ticket_form_support_ticket_type_edit_form_alter(&$form, FormSta
       ],
     );
 
-    // @todo: reload options below when above is changed; disable below
-    // if '- None -' is selected above.
-
     if (!empty($comment_field)) {
       $revision_reference_options = $revision_changes_options = array();
       $field_storage = FieldStorageConfig::loadByName('support_ticket', $comment_field);

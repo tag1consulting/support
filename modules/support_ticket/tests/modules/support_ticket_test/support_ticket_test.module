@@ -20,12 +20,12 @@ function support_ticket_test_support_ticket_view(array &$build, SupportTicketInt
     // Add RSS elements and namespaces when building the RSS feed.
     $support_ticket->rss_elements[] = array(
       'key' => 'testElement',
-      'value' => t('Value of testElement RSS element for support_ticket !nid.', array('!nid' => $support_ticket->id())),
+      'value' => t('Value of testElement RSS element for support_ticket @id.', array('@id' => $support_ticket->id())),
     );
 
     // Add content that should be displayed only in the RSS feed.
     $build['extra_feed_content'] = array(
-      '#markup' => '<p>' . t('Extra data that should appear only in the RSS feed for support_ticket !nid.', array('!nid' => $support_ticket->id())) . '</p>',
+      '#markup' => '<p>' . t('Extra data that should appear only in the RSS feed for support_ticket @id.', array('@id' => $support_ticket->id())) . '</p>',
       '#weight' => 10,
     );
   }
@@ -33,7 +33,7 @@ function support_ticket_test_support_ticket_view(array &$build, SupportTicketInt
   if ($view_mode != 'rss') {
     // Add content that should NOT be displayed in the RSS feed.
     $build['extra_non_feed_content'] = array(
-      '#markup' => '<p>' . t('Extra data that should appear everywhere except the RSS feed for support_ticket !nid.', array('!nid' => $support_ticket->id())) . '</p>',
+      '#markup' => '<p>' . t('Extra data that should appear everywhere except the RSS feed for support_ticket @id.', array('@id' => $support_ticket->id())) . '</p>',
     );
   }
 }

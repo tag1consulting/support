@@ -16,7 +16,7 @@ use Drupal\system\Tests\System\TokenReplaceUnitTestBase;
  * Generates text using placeholders for dummy content to check support_ticket token
  * replacement.
  *
- * @group support_ticket
+ * @group support
  */
 class SupportTicketTokenReplaceTest extends TokenReplaceUnitTestBase {
 

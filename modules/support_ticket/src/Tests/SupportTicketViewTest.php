@@ -10,7 +10,7 @@ namespace Drupal\support_ticket\Tests;
 /**
  * Tests the support_ticket/{support_ticket} page.
  *
- * @group support_ticket
+ * @group support
  * @see \Drupal\support_ticket\Controller\SupportTicketController
  */
 class SupportTicketViewTest extends SupportTicketTestBase {

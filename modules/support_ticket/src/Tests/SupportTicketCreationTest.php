@@ -13,7 +13,7 @@ use Drupal\Core\Language\LanguageInterface;
 /**
  * Create a support ticket and test saving it.
  *
- * @group support_ticket
+ * @group support
  */
 class SupportTicketCreationTest extends SupportTicketTestBase {
 

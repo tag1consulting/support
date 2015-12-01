@@ -12,7 +12,7 @@ use Drupal\support_ticket\Entity\SupportTicket;
 /**
  * Tests $support_ticket->save() for saving tickets.
  *
- * @group support_ticket
+ * @group support
  */
 class SupportTicketSaveTest extends SupportTicketTestBase {
 

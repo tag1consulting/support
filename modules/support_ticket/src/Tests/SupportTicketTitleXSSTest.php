@@ -13,7 +13,7 @@ use Drupal\Component\Utility\Html;
  * Create a support_ticket with dangerous tags in its title and test that they are
  * escaped.
  *
- * @group support_ticket
+ * @group support
  */
 class SupportTicketTitleXSSTest extends SupportTicketTestBase {
   /**

@@ -14,7 +14,7 @@ use Drupal\user\RoleInterface;
  *
  * Note that hook_support_ticket_access_records() is covered in another test class.
  *
- * @group support_ticket
+ * @group support
  * @todo Cover hook_support_ticket_access in a separate test class.
  */
 class SupportTicketAccessTest extends SupportTicketTestBase {

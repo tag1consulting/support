@@ -10,7 +10,7 @@ namespace Drupal\support_ticket\Tests;
 /**
  * Tests all the different buttons on the support_ticket form.
  *
- * @group support_ticket
+ * @group support
  */
 class SupportTicketFormButtonsTest extends SupportTicketTestBase {
 

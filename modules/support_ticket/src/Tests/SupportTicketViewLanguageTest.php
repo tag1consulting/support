@@ -12,7 +12,7 @@ use Drupal\language\Entity\ConfigurableLanguage;
 /**
  * Tests the support_ticket language extra field display.
  *
- * @group support_ticket
+ * @group support
  */
 class SupportTicketViewLanguageTest extends SupportTicketTestBase {
 

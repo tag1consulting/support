@@ -229,7 +229,7 @@ class SupportTicketViewsData extends EntityViewsData {
         'title' => t('Support ticket'),
         'label' => t('Get the actual support ticket from a support ticket revision.'),
       ),
-    ) + $data['support_ticket_revision']['vid'];
+    ) + $data['support_ticket_field_revision']['vid'];
 
     $data['support_ticket_field_revision']['langcode']['help'] = t('The language the original ticket is in.');
 

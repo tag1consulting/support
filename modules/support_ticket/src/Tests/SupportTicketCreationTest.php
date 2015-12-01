@@ -49,7 +49,7 @@ class SupportTicketCreationTest extends SupportTicketTestBase {
     $edit = array();
     $edit['title[0][value]'] = $this->randomMachineName(8);
     $edit['body[0][value]'] = $this->randomMachineName(16);
-    $edit['field_priority'] = 'high';
+    $edit['field_priority'] = '120'; // 120 = 'high'
     $edit['field_state'] = 'inactive';
     $this->drupalPostForm('support_ticket/add/ticket', $edit, t('Save'));
 

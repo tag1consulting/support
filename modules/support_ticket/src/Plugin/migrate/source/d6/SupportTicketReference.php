@@ -8,7 +8,6 @@
 namespace Drupal\support_ticket\Plugin\migrate\source\d6;
 
 use Drupal\migrate\Row;
-use Drupal\migrate\Plugin\SourceEntityInterface;
 use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 
 /*
@@ -28,7 +27,7 @@ mysql> describe support_reference;
  *   id = "d6_support_ticket_reference"
  * )
  */
-class SupportTicketReference extends DrupalSqlBase implements SourceEntityInterface {
+class SupportTicketReference extends DrupalSqlBase {
 
   /**
    * {@inheritdoc}

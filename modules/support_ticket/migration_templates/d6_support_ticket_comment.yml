@@ -13,7 +13,7 @@ migration_tags:
   - 'Drupal 6'
 label: 'Drupal 6 support ticket comments'
 source:
-  plugin: d6_comment
+  plugin: d6_support_ticket_comment
   constants:
     entity_type: support_ticket
     field_name: field_ticket_update
@@ -22,7 +22,7 @@ process:
   cid: cid
   pid:
     plugin: migration
-    migration: d6_comment
+    migration: d6_support_ticket_comment
     source: pid
   entity_id: nid
   entity_type: constants/entity_type

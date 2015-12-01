@@ -1,0 +1,39 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - migrate.migration.d6_support_ticket
+    - migrate.migration.d6_user
+  module:
+    - comment
+    - support_ticket
+id: d6_support_ticket_comment_metadata
+migration_tags:
+  - 'Drupal 6'
+label: 'Drupal 6 support ticket comments metadata'
+source:
+  plugin: d6_support_ticket_comment
+process:
+  nid:
+    plugin: migration
+    migration: d6_support_ticket
+    source: nid
+  uid:
+    plugin: migration
+    migration: d6_user
+    source: uid
+  changed: timestamp
+  field_assigned_to:
+    plugin: migration
+    migration: d6_user
+    source: assigned
+  field_priority: priority_name
+  field_state: state_name
+destination:
+  plugin: entity_revision:node
+migration_dependencies:
+  required:
+    - d6_support_ticket
+    - d6_support_ticket_comment
+    - d6_user
+migration_group: null

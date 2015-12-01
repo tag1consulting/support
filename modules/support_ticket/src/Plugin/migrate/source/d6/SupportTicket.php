@@ -8,7 +8,6 @@
 namespace Drupal\support_ticket\Plugin\migrate\source\d6;
 
 use Drupal\migrate\Row;
-use Drupal\migrate\Plugin\SourceEntityInterface;
 use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 
 /*
@@ -87,7 +86,7 @@ describe support_assigned;
  *   id = "d6_support_ticket"
  * )
  */
-class SupportTicket extends DrupalSqlBase implements SourceEntityInterface {
+class SupportTicket extends DrupalSqlBase {
 
   /**
    * The join options between the node and the node_revisions table.

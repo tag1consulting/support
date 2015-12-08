@@ -7,15 +7,12 @@
 
 namespace Drupal\support_ticket;
 
-use Drupal\user\EntityOwnerInterface;
-use Drupal\Core\Entity\EntityChangedInterface;
-use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\user\UserInterface;
+use Drupal\content_entity_base\Entity\EntityBaseInterface;
 
 /**
  * Provides an interface defining a support ticket entity.
  */
-interface SupportTicketInterface extends ContentEntityInterface, EntityChangedInterface, EntityOwnerInterface {
+interface SupportTicketInterface extends EntityBaseInterface {
 
   /**
    * Gets the support ticket type.

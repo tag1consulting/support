@@ -5,8 +5,9 @@ package: Support
 core: 8.x
 version: VERSION
 dependencies:
-  - text
-  - options
-  - diff
   - comment
+  - content_entity_base
+  - diff
+  - options
+  - text
   - views

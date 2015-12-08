@@ -7,7 +7,7 @@
 
 namespace Drupal\support_ticket\Entity;
 
-use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\content_entity_base\Entity\EntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -67,7 +67,7 @@ use Drupal\user\UserInterface;
  *   }
  * )
  */
-class SupportTicket extends ContentEntityBase implements SupportTicketInterface {
+class SupportTicket extends EntityBase implements SupportTicketInterface {
 
   use EntityChangedTrait;
 

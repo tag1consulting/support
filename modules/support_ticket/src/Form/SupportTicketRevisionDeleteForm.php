@@ -7,9 +7,9 @@
 
 namespace Drupal\support_ticket\Form;
 
+use Drupal\content_entity_base\Entity\Form\EntityRevisionDeleteForm;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\support_ticket\SupportInterface;
@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Provides a form for reverting a support ticket revision.
  */
-class SupportTicketRevisionDeleteForm extends ConfirmFormBase {
+class SupportTicketRevisionDeleteForm extends EntityRevisionDeleteForm {
 
   /**
    * The support ticket revision.
@@ -86,22 +86,8 @@ class SupportTicketRevisionDeleteForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getQuestion() {
-    return t('Are you sure you want to delete the revision from %revision-date?', array('%revision-date' => format_date($this->revision->getRevisionCreationTime())));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getCancelUrl() {
     return new Url('entity.support_ticket.version_history', array('support_ticket' => $this->revision->id()));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getConfirmText() {
-    return t('Delete');
   }
 
   /**

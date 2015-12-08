@@ -7,7 +7,7 @@
 
 namespace Drupal\support_ticket;
 
-use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
+use Drupal\content_entity_base\Entity\Listing\EntityTypeBaseListBuilder;
 use Drupal\Core\Url;
 use Drupal\Core\Entity\EntityInterface;
 
@@ -16,7 +16,7 @@ use Drupal\Core\Entity\EntityInterface;
  *
  * @see \Drupal\support_ticket\Entity\SupportTicketType
  */
-class SupportTicketTypeListBuilder extends ConfigEntityListBuilder {
+class SupportTicketTypeListBuilder extends EntityTypeBaseListBuilder {
 
   /**
    * {@inheritdoc}
@@ -40,19 +40,6 @@ class SupportTicketTypeListBuilder extends ConfigEntityListBuilder {
     );
     $row['description']['data'] = ['#markup' => $entity->getDescription()];
     return $row + parent::buildRow($entity);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getDefaultOperations(EntityInterface $entity) {
-    $operations = parent::getDefaultOperations($entity);
-    // Place the edit operation after the operations added by field_ui.module
-    // which have the weights 15, 20, 25.
-    if (isset($operations['edit'])) {
-      $operations['edit']['weight'] = 30;
-    }
-    return $operations;
   }
 
   /**

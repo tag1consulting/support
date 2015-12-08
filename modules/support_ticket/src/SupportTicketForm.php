@@ -7,7 +7,7 @@
 
 namespace Drupal\support_ticket;
 
-use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\content_entity_base\Entity\Form\EntityBaseForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Form controller for the support ticket edit forms.
  */
-class SupportTicketForm extends ContentEntityForm {
+class SupportTicketForm extends EntityBaseForm {
 
   /**
    * The tempstore factory.

@@ -7,12 +7,12 @@
 
 namespace Drupal\support_ticket\Form;
 
-use Drupal\Core\Entity\ContentEntityDeleteForm;
+use Drupal\content_entity_base\Entity\Form\EntityBaseDeleteForm;
 
 /**
  * Provides a form for deleting a support ticket.
  */
-class SupportTicketDeleteForm extends ContentEntityDeleteForm {
+class SupportTicketDeleteForm extends EntityBaseDeleteForm {
 
   /**
    * {@inheritdoc}

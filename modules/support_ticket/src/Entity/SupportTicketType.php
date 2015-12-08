@@ -7,9 +7,10 @@
 
 namespace Drupal\support_ticket\Entity;
 
-use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\support_ticket\SupportTicketTypeInterface;
+use Drupal\content_entity_base\Entity\EntityTypeBase;
+
 
 /**
  * Defines the SupportTicket type configuration entity.
@@ -21,7 +22,7 @@ use Drupal\support_ticket\SupportTicketTypeInterface;
  *     "form" = {
  *       "add" = "Drupal\support_ticket\SupportTicketTypeForm",
  *       "edit" = "Drupal\support_ticket\SupportTicketTypeForm",
- *       "delete" = "Drupal\support_ticket\Form\SupportTicketTypeDeleteConfirm"
+ *       "delete" = "Drupal\content_entity_base\Entity\Form\EntityTypeBaseDeleteForm",
  *     },
  *     "list_builder" = "Drupal\support_ticket\SupportTicketTypeListBuilder",
  *   },
@@ -48,7 +49,7 @@ use Drupal\support_ticket\SupportTicketTypeInterface;
  *   }
  * )
  */
-class SupportTicketType extends ConfigEntityBundleBase implements SupportTicketTypeInterface {
+class SupportTicketType extends EntityTypeBase implements SupportTicketTypeInterface {
 
   /**
    * The machine name of this support ticket type.
